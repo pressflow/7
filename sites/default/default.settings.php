@@ -444,3 +444,13 @@ ini_set('session.cookie_lifetime', 2000000);
  * Remove the leading hash signs to disable.
  */
 # $conf['allow_authorize_operations'] = FALSE;
+
+/**
+ * Smart start:
+ *
+ * If you would prefer to be redirected to the installation system when a
+ * valid settings.php file is present but no tables are installed, remove
+ * the leading hash sign below.
+ */
+# $conf['pressflow_smart_start'] = TRUE;
+

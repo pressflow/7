@@ -2252,6 +2252,17 @@ function _drupal_bootstrap_database() {
 function _drupal_bootstrap_variables() {
   global $conf;
 
+  // Pressflow Smart Start
+  if (!empty($GLOBALS['databases']) && variable_get('pressflow_smart_start', FALSE)) {
+    try {
+      $result = db_query('SELECT s.name FROM {system} s WHERE s.name = :name', array(':name' => 'system'));
+    } catch (Exception $e) {
+      // Redirect to the installer if an essential table is missing.
+      include_once DRUPAL_ROOT . '/includes/install.inc';
+      install_goto('install.php');
+    }
+  }
+
   // Initialize the lock system.
   require_once DRUPAL_ROOT . '/' . variable_get('lock_inc', 'includes/lock.inc');
   lock_initialize();
