@@ -1,74 +1,13 @@
 <?php
-function pantheon_install_tasks($install_state) {
-  $tasks = array (
-    'pantheon_cofigure' => array(),
-    'pantheon_phone_home' => array(),
-  );
-  return $tasks;
-}
-
-// Most of the configuration was moved to pantheon.module
-
-function pantheon_phone_home() {
-  pantheon_ygg_event_post('self', array('Drupal' => 'New Site Installed!'));
-}
-
+// $Id$
 /**
- * Set up base config
+ * @file pantheon.api.inc
+ * API functions for Pantheon
  */
-function pantheon_cofigure() {
-  $config = pantheon_ygg_config_get();
-  $solr_server = array(
-    'server_id' => '',
-    'name' => '',
-    'scheme' => 'http',
-    'host' => '',
-    'port' => '',
-    'path' => '',
-   );
-
-  // Remove existing apachesolr servers
-  db_delete('apachesolr_server')->execute();
-
-  // Create solr server entries for each environment.
-  foreach ($config as $project => $data) {
-    foreach ($data->environments as $env_name => $env) {
-      $solr_server['server_id'] = $env->solr->apachesolr_default_server;
-      $solr_server['name'] = ucwords("$project $env_name");
-      $solr_server['path'] = $env->solr->solr_path;
-      $solr_server['host'] = $env->solr->solr_host;
-      $solr_server['port'] = $env->solr->solr_port;
-      db_insert('apachesolr_server')->fields($solr_server)->execute();
-    }
-  }
-
-  // Set default Pantheon variables
-  variable_set('cache', 1);
-  variable_set('block_cache', 1);
-  variable_set('cache_lifetime', '0');
-  variable_set('page_cache_maximum_age', '900');
-  variable_set('page_compression', 0);
-  variable_set('preprocess_css', 1);
-  variable_set('preprocess_js', 1);
-  $search_active_modules = array(
-    'apachesolr_search' => 'apachesolr_search',
-    'user' => 'user',
-    'node' => 0
-  );
-  variable_set('search_active_modules', $search_active_modules);
-  variable_set('search_default_module', 'apachesolr_search');
-  drupal_set_message(t('Pantheon defaults configured.'));
-}
-
-
-// DUPLICATE FUNCTIONS FROM PANTHEON.MODULE
-//
-// It would be great to include pantheon.api.inc here...
 
 define('YGG_API_PORT', 8443);
 define('YGG_API', 'https://api.getpantheon.com');
 define('PANTHEON_SYSTEM_CERT', '/etc/pantheon/system.pem');
-
 
 /**
  * External API function to put config data in the Ygg API
@@ -93,6 +32,25 @@ function pantheon_ygg_config_get($site_uuid = 'self', $reset = FALSE) {
 }
 
 
+/**
+ * External API function to put config data in the Ygg API
+ *
+ * @params
+ *
+ * $site_uuid the site to hit
+ *
+ * $path the REST url behind /sites/<site-uuid> to query
+ * 
+ * $data an array or object that will be JSONified and PUT
+ * 
+ */
+function pantheon_ygg_config_set($site_uuid = 'self', $data) {
+  $url = YGG_API ."/sites/$site_uuid/configuration";
+  $json = json_encode($data);
+  $result = pantheon_curl($url, $json, 0, YGG_API_PORT, 'PUT');
+  
+  return $result;
+}
 
 /**
  * Post events to Ygg api.
@@ -103,6 +61,22 @@ function pantheon_ygg_event_post($site_uuid = 'self', $data) {
   $result = pantheon_curl($url, $json, 0, YGG_API_PORT, 'POST');
   
   return $result;
+}
+
+/**
+ * Ygg API call to pull the services status.
+ */
+function pantheon_ygg_services_get($site_uuid = 'self', $reset = FALSE) {
+  static $services = array();
+  if (!$services[$site_uuid] && !$reset) {
+    $url = YGG_API ."/sites/$site_uuid/services";
+    $result = pantheon_curl($url, NULL, 0, YGG_API_PORT);
+    
+    // TODO: error checking?
+    $services[$site_uuid] = json_decode($result['body']);
+  }
+  
+   return $services[$site_uuid];
 }
 
 
@@ -145,7 +119,7 @@ function pantheon_curl($url, $data = NULL, $port = 443, $datamethod = 'POST') {
   if (curl_errno($ch) != 0) {
     $error = curl_error($ch);
     curl_close($ch);
-    drupal_set_message(t('Fatal error contacting API: !error', array('!error' => $error)), 'error');
+    watchdog('pantheon', 'Fatal error contacting API: !error', array('!error' => $error), WATCHDOG_EMERGENCY);
     return FALSE;
   }
 
@@ -163,4 +137,15 @@ function pantheon_curl($url, $data = NULL, $port = 443, $datamethod = 'POST') {
   curl_close($ch);
   
   return $return;
+}
+
+/**
+ * Helper function to get uuid for "self" from the cert.
+ */
+function pantheon_get_self_uuid() {
+  $cert = file_get_contents(PANTHEON_SYSTEM_CERT);
+  $ssl = openssl_x509_parse($cert);
+  $uuid = array_shift(explode('.', $ssl['subject']['CN']));
+  
+  return $uuid;
 }

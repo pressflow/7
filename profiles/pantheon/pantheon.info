@@ -27,4 +27,5 @@ dependencies[] = rdf
 
 dependencies[] = apachesolr
 dependencies[] = apachesolr_search
+dependencies[] = pantheon
 files[] = pantheon.profile

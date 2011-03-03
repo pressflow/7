@@ -1,0 +1,6 @@
+; $Id$
+name = Pantheon Platform
+description = Integration with the Pantheon Platform
+package = Pantheon
+version = 1.0
+core = 7.x
