@@ -63,7 +63,7 @@ function pantheon_cofigure() {
 
 // DUPLICATE FUNCTIONS FROM PANTHEON.MODULE
 //
-// It would be great to include pantheon.api.inc here...
+// It sure would be great to include pantheon.api.inc here...
 
 define('YGG_API_PORT', 8443);
 define('YGG_API', 'https://api.getpantheon.com');
@@ -81,9 +81,9 @@ define('PANTHEON_SYSTEM_CERT', '/etc/pantheon/system.pem');
  */
 function pantheon_ygg_config_get($site_uuid = 'self', $reset = FALSE) {
   static $config = array();
-  if (!$config[$site_uuid] && !$reset) {
+  if (!isset($config[$site_uuid]) && !$reset) {
     $url = YGG_API ."/sites/$site_uuid/configuration";
-    $result = pantheon_curl($url, NULL, 0, YGG_API_PORT);
+    $result = pantheon_curl($url, NULL, YGG_API_PORT);
     
     // TODO: error checking?
     $config[$site_uuid] = json_decode($result['body']);
@@ -100,7 +100,7 @@ function pantheon_ygg_config_get($site_uuid = 'self', $reset = FALSE) {
 function pantheon_ygg_event_post($site_uuid = 'self', $data) {
   $url = YGG_API ."/sites/$site_uuid/events/";
   $json = json_encode($data);
-  $result = pantheon_curl($url, $json, 0, YGG_API_PORT, 'POST');
+  $result = pantheon_curl($url, $json, YGG_API_PORT, 'POST');
   
   return $result;
 }

@@ -7,6 +7,7 @@
 
 define('YGG_API_PORT', 8443);
 define('YGG_API', 'https://api.getpantheon.com');
+define('HELIOS_CA_CERT', '/usr/share/ca-certificates/pantheon.crt');
 define('PANTHEON_SYSTEM_CERT', '/etc/pantheon/system.pem');
 
 /**
@@ -22,7 +23,7 @@ function pantheon_ygg_config_get($site_uuid = 'self', $reset = FALSE) {
   static $config = array();
   if (!$config[$site_uuid] && !$reset) {
     $url = YGG_API ."/sites/$site_uuid/configuration";
-    $result = pantheon_curl($url, NULL, 0, YGG_API_PORT);
+    $result = pantheon_curl($url, NULL, YGG_API_PORT);
     
     // TODO: error checking?
     $config[$site_uuid] = json_decode($result['body']);
@@ -47,7 +48,7 @@ function pantheon_ygg_config_get($site_uuid = 'self', $reset = FALSE) {
 function pantheon_ygg_config_set($site_uuid = 'self', $data) {
   $url = YGG_API ."/sites/$site_uuid/configuration";
   $json = json_encode($data);
-  $result = pantheon_curl($url, $json, 0, YGG_API_PORT, 'PUT');
+  $result = pantheon_curl($url, $json, YGG_API_PORT, 'PUT');
   
   return $result;
 }
@@ -58,7 +59,7 @@ function pantheon_ygg_config_set($site_uuid = 'self', $data) {
 function pantheon_ygg_event_post($site_uuid = 'self', $data) {
   $url = YGG_API ."/sites/$site_uuid/events/";
   $json = json_encode($data);
-  $result = pantheon_curl($url, $json, 0, YGG_API_PORT, 'POST');
+  $result = pantheon_curl($url, $json, YGG_API_PORT, 'POST');
   
   return $result;
 }
@@ -68,9 +69,9 @@ function pantheon_ygg_event_post($site_uuid = 'self', $data) {
  */
 function pantheon_ygg_services_get($site_uuid = 'self', $reset = FALSE) {
   static $services = array();
-  if (!$services[$site_uuid] && !$reset) {
+  if (!isset($services[$site_uuid]) && !$reset) {
     $url = YGG_API ."/sites/$site_uuid/services";
-    $result = pantheon_curl($url, NULL, 0, YGG_API_PORT);
+    $result = pantheon_curl($url, NULL, YGG_API_PORT);
     
     // TODO: error checking?
     $services[$site_uuid] = json_decode($result['body']);
@@ -94,6 +95,7 @@ function pantheon_curl($url, $data = NULL, $port = 443, $datamethod = 'POST') {
     CURLOPT_PORT => $port,
     CURLOPT_RETURNTRANSFER => 1,
     CURLOPT_SSLCERT => PANTHEON_SYSTEM_CERT,
+    CURLOPT_CAINFO => HELIOS_CA_CERT,
     CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
   );
   curl_setopt_array($ch, $opts);
