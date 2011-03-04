@@ -1,7 +1,7 @@
 <?php
 function pantheon_install_tasks($install_state) {
   $tasks = array (
-    'pantheon_cofigure' => array(),
+    'pantheon_configure' => array(),
     'pantheon_phone_home' => array(),
   );
   return $tasks;
@@ -16,7 +16,7 @@ function pantheon_phone_home() {
 /**
  * Set up base config
  */
-function pantheon_cofigure() {
+function pantheon_configure() {
   $config = pantheon_ygg_config_get();
   $solr_server = array(
     'server_id' => '',
@@ -164,3 +164,4 @@ function pantheon_curl($url, $data = NULL, $port = 443, $datamethod = 'POST') {
   
   return $return;
 }
+
