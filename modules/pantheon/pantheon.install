@@ -1,15 +1,6 @@
 <?php
 // $Id$
 /**
- * Implementation of hook_update().
- */
-function pantheon_update($node) {
-
-}
-
-<?php
-// $Id$
-/**
  * @file pantheon.install
  * TODO: Enter file description here.
  */
@@ -18,5 +9,12 @@ function pantheon_update($node) {
  * Implementation of hook_install().
  */
 function pantheon_install() {
+
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function pantheon_update($node) {
 
 }
