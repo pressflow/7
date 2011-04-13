@@ -7,8 +7,6 @@ function pantheon_update($node) {
 
 }
 
-
-Proposed pantheon.install:
 <?php
 // $Id$
 /**
