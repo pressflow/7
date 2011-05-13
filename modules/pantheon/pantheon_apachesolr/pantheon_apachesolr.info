@@ -1,0 +1,8 @@
+; $Id$
+name = Pantheon Apache Solr
+description = Allows the use of Pantheon's ApacheSolr infrastructure
+package = Pantheon
+dependencies[] = apachesolr
+files[] = Pantheon_Apache_Solr_Service.php
+core = 7.x
+php = 5.2
