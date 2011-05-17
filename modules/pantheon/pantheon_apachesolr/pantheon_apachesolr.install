@@ -20,6 +20,11 @@ function pantheon_apachesolr_enable() {
   variable_set('apachesolr_service_class', $class);
 }
 
+function pantheon_apachesolr_disable() {
+  // restore stock solrserviceclass
+  variable_del('apachesolr_service_class');
+}
+
 function pantheon_apachesolr_update_6001() {
   $ret = array();
   $schema = drupal_get_path('module', 'apachesolr') .'/schema.xml';
