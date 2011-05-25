@@ -71,6 +71,6 @@ function next_item($redis, $list_in) {
   }
   catch (RedisException $e) {
     echo '[xRender] Redis timed out.' . PHP_EOL;
-    return NULL;
   }
+  return NULL;
 }
