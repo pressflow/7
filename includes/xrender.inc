@@ -28,7 +28,7 @@ function xrender() {
     'environment' => array(
       'user' => $user,
       'path' => $_GET['q'],
-      'session' => $_SESSION,
+      'session' => isset($_SESSION) ? $_SESSION : array(),
     ),
     'function' => $function,
     'arguments' => $arguments,
