@@ -35,14 +35,11 @@ echo '[xRender] Memory usage: ' . round(memory_get_usage() / 1024 / 1024) . 'M' 
 echo '[xRender] Ready for jobs.' . PHP_EOL;
 
 while ($handled < variable_get('xrender_worker_max_requests', 1000) && $message = next_item($redis, $list_in)) {
-  if (is_null($message)) {
+  if ($message === TRUE) {
     echo '[xRender] Attempting recovery from timeout.' . PHP_EOL;
     continue;
   }
   $job_data = unserialize($message[1]);
-  //echo '[xRender] Job received:' . PHP_EOL;
-  //print_r($job_data);
-  //echo PHP_EOL;
 
   // Re-establish the environment.
   $GLOBALS['user'] = $job_data['environment']['user'];
@@ -54,8 +51,14 @@ while ($handled < variable_get('xrender_worker_max_requests', 1000) && $message 
   $response = call_user_func_array($job_data['function'], $job_data['arguments']);
   $stop = microtime(TRUE);
 
-  echo '[xRender] Job finished (' . round($stop - $start, 3) . ' seconds saved).' . PHP_EOL;
+  echo '[xRender] Job finished (' . round($stop - $start, 3) . ' seconds) . ' . PHP_EOL;
   //echo $response . PHP_EOL;
+
+  //if ($stop - $start > 0.1) {
+  //  echo '[xRender] Slow job details:';
+  //  print_r($job_data);
+  //  echo PHP_EOL;
+  //}
 
   $redis->lPush('xrender-out-' . $job_data['id'], $response . "\n");
 
@@ -72,5 +75,5 @@ function next_item($redis, $list_in) {
   catch (RedisException $e) {
     echo '[xRender] Redis timed out.' . PHP_EOL;
   }
-  return NULL;
+  return TRUE;
 }
