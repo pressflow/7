@@ -830,42 +830,6 @@ function _block_array_to_block($array, &$block) {
 }
 
 /**
- * Render block.
- */
-function _block_render_item($key, $block) {
-  // Try fetching the block from cache. Block caching is not compatible
-  // with node_access modules. We also preserve the submission of forms in
-  // blocks, by fetching from cache only if the request method is 'GET'
-  // (or 'HEAD').
-  if (!count(module_implements('node_grants')) && ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD') && ($cid = _block_get_cache_id($block)) && ($cache = cache_get($cid, 'cache_block'))) {
-    $array = $cache->data;
-  }
-  else {
-    $array = block_render_callback($block, $cid);
-  }
-
-  _block_array_to_block($array, $block);
-
-  if (isset($block->content) && $block->content) {
-    // Normalize to the drupal_render() structure.
-    if (is_string($block->content)) {
-      $block->content = array('#markup' => $block->content);
-    }
-    // Override default block title if a custom display title is present.
-    if ($block->title) {
-      // Check plain here to allow module generated titles to keep any
-      // markup.
-      $block->subject = $block->title == '<none>' ? '' : check_plain($block->title);
-    }
-    if (!isset($block->subject)) {
-      $block->subject = '';
-    }
-    return $block;
-  }
-  return NULL;
-}
-
-/**
  * Render the content and subject for a set of blocks.
  *
  * @param $region_blocks
@@ -881,8 +845,33 @@ function _block_render_blocks($region_blocks) {
       // Erase the block from the static array - we'll put it back if it has
       // content.
       unset($region_blocks[$key]);
-      $block = _block_render_item($key, $block);
-      if (isset($block)) {
+      // Try fetching the block from cache. Block caching is not compatible
+      // with node_access modules. We also preserve the submission of forms in
+      // blocks, by fetching from cache only if the request method is 'GET'
+      // (or 'HEAD').
+      if (!count(module_implements('node_grants')) && ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD') && ($cid = _block_get_cache_id($block)) && ($cache = cache_get($cid, 'cache_block'))) {
+        $array = $cache->data;
+      }
+      else {
+        $array = block_render_callback($block, $cid);
+      }
+
+      _block_array_to_block($array, $block);
+
+      if (isset($block->content) && $block->content) {
+        // Normalize to the drupal_render() structure.
+        if (is_string($block->content)) {
+          $block->content = array('#markup' => $block->content);
+        }
+        // Override default block title if a custom display title is present.
+        if ($block->title) {
+          // Check plain here to allow module generated titles to keep any
+          // markup.
+          $block->subject = $block->title == '<none>' ? '' : check_plain($block->title);
+        }
+        if (!isset($block->subject)) {
+          $block->subject = '';
+        }
         $region_blocks["{$block->module}_{$block->delta}"] = $block;
       }
     }
