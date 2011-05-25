@@ -35,7 +35,8 @@ echo '[xRender] Memory usage: ' . round(memory_get_usage() / 1024 / 1024) . 'M' 
 echo '[xRender] Ready for jobs.' . PHP_EOL;
 
 while ($handled < variable_get('xrender_worker_max_requests', 1000) && $message = next_item($redis, $list_in)) {
-  if (!isset($message)) {
+  if (is_null($message)) {
+    echo '[xRender] Attempting recovery from timeout.' . PHP_EOL;
     continue;
   }
   $job_data = unserialize($message[1]);
@@ -54,8 +55,7 @@ while ($handled < variable_get('xrender_worker_max_requests', 1000) && $message 
   $stop = microtime(TRUE);
 
   echo '[xRender] Job finished (' . round($stop - $start, 3) . ' seconds saved).' . PHP_EOL;
-  //echo $response;
-  //echo PHP_EOL;
+  //echo $response . PHP_EOL;
 
   $redis->lPush('xrender-out-' . $job_data['id'], $response . "\n");
 
