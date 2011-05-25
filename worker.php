@@ -51,7 +51,7 @@ while ($handled < variable_get('xrender_worker_max_requests', 1000) && $message 
   $response = call_user_func_array($job_data['function'], $job_data['arguments']);
   $stop = microtime(TRUE);
 
-  echo '[xRender] Job finished (' . round($stop - $start, 3) . ' seconds) . ' . PHP_EOL;
+  echo '[xRender] Job finished (' . round($stop - $start, 3) . ' seconds).' . PHP_EOL;
   //echo $response . PHP_EOL;
 
   //if ($stop - $start > 0.1) {
