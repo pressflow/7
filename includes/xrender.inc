@@ -6,7 +6,8 @@
 function _xrender_get_redis() {
   static $redis;
   if (!isset($redis)) {
-    $redis = new Redis('127.0.0.1', 6379);
+    $redis = new Redis();
+    $redis->connect('127.0.0.1', 6379);
   }
   return $redis;
 }
@@ -18,7 +19,7 @@ function xrender() {
   global $user;
 
   $arguments = func_get_args();
-  $function = $args[0];
+  $function = $arguments[0];
   unset($arguments[0]);
 
   // Construct the xRender request.
@@ -38,13 +39,13 @@ function xrender() {
   $redis->lPush('xrender-in-' . sha1(variable_get('drupal_private_key')), serialize($request) . "\n");
 
   // Sets the content source to Webdis.
-  $content_src = 'http://localhost:7379/BLPOP/' . $request['id'] . '?type=text/html';
+  $ssi_content_path = '/BLPOP/xrender-out-' . $request['id'] . '/10?type=text/html';
 
   // Return the appropriate ESI tag (disabled for now).
   //$tag = '<esi:include src="' . $content_src . '" />';
 
   // Return the appropriate SSI tag.
-  $tag = '<!--# include virtual="' . $content_src . '" -->';
+  $tag = '<!--# include virtual="' . $ssi_content_path . '" -->';
 
   return $tag;
 }
