@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -189,32 +188,33 @@ function _openid_select_service(array $services) {
   // Extensible Resource Identifier (XRI) Resolution Version 2.0, section 4.3.3:
   // Find the service with the highest priority (lowest integer value). If there
   // is a tie, select a random one, not just the first in the XML document.
-  $selected_service = NULL;
   shuffle($services);
+  $selected_service = NULL;
+  $selected_type_priority = FALSE;
 
   // Search for an OP Identifier Element.
   foreach ($services as $service) {
     if (!empty($service['uri'])) {
+      $type_priority = FALSE;
       if (in_array('http://specs.openid.net/auth/2.0/server', $service['types'])) {
         $service['version'] = 2;
+        $type_priority = 1;
+      }
+      elseif (in_array('http://specs.openid.net/auth/2.0/signon', $service['types'])) {
+        $service['version'] = 2;
+        $type_priority = 2;
       }
       elseif (in_array(OPENID_NS_1_0, $service['types']) || in_array(OPENID_NS_1_1, $service['types'])) {
         $service['version'] = 1;
+        $type_priority = 3;
       }
-      if (isset($service['version']) && (!$selected_service || $service['priority'] < $selected_service['priority'])) {
-        $selected_service = $service;
-      }
-    }
-  }
 
-  if (!$selected_service) {
-    // Search for Claimed Identifier Element.
-    foreach ($services as $service) {
-      if (!empty($service['uri']) && in_array('http://specs.openid.net/auth/2.0/signon', $service['types'])) {
-        $service['version'] = 2;
-        if (!$selected_service || $service['priority'] < $selected_service['priority']) {
-          $selected_service = $service;
-        }
+      if ($type_priority
+          && (!$selected_service
+              || $type_priority < $selected_type_priority
+              || ($type_priority == $selected_type_priority && $service['priority'] < $selected_service['priority']))) {
+        $selected_service = $service;
+        $selected_type_priority = $type_priority;
       }
     }
   }
@@ -448,15 +448,15 @@ function _openid_dh_binary_to_long($str) {
 
   $n = 0;
   foreach ($bytes as $byte) {
-    $n = bcmul($n, pow(2, 8));
-    $n = bcadd($n, $byte);
+    $n = _openid_math_mul($n, pow(2, 8));
+    $n = _openid_math_add($n, $byte);
   }
 
   return $n;
 }
 
 function _openid_dh_long_to_binary($long) {
-  $cmp = bccomp($long, 0);
+  $cmp = _openid_math_cmp($long, 0);
   if ($cmp < 0) {
     return FALSE;
   }
@@ -467,9 +467,9 @@ function _openid_dh_long_to_binary($long) {
 
   $bytes = array();
 
-  while (bccomp($long, 0) > 0) {
-    array_unshift($bytes, bcmod($long, 256));
-    $long = bcdiv($long, pow(2, 8));
+  while (_openid_math_cmp($long, 0) > 0) {
+    array_unshift($bytes, _openid_math_mod($long, 256));
+    $long = _openid_math_div($long, pow(2, 8));
   }
 
   if ($bytes && ($bytes[0] > 127)) {
@@ -512,11 +512,11 @@ function _openid_dh_rand($stop) {
       $nbytes = strlen($rbytes);
     }
 
-    $mxrand = bcpow(256, $nbytes);
+    $mxrand = _openid_math_pow(256, $nbytes);
 
     // If we get a number less than this, then it is in the
     // duplicated range.
-    $duplicate = bcmod($mxrand, $stop);
+    $duplicate = _openid_math_mod($mxrand, $stop);
 
     if (count($duplicate_cache) > 10) {
       $duplicate_cache = array();
@@ -529,9 +529,9 @@ function _openid_dh_rand($stop) {
     $bytes = "\x00" . _openid_get_bytes($nbytes);
     $n = _openid_dh_binary_to_long($bytes);
     // Keep looping if this value is in the low duplicated range.
-  } while (bccomp($n, $duplicate) < 0);
+  } while (_openid_math_cmp($n, $duplicate) < 0);
 
-  return bcmod($n, $stop);
+  return _openid_math_mod($n, $stop);
 }
 
 function _openid_get_bytes($num_bytes) {
@@ -683,3 +683,113 @@ function openid_extract_ax_values($values, $uris) {
   return $output;
 }
 
+/**
+ * Determine the available math library GMP vs. BCMath, favouring GMP for performance.
+ */
+function _openid_get_math_library() {
+  // Not drupal_static(), because a function is not going to disappear and
+  // change the output of this under any circumstances.
+  static $library;
+
+  if (empty($library)) {
+    if (function_exists('gmp_add')) {
+      $library =  'gmp';
+    }
+    elseif (function_exists('bcadd')) {
+      $library = 'bcmath';
+    }
+  }
+
+  return $library;
+}
+
+/**
+ * Calls the add function from the available math library for OpenID.
+ */
+function _openid_math_add($x, $y) {
+  $library = _openid_get_math_library();
+  switch ($library) {
+    case 'gmp':
+      return gmp_strval(gmp_add($x, $y));
+    case 'bcmath':
+      return bcadd($x, $y);
+  }
+}
+
+/**
+ * Calls the mul function from the available math library for OpenID.
+ */
+function _openid_math_mul($x, $y) {
+  $library = _openid_get_math_library();
+  switch ($library) {
+    case 'gmp':
+      return gmp_mul($x, $y);
+    case 'bcmath':
+      return bcmul($x, $y);
+  }
+}
+
+/**
+ * Calls the div function from the available math library for OpenID.
+ */
+function _openid_math_div($x, $y) {
+  $library = _openid_get_math_library();
+  switch ($library) {
+    case 'gmp':
+      return gmp_div($x, $y);
+    case 'bcmath':
+      return bcdiv($x, $y);
+  }
+}
+
+/**
+ * Calls the cmp function from the available math library for OpenID.
+ */
+function _openid_math_cmp($x, $y) {
+  $library = _openid_get_math_library();
+  switch ($library) {
+    case 'gmp':
+      return gmp_cmp($x, $y);
+    case 'bcmath':
+      return bccomp($x, $y);
+  }
+}
+
+/**
+ * Calls the mod function from the available math library for OpenID.
+ */
+function _openid_math_mod($x, $y) {
+  $library = _openid_get_math_library();
+  switch ($library) {
+    case 'gmp':
+      return gmp_mod($x, $y);
+    case 'bcmath':
+      return bcmod($x, $y);
+  }
+}
+
+/**
+ * Calls the pow function from the available math library for OpenID.
+ */
+function _openid_math_pow($x, $y) {
+  $library = _openid_get_math_library();
+  switch ($library) {
+    case 'gmp':
+      return gmp_pow($x, $y);
+    case 'bcmath':
+      return bcpow($x, $y);
+  }
+}
+
+/**
+ * Calls the mul function from the available math library for OpenID.
+ */
+function _openid_math_powmod($x, $y, $z) {
+  $library = _openid_get_math_library();
+  switch ($library) {
+    case 'gmp':
+      return gmp_powm($x, $y, $z);
+    case 'bcmath':
+      return bcpowmod($x, $y, $z);
+  }
+}

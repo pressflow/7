@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -258,7 +257,7 @@ function block_page_build(&$page) {
   // The theme system might not yet be initialized. We need $theme.
   drupal_theme_initialize();
 
-  // Populate all block regions
+  // Fetch a list of regions for the current theme.
   $all_regions = system_region_list($theme);
 
   $item = menu_get_item();
@@ -356,7 +355,7 @@ function _block_get_renderable_array($list = array()) {
 /**
  * Update the 'block' DB table with the blocks currently exported by modules.
  *
- * @param $theme
+ * @param $theme
  *   The theme to rehash blocks for. If not provided, defaults to the currently
  *   used theme.
  *
@@ -944,7 +943,15 @@ function template_preprocess_block(&$variables) {
 
   $variables['theme_hook_suggestions'][] = 'block__' . $variables['block']->region;
   $variables['theme_hook_suggestions'][] = 'block__' . $variables['block']->module;
-  $variables['theme_hook_suggestions'][] = 'block__' . $variables['block']->module . '__' . $variables['block']->delta;
+  // Hyphens (-) and underscores (_) play a special role in theme suggestions.
+  // Theme suggestions should only contain underscores, because within
+  // drupal_find_theme_templates(), underscores are converted to hyphens to
+  // match template file names, and then converted back to underscores to match
+  // pre-processing and other function names. So if your theme suggestion
+  // contains a hyphen, it will end up as an underscore after this conversion,
+  // and your function names won't be recognized. So, we need to convert
+  // hyphens to underscores in block deltas for the theme suggestions.
+  $variables['theme_hook_suggestions'][] = 'block__' . $variables['block']->module . '__' . strtr($variables['block']->delta, '-', '_');
 
   // Create a valid HTML ID and make sure it is unique.
   $variables['block_html_id'] = drupal_html_id('block-' . $variables['block']->module . '-' . $variables['block']->delta);

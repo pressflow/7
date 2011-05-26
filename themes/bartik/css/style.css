@@ -1,4 +1,3 @@
-/* $Id$ */
 
 /* ---------- Overall Specifications ---------- */
 
@@ -159,7 +158,7 @@ blockquote:after {
   line-height: 0.1em;
   vertical-align: -.45em;
 }
-blockquote :first-child {
+blockquote > p:first-child {
   display: inline;
 }
 a.feed-icon {
@@ -1067,24 +1066,25 @@ div.messages {
 
 /* -------------- Password Meter  ------------- */
 
+.confirm-parent,
+.password-parent {
+  width: 34em;
+}
 .password-parent,
 div.form-item div.password-suggestions {
   position: relative;
-  width: auto;
 }
-#password-strength {
-  float: none;
-  left: 16em;
-  position: absolute;
-  width: 11.5em;
-}
-#password-strength-text,
+.password-strength-text,
 .password-strength-title,
 div.password-confirm {
   font-size: 0.82em;
 }
-#password-strength-text {
+.password-strength-text {
   margin-top: 0.2em;
+}
+div.password-confirm {
+  margin-top: 2.2em;
+  width: 20.73em;
 }
 
 /* ---------------- Buttons    ---------------- */
@@ -1136,7 +1136,7 @@ fieldset {
 .fieldset-wrapper {
   margin-top: 25px;
 }
-.node-form .fieldset-wrapper {
+.node-form .vertical-tabs .fieldset-wrapper {
   margin-top: 0;
 }
 .filter-wrapper {
@@ -1213,6 +1213,13 @@ fieldset legend a:active {
 fieldset .fieldset-wrapper {
   padding: 0 10px;
 }
+fieldset .fieldset-description {
+  margin-top: 5px;
+  margin-bottom: 1em;
+  line-height: 1.4;
+  color: #3c3c3c;
+  font-style: italic;
+}
 input {
   margin: 2px 0;
   padding: 4px;
@@ -1246,12 +1253,6 @@ input.form-submit:focus {
 }
 .form-item label {
   font-size: 0.929em;
-}
-fieldset .description {
-  margin-top: 5px;
-  line-height: 1.4;
-  color: #3c3c3c;
-  font-style: italic;
 }
 .form-type-radio label,
 .form-type-checkbox label {

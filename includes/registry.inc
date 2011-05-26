@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -98,7 +97,8 @@ function _registry_update() {
     _registry_check_code(REGISTRY_RESET_LOOKUP_CACHE);
   }
   catch (Exception $e) {
-    $transaction->rollback('registry', $e->getMessage(), array(), WATCHDOG_ERROR);
+    $transaction->rollback();
+    watchdog_exception('registry', $e);
     throw $e;
   }
 

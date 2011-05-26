@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -33,8 +32,8 @@ class InsertQuery_sqlite extends InsertQuery {
   }
 
   public function __toString() {
-    // Create a comments string to prepend to the query.
-    $comments = (!empty($this->comments)) ? '/* ' . implode('; ', $this->comments) . ' */ ' : '';
+    // Create a sanitized comment string to prepend to the query.
+    $comments = $this->connection->makeComment($this->comments);
 
     // Produce as many generic placeholders as necessary.
     $placeholders = array_fill(0, count($this->insertFields), '?');
@@ -102,7 +101,7 @@ class UpdateQuery_sqlite extends UpdateQuery {
       }
       elseif (!isset($data)) {
         // The field will be set to NULL.
-        $condition->isNull($field);
+        $condition->isNotNull($field);
       }
       else {
         $condition->condition($field, $data, '<>');
@@ -149,8 +148,8 @@ class DeleteQuery_sqlite extends DeleteQuery {
  */
 class TruncateQuery_sqlite extends TruncateQuery {
   public function __toString() {
-    // Create a comments string to prepend to the query.
-    $comments = (!empty($this->comments)) ? '/* ' . implode('; ', $this->comments) . ' */ ' : '';
+    // Create a sanitized comment string to prepend to the query.
+    $comments = $this->connection->makeComment($this->comments);
 
     return $comments . 'DELETE FROM {' . $this->connection->escapeTable($this->table) . '} ';
   }

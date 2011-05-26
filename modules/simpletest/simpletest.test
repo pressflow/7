@@ -1,5 +1,9 @@
 <?php
-// $Id$
+
+/**
+ * @file
+ * Tests for simpletest.module.
+ */
 
 class SimpleTestFunctionalTest extends DrupalWebTestCase {
   /**

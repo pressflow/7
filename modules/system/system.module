@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -295,10 +294,10 @@ function system_element_info() {
     '#theme' => 'page',
     '#theme_wrappers' => array('html'),
   );
-  // By default, we don't want AJAX commands being rendered in the context of an
+  // By default, we don't want Ajax commands being rendered in the context of an
   // HTML page, so we don't provide defaults for #theme or #theme_wrappers.
   // However, modules can set these properties (for example, to provide an HTML
-  // debugging page that displays rather than executes AJAX commands).
+  // debugging page that displays rather than executes Ajax commands).
   $types['ajax'] = array(
     '#header' => TRUE,
     '#commands' => array(),
@@ -1079,7 +1078,7 @@ function _system_batch_theme() {
  * Implements hook_library().
  */
 function system_library() {
-  // Drupal's AJAX framework.
+  // Drupal's Ajax framework.
   $libraries['drupal.ajax'] = array(
     'title' => 'Drupal AJAX',
     'website' => 'http://api.drupal.org/api/drupal/includes--ajax.inc/group/ajax/7',
@@ -2387,9 +2386,14 @@ function _system_rebuild_module_data() {
     drupal_alter('system_info', $modules[$key]->info, $modules[$key], $type);
   }
 
-  // The install profile is required, if it's a valid module.
   if (isset($modules[$profile])) {
+    // The install profile is required, if it's a valid module.
     $modules[$profile]->info['required'] = TRUE;
+    // Add a default distribution name if the profile did not provide one. This
+    // matches the default value used in install_profile_info().
+    if (!isset($modules[$profile]->info['distribution_name'])) {
+      $modules[$profile]->info['distribution_name'] = 'Drupal';
+    }
   }
 
   return $modules;
@@ -2677,7 +2681,7 @@ function system_region_list($theme_key, $show = REGIONS_ALL) {
   // If requested, suppress hidden regions. See block_admin_display_form().
   foreach ($info['regions'] as $name => $label) {
     if ($show == REGIONS_ALL || !isset($info['regions_hidden']) || !in_array($name, $info['regions_hidden'])) {
-      $list[$name] = $label;
+      $list[$name] = t($label);
     }
   }
 
@@ -3451,7 +3455,7 @@ function system_page_alter(&$page) {
  */
 function system_run_automated_cron() {
   // If the site is not fully installed, suppress the automated cron run.
-  // Otherwise it could be triggered prematurely by AJAX requests during
+  // Otherwise it could be triggered prematurely by Ajax requests during
   // installation.
   if (($threshold = variable_get('cron_safe_threshold', DRUPAL_CRON_DEFAULT_THRESHOLD)) > 0 && variable_get('install_task') == 'done') {
     $cron_last = variable_get('cron_last', NULL);

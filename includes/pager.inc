@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -431,7 +430,7 @@ function theme_pager($variables) {
 /**
  * @defgroup pagerpieces Pager pieces
  * @{
- * Use these pieces to construct your own custom pagers in your theme.
+ * Theme functions for customizing pager elements.
  *
  * Note that you should NOT modify this file to customize your pager.
  */

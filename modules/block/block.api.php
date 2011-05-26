@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -34,7 +33,7 @@
  * it is preferable to use descriptive strings whenever possible, and only use a
  * numeric identifier if you have to (for instance if your module allows users
  * to create several similar blocks that you identify within your module code
- * with numeric IDs).
+ * with numeric IDs). The maximum length for delta values is 32 bytes.
  *
  * @return
  *   An associative array whose keys define the delta for each block and whose
@@ -77,12 +76,12 @@
  *     enabled theme, the block will be disabled.
  *   - 'visibility': (optional) Initial value for the visibility flag, which
  *     tells how to interpret the 'pages' value. Possible values are:
- *     - 0: Show on all pages except listed pages. 'pages' lists the paths where
- *       the block should not be shown.
- *     - 1: Show only on listed pages. 'pages' lists the paths where the block
- *       should be shown.
- *     - 2: Use custom PHP code to determine visibility. 'pages' gives the PHP
- *       code to use.
+ *     - BLOCK_VISIBILITY_NOTLISTED: Show on all pages except listed pages.
+ *       'pages' lists the paths where the block should not be shown.
+ *     - BLOCK_VISIBILITY_LISTED: Show only on listed pages. 'pages' lists the
+ *       paths where the block should be shown.
+ *     - BLOCK_VISIBILITY_PHP: Use custom PHP code to determine visibility.
+ *       'pages' gives the PHP code to use.
  *     Most modules do not provide an initial value for 'visibility' or 'pages',
  *     and any value provided can be modified by a user on the block
  *     configuration screen.
@@ -206,23 +205,27 @@ function hook_block_save($delta = '', $edit = array()) {
  * @see hook_block_view_MODULE_DELTA_alter()
  */
 function hook_block_view($delta = '') {
-  // This example comes from node.module. Note that you can also return a
-  // renderable array rather than rendered HTML for 'content'.
+  // This example is adapted from node.module.
   $block = array();
 
   switch ($delta) {
     case 'syndicate':
       $block['subject'] = t('Syndicate');
-      $block['content'] = theme('feed_icon', array('url' => url('rss.xml'), 'title' => t('Syndicate')));
+      $block['content'] = array(
+        '#theme' => 'feed_icon',
+        '#url' => 'rss.xml',
+        '#title' => t('Syndicate'),
+      );
       break;
 
     case 'recent':
       if (user_access('access content')) {
         $block['subject'] = t('Recent content');
         if ($nodes = node_get_recent(variable_get('node_recent_block_count', 10))) {
-          $block['content'] = theme('node_recent_block', array(
-            'nodes' => $nodes,
-          ));
+          $block['content'] = array(
+            '#theme' => 'node_recent_block',
+            '#nodes' => $nodes,
+          );
         } else {
           $block['content'] = t('No content available.');
         }

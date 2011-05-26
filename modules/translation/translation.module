@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -114,15 +113,14 @@ function translation_form_node_type_form_alter(&$form, &$form_state) {
   // Add translation option to content type form.
   $form['workflow']['language_content_type']['#options'][TRANSLATION_ENABLED] = t('Enabled, with translation');
   // Description based on text from locale.module.
-  $form['workflow']['language_content_type']['#description'] = t('Enable multilingual support for this content type. If enabled, a language selection field will be added to the editing form, allowing you to select from one of the <a href="!languages">enabled languages</a>. You can also turn on translation for this content type, which lets you have content translated to any of the enabled languages. If disabled, new posts are saved with the default language. Existing content will not be affected by changing this option.', array('!languages' => url('admin/config/regional/language')));
+  $form['workflow']['language_content_type']['#description'] = t('Enable multilingual support for this content type. If enabled, a language selection field will be added to the editing form, allowing you to select from one of the <a href="!languages">enabled languages</a>. You can also turn on translation for this content type, which lets you have content translated to any of the installed languages. If disabled, new posts are saved with the default language. Existing content will not be affected by changing this option.', array('!languages' => url('admin/config/regional/language')));
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_BASE_FORM_ID_alter().
  *
- * - Add translation option to content type form.
- * - Alters language fields on node forms when a translation
- *   is about to be created.
+ * This function alters language fields on node edit forms when a translation is
+ * about to be created.
  */
 function translation_form_node_form_alter(&$form, &$form_state) {
   if (translation_supported_type($form['#node']->type)) {
@@ -135,7 +133,7 @@ function translation_form_node_form_alter(&$form, &$form_state) {
     // might need to distinguish between enabled and disabled languages, hence
     // we divide them in two option groups.
     if ($translator_widget) {
-      $options = array();
+      $options = array($groups[1] => array(LANGUAGE_NONE => t('Language neutral')));
       $language_list = locale_language_list('name', TRUE);
       foreach (array(1, 0) as $status) {
         $group = $groups[$status];
@@ -504,8 +502,23 @@ function translation_path_get_translations($path) {
  */
 function translation_language_switch_links_alter(array &$links, $type, $path) {
   $language_type = variable_get('translation_language_type', LANGUAGE_TYPE_INTERFACE);
-  if ($type == $language_type && preg_match("!^node/(\d+)(/.+|)!", $path, $matches) && ($node = node_load((int) $matches[1]))) {
-    $translations = $node->tnid ? translation_node_get_translations($node->tnid) : array($node->language => $node);
+
+  if ($type == $language_type && preg_match("!^node/(\d+)(/.+|)!", $path, $matches)) {
+    $node = node_load((int) $matches[1]);
+
+    if (empty($node->tnid)) {
+      // If the node cannot be found nothing needs to be done. If it does not
+      // have translations it might be a language neutral node, in which case we
+      // must leave the language switch links unaltered. This is true also for
+      // nodes not having translation support enabled.
+      if (empty($node) || $node->language == LANGUAGE_NONE || !translation_supported_type($node->type)) {
+        return;
+      }
+      $translations = array($node->language => $node);
+    }
+    else {
+      $translations = translation_node_get_translations($node->tnid);
+    }
 
     foreach ($links as $langcode => $link) {
       if (isset($translations[$langcode]) && $translations[$langcode]->status) {

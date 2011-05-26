@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Indicates an error during check for PHP unicode support.
@@ -170,7 +169,7 @@ function unicode_requirements() {
  * This is also where unsupported encodings will be converted. Callers should
  * take this into account: $data might have been changed after the call.
  *
- * @param &$data
+ * @param $data
  *   The XML data which will be parsed later.
  *
  * @return
@@ -221,7 +220,7 @@ function drupal_xml_parser_create(&$data) {
  * @param $data
  *   The data to be converted.
  * @param $encoding
- *   The encoding that the data is in
+ *   The encoding that the data is in.
  *
  * @return
  *   Converted data or FALSE.

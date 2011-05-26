@@ -1,5 +1,9 @@
 <?php
-// $Id$
+
+/**
+ * @file
+ * Tests for openid.module.
+ */
 
 /**
  * Base class for OpenID tests.

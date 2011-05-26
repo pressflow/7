@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -258,9 +257,9 @@ function _field_invoke($op, $entity_type, $entity, &$a = NULL, &$b = NULL, $opti
  *  - 'deleted': If TRUE, the function will operate on deleted fields
  *    as well as non-deleted fields. If unset or FALSE, only
  *    non-deleted fields are operated on.
- *  - 'language': A language code or an array of language codes keyed by field
- *    name. It will be used to narrow down to a single value the available
- *    languages to act on.
+ *  - 'language': A language code or an array of arrays of language codes keyed
+ *    by entity id and field name. It will be used to narrow down to a single
+ *    value the available languages to act on.
  *
  * @return
  *   An array of returned values keyed by entity id.
@@ -312,7 +311,8 @@ function _field_invoke_multiple($op, $entity_type, $entities, &$a = NULL, &$b = 
         // Unless a language suggestion is provided we iterate on all the
         // available languages.
         $available_languages = field_available_languages($entity_type, $field);
-        $languages = _field_language_suggestion($available_languages, $options['language'], $field_name);
+        $language = !empty($options['language'][$id]) ? $options['language'][$id] : $options['language'];
+        $languages = _field_language_suggestion($available_languages, $language, $field_name);
         foreach ($languages as $langcode) {
           $grouped_items[$field_id][$langcode][$id] = isset($entity->{$field_name}[$langcode]) ? $entity->{$field_name}[$langcode] : array();
         }
@@ -348,7 +348,7 @@ function _field_invoke_multiple($op, $entity_type, $entities, &$a = NULL, &$b = 
     // fields with an empty array (those are not equivalent on update).
     foreach ($grouped_entities[$field_id] as $id => $entity) {
       foreach ($grouped_items[$field_id] as $langcode => $items) {
-        if ($grouped_items[$field_id][$langcode][$id] !== array() || isset($entity->{$field_name}[$langcode])) {
+        if (isset($grouped_items[$field_id][$langcode][$id]) && ($grouped_items[$field_id][$langcode][$id] !== array() || isset($entity->{$field_name}[$langcode]))) {
           $entity->{$field_name}[$langcode] = $grouped_items[$field_id][$langcode][$id];
         }
       }
@@ -780,11 +780,11 @@ function field_attach_validate($entity_type, $entity) {
  * There are two levels of validation for fields in forms: widget
  * validation, and field validation.
  * - Widget validation steps are specific to a given widget's own form
- * structure and UI metaphors. They are executed through FAPI's
- * #element_validate property during normal form validation.
+ *   structure and UI metaphors. They are executed through FAPI's
+ *   #element_validate property during normal form validation.
  * - Field validation steps are common to a given field type, independently of
- * the specific widget being used in a given form. They are defined in the
- * field type's implementation of hook_field_validate().
+ *   the specific widget being used in a given form. They are defined in the
+ *   field type's implementation of hook_field_validate().
  *
  * This function performs field validation in the context of a form
  * submission. It converts field validation errors into form errors
@@ -878,7 +878,7 @@ function field_attach_presave($entity_type, $entity) {
 /**
  * Save field data for a new entity.
  *
- * The passed in entity must already contain its id and (if applicable)
+ * The passed-in entity must already contain its id and (if applicable)
  * revision id attributes.
  * Default values (if any) will be saved for fields not present in the
  * $entity.
@@ -1075,8 +1075,13 @@ function field_attach_delete_revision($entity_type, $entity) {
  *   An array of entities, keyed by entity id.
  * @param $view_mode
  *   View mode, e.g. 'full', 'teaser'...
+ * @param $langcode
+ *   (Optional) The language the field values are to be shown in. If no language
+ *   is provided the current language is used.
  */
-function field_attach_prepare_view($entity_type, $entities, $view_mode) {
+function field_attach_prepare_view($entity_type, $entities, $view_mode, $langcode = NULL) {
+  $options = array('language' => array());
+
   // To ensure hooks are only run once per entity, only process items without
   // the _field_view_prepared flag.
   // @todo: resolve this more generally for both entity and field level hooks.
@@ -1086,17 +1091,22 @@ function field_attach_prepare_view($entity_type, $entities, $view_mode) {
       // Add this entity to the items to be prepared.
       $prepare[$id] = $entity;
 
+      // Determine the actual language to display for each field, given the
+      // languages available in the field data.
+      $options['language'][$id] = field_language($entity_type, $entity, NULL, $langcode);
+
       // Mark this item as prepared.
       $entity->_field_view_prepared = TRUE;
     }
   }
 
+  $null = NULL;
   // First let the field types do their preparation.
-  _field_invoke_multiple('prepare_view', $entity_type, $prepare);
+  _field_invoke_multiple('prepare_view', $entity_type, $prepare, $null, $null, $options);
   // Then let the formatters do their own specific massaging.
   // field_default_prepare_view() takes care of dispatching to the correct
   // formatters according to the display settings for the view mode.
-  _field_invoke_multiple_default('prepare_view', $entity_type, $prepare, $view_mode);
+  _field_invoke_multiple_default('prepare_view', $entity_type, $prepare, $view_mode, $null, $options);
 }
 
 /**

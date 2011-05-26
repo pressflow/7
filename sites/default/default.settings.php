@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -282,11 +281,11 @@ ini_set('session.cookie_lifetime', 2000000);
 
 /**
  * Drupal automatically generates a unique session cookie name for each site
- * based on on its full domain name. If you have multiple domains pointing at
- * the same Drupal site, you can either redirect them all to a single domain
- * (see comment in .htaccess), or uncomment the line below and specify their
- * shared base domain. Doing so assures that users remain logged in as they
- * cross between your various domains.
+ * based on its full domain name. If you have multiple domains pointing at the
+ * same Drupal site, you can either redirect them all to a single domain (see
+ * comment in .htaccess), or uncomment the line below and specify their shared
+ * base domain. Doing so assures that users remain logged in as they cross
+ * between your various domains.
  */
 # $cookie_domain = 'example.com';
 
@@ -369,8 +368,7 @@ ini_set('session.cookie_lifetime', 2000000);
  * the cache. If the site has mostly anonymous users except a few known
  * editors/administrators, the Vary header can be omitted. This allows for
  * better caching in HTTP proxies (including reverse proxies), i.e. even if
- * clients send different cookies, they still get content served from the cache
- * if aggressive caching is enabled and the minimum cache time is non-zero.
+ * clients send different cookies, they still get content served from the cache.
  * However, authenticated users should access the site directly (i.e. not use an
  * HTTP proxy, and bypass the reverse proxy if one is used) in order to avoid
  * getting cached pages from the proxy.

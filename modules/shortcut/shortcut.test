@@ -1,9 +1,8 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Tests for the shortcut module.
+ * Tests for shortcut.module.
  */
 
 /**

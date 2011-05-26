@@ -1,5 +1,9 @@
 <?php
-// $Id$
+
+/**
+ * @file
+ * Tests for statistics.module.
+ */
 
 /**
  * Sets up a base class for the Statistics module.
@@ -434,7 +438,7 @@ class StatisticsTokenReplaceTestCase extends StatisticsTestCase {
 
     foreach ($tests as $input => $expected) {
       $output = token_replace($input, array('node' => $node), array('language' => $language));
-      $this->assertFalse(strcmp($output, $expected), t('Statistics token %token replaced.', array('%token' => $input)));
+      $this->assertEqual($output, $expected, t('Statistics token %token replaced.', array('%token' => $input)));
     }
   }
 }

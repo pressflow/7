@@ -1,9 +1,8 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Tests for the 'List' field types.
+ * Tests for list.module.
  */
 
 /**
@@ -98,8 +97,8 @@ class ListFieldTestCase extends FieldTestCase {
 }
 
 /**
-* List module UI tests.
-*/
+ * List module UI tests.
+ */
 class ListFieldUITestCase extends FieldTestCase {
   public static function getInfo() {
     return array(

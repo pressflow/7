@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -33,7 +32,7 @@
  *   @endcode
  *
  * @return
- *   The passed in $graph with more secondary keys filled in:
+ *   The passed-in $graph with more secondary keys filled in:
  *   - 'paths': Contains a list of vertices than can be reached on a path from
  *     this vertex.
  *   - 'reverse_paths': Contains a list of vertices that has a path from them
@@ -75,15 +74,15 @@ function drupal_depth_first_search(&$graph) {
 /**
  * Helper function to perform a depth first sort.
  *
- * @param &$graph
+ * @param $graph
  *   A three dimensional associated graph array.
- * @param &$state
+ * @param $state
  *   An associative array. The key 'last_visit_order' stores a list of the
  *   vertices visited. The key components stores list of vertices belonging
  *   to the same the component.
  * @param $start
  *   An arbitrary vertex where we started traversing the graph.
- * @param &$component
+ * @param $component
  *   The component of the last vertex.
  *
  * @see drupal_depth_first_search()

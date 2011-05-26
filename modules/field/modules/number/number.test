@@ -1,9 +1,8 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Tests for number field types.
+ * Tests for number.module.
  */
 
 /**
