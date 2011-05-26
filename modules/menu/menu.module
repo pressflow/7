@@ -1,9 +1,14 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Allows administrators to customize the site navigation menu.
+ * Allows administrators to customize the site's navigation menus.
+ *
+ * A menu (in this context) is a hierarchical collection of links, generally
+ * used for navigation. This is not to be confused with the
+ * @link menu Menu system @endlink of menu.inc and hook_menu(), which defines
+ * page routing requests for Drupal, and also allows the defined page routing
+ * URLs to be added to the main site navigation menu.
  */
 
 /**
@@ -20,7 +25,7 @@ function menu_help($path, $arg) {
     case 'admin/help#menu':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Menu module provides an interface for managing menus. A menu is a hierarchical collection of links, which can be within or external to the site, generally used for navigation. Each menu is rendered in a block that can be enabled and positioned through the <a href="@blocks"">Blocks administration page</a>. You can view and manage menus on the <a href="@menus">Menus administration page</a>. For more information, see the online handbook entry for the <a href="@menu">Menu module</a>.', array('@blocks' => url('admin/structure/block'), '@menus' => url('admin/structure/menu'), '@menu' => 'http://drupal.org/handbook/modules/menu/')) . '</p>';
+      $output .= '<p>' . t('The Menu module provides an interface for managing menus. A menu is a hierarchical collection of links, which can be within or external to the site, generally used for navigation. Each menu is rendered in a block that can be enabled and positioned through the <a href="@blocks">Blocks administration page</a>. You can view and manage menus on the <a href="@menus">Menus administration page</a>. For more information, see the online handbook entry for the <a href="@menu">Menu module</a>.', array('@blocks' => url('admin/structure/block'), '@menus' => url('admin/structure/menu'), '@menu' => 'http://drupal.org/handbook/modules/menu/')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Managing menus') . '</dt>';
@@ -352,7 +357,7 @@ function menu_parent_options($menus, $item) {
 
 /**
  * Page callback.
- * Get all available menus and menu items as Javascript array.
+ * Get all the available menus and menu items as a JavaScript array.
  */
 function menu_parent_options_js() {
   $available_menus = array();
@@ -535,18 +540,23 @@ function menu_node_delete($node) {
 function menu_node_prepare($node) {
   if (empty($node->menu)) {
     // Prepare the node for the edit form so that $node->menu always exists.
-    $menu_name = variable_get('menu_parent_' . $node->type, 'main-menu:0');
+    $menu_name = strtok(variable_get('menu_parent_' . $node->type, 'main-menu:0'), ':');
     $item = array();
     if (isset($node->nid)) {
+      $mlid = FALSE;
       // Give priority to the default menu
-      $mlid = db_query_range("SELECT mlid FROM {menu_links} WHERE link_path = :path AND menu_name = :menu_name AND module = 'menu' ORDER BY mlid ASC", 0, 1, array(
-        ':path' => 'node/' . $node->nid,
-        ':menu_name' => $menu_name,
-      ))->fetchField();
-      // Check all menus if a link does not exist in the default menu.
-      if (!$mlid) {
-        $mlid = db_query_range("SELECT mlid FROM {menu_links} WHERE link_path = :path AND module = 'menu' ORDER BY mlid ASC", 0, 1, array(
+      $type_menus = variable_get('menu_options_' . $node->type, array('main-menu' => 'main-menu'));
+      if (in_array($menu_name, $type_menus)) {
+        $mlid = db_query_range("SELECT mlid FROM {menu_links} WHERE link_path = :path AND menu_name = :menu_name AND module = 'menu' ORDER BY mlid ASC", 0, 1, array(
           ':path' => 'node/' . $node->nid,
+          ':menu_name' => $menu_name,
+        ))->fetchField();
+      }
+      // Check all allowed menus if a link does not exist in the default menu.
+      if (!$mlid && !empty($type_menus)) {
+        $mlid = db_query_range("SELECT mlid FROM {menu_links} WHERE link_path = :path AND module = 'menu' AND menu_name IN (:type_menus) ORDER BY mlid ASC", 0, 1, array(
+          ':path' => 'node/' . $node->nid,
+          ':type_menus' => array_values($type_menus),
         ))->fetchField();
       }
       if ($mlid) {

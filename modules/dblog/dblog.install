@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -90,6 +89,13 @@ function dblog_schema() {
   );
 
   return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function dblog_uninstall() {
+  variable_del('dblog_row_limit');
 }
 
 /**

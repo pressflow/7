@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -124,6 +123,14 @@ function locale_update_7002() {
   if (isset($info['fixed'])) {
     language_negotiation_set(LANGUAGE_TYPE_URL, array_flip($info['fixed']));
   }
+}
+
+/**
+ * Update "language_count" variable.
+ */
+function locale_update_7003() {
+  $languages = language_list('enabled');
+  variable_set('language_count', count($languages[1]));
 }
 
 /**

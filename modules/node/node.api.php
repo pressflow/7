@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -38,6 +37,7 @@
  * - Creating a new node (calling node_save() on a new node):
  *   - field_attach_presave()
  *   - hook_node_presave() (all)
+ *   - hook_entity_presave() (all)
  *   - Node and revision records are written to the database
  *   - hook_insert() (node-type-specific)
  *   - field_attach_insert()
@@ -48,6 +48,7 @@
  * - Updating an existing node (calling node_save() on an existing node):
  *   - field_attach_presave()
  *   - hook_node_presave() (all)
+ *   - hook_entity_presave() (all)
  *   - Node and revision records are written to the database
  *   - hook_update() (node-type-specific)
  *   - field_attach_update()
@@ -70,6 +71,9 @@
  *   - hook_entity_prepare_view() (all)
  *   - field_attach_view()
  *   - hook_node_view() (all)
+ *   - hook_entity_view() (all)
+ *   - hook_node_view_alter() (all)
+ *   - hook_entity_view_alter() (all)
  * - Viewing multiple nodes (calling node_view_multiple() - note that the input
  *   to node_view_multiple() is a set of loaded nodes, so the Loading steps
  *   above are already done):
@@ -78,13 +82,16 @@
  *   - hook_view() (node-type-specific)
  *   - field_attach_view()
  *   - hook_node_view() (all)
+ *   - hook_entity_view() (all)
  *   - hook_node_view_alter() (all)
+ *   - hook_entity_view_alter() (all)
  * - Deleting a node (calling node_delete() or node_delete_multiple()):
  *   - Node is loaded (see Loading section above)
- *   - Node and revision information is deleted from database
  *   - hook_delete() (node-type-specific)
  *   - hook_node_delete() (all)
+ *   - hook_entity_delete() (all)
  *   - field_attach_delete()
+ *   - Node and revision information are deleted from database
  * - Deleting a node revision (calling node_revision_delete()):
  *   - Node is loaded (see Loading section above)
  *   - Revision information is deleted from database
@@ -315,7 +322,7 @@ function hook_node_access_records($node) {
  * @see hook_node_grants()
  * @see hook_node_grants_alter()
  *
- * @param &$grants
+ * @param $grants
  *   The $grants array returned by hook_node_access_records().
  * @param $node
  *   The node for which the grants were acquired.
@@ -360,7 +367,7 @@ function hook_node_access_records_alter(&$grants, $node) {
  * @see hook_node_access_records()
  * @see hook_node_access_records_alter()
  *
- * @param &$grants
+ * @param $grants
  *   The $grants array returned by hook_node_grants().
  * @param $account
  *   The user account requesting access to content.
@@ -454,9 +461,10 @@ function hook_node_operations() {
 /**
  * Respond to node deletion.
  *
- * This hook is invoked from node_delete_multiple() after the node has been
- * removed from the node table in the database, after the type-specific
- * hook_delete() has been invoked, and before field_attach_delete() is called.
+ * This hook is invoked from node_delete_multiple() after the type-specific
+ * hook_delete() has been invoked, but before hook_entity_delete and
+ * field_attach_delete() are called, and before the node is removed from the
+ * node table in the database.
  *
  * @param $node
  *   The node that is being deleted.
@@ -580,7 +588,7 @@ function hook_node_load($nodes, $types) {
  * @return
  *   NODE_ACCESS_ALLOW if the operation is to be allowed;
  *   NODE_ACCESS_DENY if the operation is to be denied;
- *   NODE_ACCESSS_IGNORE to not affect this operation at all.
+ *   NODE_ACCESS_IGNORE to not affect this operation at all.
  */
 function hook_node_access($node, $op, $account) {
   $type = is_string($node) ? $node : $node->type;
@@ -1056,8 +1064,6 @@ function hook_prepare($node) {
  * comment settings, and fields managed by the Field UI module) are
  * displayed automatically by the node module. This hook just needs to
  * return the node title and form editing fields specific to the node type.
- *
- * For a detailed usage example, see node_example.module.
  *
  * @param $node
  *   The node being added or edited.

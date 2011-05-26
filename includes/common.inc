@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -915,7 +914,9 @@ function drupal_http_request($url, array $options = array()) {
     return $result;
   }
   // Parse response headers from the response body.
-  list($response, $result->data) = explode("\r\n\r\n", $response, 2);
+  // Be tolerant of malformed HTTP responses that separate header and body with
+  // \n\n or \r\r instead of \r\n\r\n.
+  list($response, $result->data) = preg_split("/\r\n\r\n|\n\n|\r\r/", $response, 2);
   $response = preg_split("/\r\n|\n|\r/", $response);
 
   // Parse the response status line.
@@ -1050,15 +1051,15 @@ function _fix_gpc_magic_files(&$item, $key) {
  * Fix double-escaping problems caused by "magic quotes" in some PHP installations.
  */
 function fix_gpc_magic() {
-  $fixed = &drupal_static(__FUNCTION__, FALSE);
+  static $fixed = FALSE;
   if (!$fixed && ini_get('magic_quotes_gpc')) {
     array_walk($_GET, '_fix_gpc_magic');
     array_walk($_POST, '_fix_gpc_magic');
     array_walk($_COOKIE, '_fix_gpc_magic');
     array_walk($_REQUEST, '_fix_gpc_magic');
     array_walk($_FILES, '_fix_gpc_magic_files');
-    $fixed = TRUE;
   }
+  $fixed = TRUE;
 }
 
 /**
@@ -1974,7 +1975,7 @@ function _format_date_callback(array $matches = NULL, $new_langcode = NULL) {
 /**
  * Format a username.
  *
- * By default, the passed in object's 'name' property is used if it exists, or
+ * By default, the passed-in object's 'name' property is used if it exists, or
  * else, the site-defined value for the 'anonymous' variable. However, a module
  * may override this by implementing hook_username_alter(&$name, $account).
  *
@@ -2238,7 +2239,7 @@ function drupal_http_header_attributes(array $attributes = array()) {
  *   drupal_attributes(array('title' => t('<script>steal_cookie();</script>')));
  *
  *   // The statement below demonstrates dangerous use of drupal_attributes, and
- *   // will return an onmouseout attribute with javascript code that, when used
+ *   // will return an onmouseout attribute with JavaScript code that, when used
  *   // as attribute in a tag, will cause users to be redirected to another site.
  *   //
  *   // In this case, the 'onmouseout' attribute should not be whitelisted --
@@ -2383,9 +2384,9 @@ function l($text, $path, array $options = array()) {
  * basis in hook_page_delivery_callback_alter().
  *
  * For example, the same page callback function can be used for an HTML
- * version of the page and an AJAX version of the page. The page callback
+ * version of the page and an Ajax version of the page. The page callback
  * function just needs to decide what content is to be returned and the
- * delivery callback function will send it as an HTML page or an AJAX
+ * delivery callback function will send it as an HTML page or an Ajax
  * response, as appropriate.
  *
  * In order for page callbacks to be reusable in different delivery formats,
@@ -2602,7 +2603,8 @@ function drupal_exit($destination = NULL) {
  *   A linear array.
  * @param $function
  *   A name of a function to apply to all values before output.
- * @result
+ *
+ * @return
  *   An associative array.
  */
 function drupal_map_assoc($array, $function = NULL) {
@@ -3543,7 +3545,7 @@ function drupal_load_stylesheet_content($contents, $optimize = FALSE) {
     // There are different conditions for removing leading and trailing
     // whitespace.
     // @see http://php.net/manual/en/regexp.reference.subpatterns.php
-    $contents = preg_replace_callback('<
+    $contents = preg_replace('<
       # Strip leading and trailing whitespace.
         \s*([@{};,])\s*
       # Strip only leading whitespace from:
@@ -3554,7 +3556,10 @@ function drupal_load_stylesheet_content($contents, $optimize = FALSE) {
       # - Colon: Retain :pseudo-selectors.
       | ([\(:])\s+
     >xS',
-      '_drupal_load_stylesheet_content',
+      // Only one of the three capturing groups will match, so its reference
+      // will contain the wanted value and the references for the
+      // two non-matching groups will be replaced with empty strings.
+      '$1$2$3',
       $contents
     );
     // End the file with a new line.
@@ -3566,16 +3571,6 @@ function drupal_load_stylesheet_content($contents, $optimize = FALSE) {
   // This happens recursively but omits external files.
   $contents = preg_replace_callback('/@import\s*(?:url\(\s*)?[\'"]?(?![a-z]+:)([^\'"\()]+)[\'"]?\s*\)?\s*;/', '_drupal_load_stylesheet', $contents);
   return $contents;
-}
-
-/**
- * Helper for drupal_load_stylesheet_content().
- */
-function _drupal_load_stylesheet_content($matches) {
-  // Discard the full match.
-  unset($matches[0]);
-  // Use the non-empty match.
-  return current(array_filter($matches));
 }
 
 /**
@@ -3672,17 +3667,17 @@ function drupal_html_class($class) {
  * blocks, and other content to be output multiple times on the same page,
  * without breaking (X)HTML validation.
  *
- * For already existing ids, a counter is appended to the id string. Therefore,
+ * For already existing IDs, a counter is appended to the ID string. Therefore,
  * JavaScript and CSS code should not rely on any value that was generated by
  * this function and instead should rely on manually added CSS classes or
  * similarly reliable constructs.
  *
- * Two consecutive hyphens separate the counter from the original id. To manage
- * uniqueness across multiple AJAX requests on the same page, AJAX requests
+ * Two consecutive hyphens separate the counter from the original ID. To manage
+ * uniqueness across multiple Ajax requests on the same page, Ajax requests
  * POST an array of all IDs currently present on the page, which are used to
  * prime this function's cache upon first invocation.
  *
- * To allow reverse-parsing of ids submitted via AJAX, any multiple consecutive
+ * To allow reverse-parsing of IDs submitted via Ajax, any multiple consecutive
  * hyphens in the originally passed $id are replaced with a single hyphen.
  *
  * @param $id
@@ -3692,10 +3687,10 @@ function drupal_html_class($class) {
  *   The cleaned ID.
  */
 function drupal_html_id($id) {
-  // If this is an AJAX request, then content returned by this page request will
-  // be merged with content already on the base page. The HTML ids must be
+  // If this is an Ajax request, then content returned by this page request will
+  // be merged with content already on the base page. The HTML IDs must be
   // unique for the fully merged content. Therefore, initialize $seen_ids to
-  // take into account ids that are already in use on the base page.
+  // take into account IDs that are already in use on the base page.
   $seen_ids_init = &drupal_static(__FUNCTION__ . ':init');
   if (!isset($seen_ids_init)) {
     // Ideally, Drupal would provide an API to persist state information about
@@ -3703,7 +3698,7 @@ function drupal_html_id($id) {
     // function's $seen_ids static variable to that state information in order
     // to have it properly initialized for this page request. However, no such
     // page state API exists, so instead, ajax.js adds all of the in-use HTML
-    // ids to the POST data of AJAX submissions. Direct use of $_POST is
+    // IDs to the POST data of Ajax submissions. Direct use of $_POST is
     // normally not recommended as it could open up security risks, but because
     // the raw POST data is cast to a number before being returned by this
     // function, this usage is safe.
@@ -3750,7 +3745,7 @@ function drupal_html_id($id) {
   // The counter needs to be appended with a delimiter that does not exist in
   // the base ID. Requiring a unique delimiter helps ensure that we really do
   // return unique IDs and also helps us re-create the $seen_ids array during
-  // AJAX requests.
+  // Ajax requests.
   if (isset($seen_ids[$id])) {
     $id = $id . '--' . ++$seen_ids[$id];
   }
@@ -3768,7 +3763,7 @@ function drupal_html_id($id) {
  * page region that is output by the theme (Drupal core already handles this in
  * the standard template preprocess implementation). Standardizing the class
  * names in this way allows modules to implement certain features, such as
- * drag-and-drop or dynamic AJAX loading, in a theme-independent way.
+ * drag-and-drop or dynamic Ajax loading, in a theme-independent way.
  *
  * @param $region
  *   The name of the page region (for example, 'page_top' or 'content').
@@ -3953,12 +3948,17 @@ function drupal_add_js($data = NULL, $options = NULL) {
 
   if (isset($data)) {
     // Add jquery.js and drupal.js, as well as the basePath setting, the
-    // first time a Javascript file is added.
+    // first time a JavaScript file is added.
     if (empty($javascript)) {
+      // url() generates the prefix using hook_url_outbound_alter(). Instead of
+      // running the hook_url_outbound_alter() again here, extract the prefix
+      // from url().
+      url('', array('prefix' => &$prefix));
       $javascript = array(
         'settings' => array(
           'data' => array(
             array('basePath' => base_path()),
+            array('pathPrefix' => empty($prefix) ? '' : $prefix),
           ),
           'type' => 'setting',
           'scope' => 'header',
@@ -3996,7 +3996,7 @@ function drupal_add_js($data = NULL, $options = NULL) {
 
       default: // 'file' and 'external'
         // Local and external files must keep their name as the associative key
-        // so the same JavaScript file is not be added twice.
+        // so the same JavaScript file is not added twice.
         $javascript[$options['data']] = $options;
     }
   }
@@ -4094,13 +4094,13 @@ function drupal_get_js($scope = 'header', $javascript = NULL, $skip_alter = FALS
   // page request.
   $default_query_string = variable_get('css_js_query_string', '0');
 
-  // For inline Javascript to validate as XHTML, all Javascript containing
+  // For inline JavaScript to validate as XHTML, all JavaScript containing
   // XHTML needs to be wrapped in CDATA. To make that backwards compatible
   // with HTML 4, we need to comment out the CDATA-tag.
   $embed_prefix = "\n<!--//--><![CDATA[//><!--\n";
   $embed_suffix = "\n//--><!]]>\n";
 
-  // Since Javascript may look for arguments in the url and act on them, some
+  // Since JavaScript may look for arguments in the URL and act on them, some
   // third-party code might require the use of a different query string.
   $js_version_string = variable_get('drupal_js_version_query_string', 'v=');
 
@@ -4318,7 +4318,7 @@ function drupal_process_attached($elements, $group = JS_DEFAULT, $dependency_che
   }
 
   // Add additional types of attachments specified in the render() structure.
-  // Libraries, Javascript and CSS have been added already, as they require
+  // Libraries, JavaScript and CSS have been added already, as they require
   // special handling.
   foreach ($elements['#attached'] as $callback => $options) {
     if (function_exists($callback)) {
@@ -4785,7 +4785,7 @@ function drupal_clear_js_cache() {
 }
 
 /**
- * Converts a PHP variable into its Javascript equivalent.
+ * Converts a PHP variable into its JavaScript equivalent.
  *
  * We use HTML-safe strings, i.e. with <, > and & escaped.
  *
@@ -4881,12 +4881,12 @@ function drupal_valid_token($token, $value = '', $skip_anonymous = FALSE) {
 }
 
 function _drupal_bootstrap_full() {
-  $called = &drupal_static(__FUNCTION__);
+  static $called = FALSE;
 
   if ($called) {
     return;
   }
-  $called = 1;
+  $called = TRUE;
   require_once DRUPAL_ROOT . '/' . variable_get('path_inc', 'includes/path.inc');
   require_once DRUPAL_ROOT . '/includes/theme.inc';
   require_once DRUPAL_ROOT . '/includes/pager.inc';
@@ -5235,7 +5235,7 @@ function drupal_set_page_content($content = NULL) {
  *     browsers, '#browsers' can be set to array('IE' => 'gte IE 8').
  *
  * @return
- *   The passed in element with markup for conditional comments potentially
+ *   The passed-in element with markup for conditional comments potentially
  *   added to '#prefix' and '#suffix'.
  */
 function drupal_pre_render_conditional_comments($elements) {
@@ -5297,7 +5297,7 @@ function drupal_pre_render_conditional_comments($elements) {
  *   - #options: (optional) An array of options to pass to l().
  *
  * @return
- *   The passed in elements containing a rendered link in '#markup'.
+ *   The passed-in elements containing a rendered link in '#markup'.
  */
 function drupal_pre_render_link($element) {
   // By default, link options to pass to l() are normally set in #options.
@@ -5327,7 +5327,7 @@ function drupal_pre_render_link($element) {
     if (!isset($element['#id'])) {
       $element['#id'] = $element['#options']['attributes']['id'] = drupal_html_id('ajax-link');
     }
-    // If #ajax['path] was not specified, use the href as AJAX request URL.
+    // If #ajax['path] was not specified, use the href as Ajax request URL.
     if (!isset($element['#ajax']['path'])) {
       $element['#ajax']['path'] = $element['#href'];
       $element['#ajax']['options'] = $element['#options'];
@@ -5444,7 +5444,7 @@ function drupal_pre_render_links($element) {
  *   A structured array using the #markup key.
  *
  * @return
- *   The passed in elements, but #markup appended to #children.
+ *   The passed-in elements, but #markup appended to #children.
  */
 function drupal_pre_render_markup($elements) {
   $elements['#children'] = $elements['#markup'];
@@ -5575,9 +5575,9 @@ function drupal_render(&$elements) {
     return $cached_output;
   }
 
-  // If #markup is not empty, set #type. This allows to specify just #markup on
-  // an element without setting #type.
-  if (!empty($elements['#markup']) && !isset($elements['#type'])) {
+  // If #markup is set, ensure #type is set. This allows to specify just #markup
+  // on an element without setting #type.
+  if (isset($elements['#markup']) && !isset($elements['#type'])) {
     $elements['#type'] = 'markup';
   }
 
@@ -5694,13 +5694,17 @@ function drupal_render_children(&$element, $children_keys = NULL) {
 }
 
 /**
- * Render and print an element.
+ * Render an element.
  *
  * This function renders an element using drupal_render(). The top level
- * element is always rendered even if hide() had been previously used on it.
+ * element is shown with show() before rendering, so it will always be rendered
+ * even if hide() had been previously used on it.
  *
- * Any nested elements are only rendered if they haven't been rendered before
- * or if they have been re-enabled with show().
+ * @param $element
+ *   The element to be rendered.
+ *
+ * @return
+ *   The rendered element.
  *
  * @see drupal_render()
  * @see show()
@@ -5721,6 +5725,21 @@ function render(&$element) {
 /**
  * Hide an element from later rendering.
  *
+ * The first time render() or drupal_render() is called on an element tree,
+ * as each element in the tree is rendered, it is marked with a #printed flag
+ * and the rendered children of the element are cached. Subsequent calls to
+ * render() or drupal_render() will not traverse the child tree of this element
+ * again: they will just use the cached children. So if you want to hide an
+ * element, be sure to call hide() on the element before its parent tree is
+ * rendered for the first time, as it will have no effect on subsequent
+ * renderings of the parent tree.
+ *
+ * @param $element
+ *   The element to be hidden.
+ *
+ * @return
+ *   The element.
+ *
  * @see render()
  * @see show()
  */
@@ -5730,10 +5749,25 @@ function hide(&$element) {
 }
 
 /**
- * Show a hidden or already printed element from later rendering.
+ * Show a hidden element for later rendering.
  *
- * Alternatively, render($element) could be used which automatically shows the
- * element while rendering it.
+ * You can also use render($element), which shows the element while rendering
+ * it.
+ *
+ * The first time render() or drupal_render() is called on an element tree,
+ * as each element in the tree is rendered, it is marked with a #printed flag
+ * and the rendered children of the element are cached. Subsequent calls to
+ * render() or drupal_render() will not traverse the child tree of this element
+ * again: they will just use the cached children. So if you want to show an
+ * element, be sure to call show() on the element before its parent tree is
+ * rendered for the first time, as it will have no effect on subsequent
+ * renderings of the parent tree.
+ *
+ * @param $element
+ *   The element to be shown.
+ *
+ * @return
+ *   The element.
  *
  * @see render()
  * @see hide()
@@ -5800,12 +5834,56 @@ function drupal_render_cache_set(&$markup, $elements) {
   // be retrieved and used.
   $data['#markup'] = &$markup;
   // Persist attached data associated with this element.
-  if (isset($elements['#attached'])) {
-    $data['#attached'] = $elements['#attached'];
+  $attached = drupal_render_collect_attached($elements, TRUE);
+  if ($attached) {
+    $data['#attached'] = $attached;
   }
   $bin = isset($elements['#cache']['bin']) ? $elements['#cache']['bin'] : 'cache';
   $expire = isset($elements['#cache']['expire']) ? $elements['#cache']['expire'] : CACHE_PERMANENT;
   cache_set($cid, $data, $bin, $expire);
+}
+
+/**
+ * Collect #attached for an element and all child elements into a single array.
+ *
+ * When caching elements, it is necessary to collect all libraries, JavaScript
+ * and CSS into a single array, from both the element itself and all child
+ * elements. This allows drupal_render() to add these back to the page when the
+ * element is returned from cache.
+ *
+ * @param $elements
+ *   The element to collect #attached from.
+ * @param $return
+ *   Whether to return the attached elements and reset the internal static.
+ *
+ * @return
+ *   The #attached array for this element and its descendants.
+ */
+function drupal_render_collect_attached($elements, $return = FALSE) {
+  $attached = &drupal_static(__FUNCTION__, array());
+
+  // Collect all #attached for this element.
+  if (isset($elements['#attached'])) {
+    foreach ($elements['#attached'] as $key => $value) {
+      if (!isset($attached[$key])) {
+        $attached[$key] = array();
+      }
+      $attached[$key] = array_merge($attached[$key], $value);
+    }
+  }
+  if ($children = element_children($elements)) {
+    foreach ($children as $child) {
+      drupal_render_collect_attached($elements[$child]);
+    }
+  }
+
+  // If this was the first call to the function, return all attached elements
+  // and reset the static cache.
+  if ($return) {
+    $return = $attached;
+    $attached = array();
+    return $return;
+  }
 }
 
 /**
@@ -5830,7 +5908,7 @@ function drupal_render_cache_set(&$markup, $elements) {
  *
  * @return
  *   A renderable array with the following keys and values:
- *   - #query: The passed in $query.
+ *   - #query: The passed-in $query.
  *   - #pre_render: $function with a _pre_render suffix.
  *   - #cache: An associative array prepared for drupal_render_cache_set().
  */
@@ -6237,7 +6315,7 @@ function drupal_array_set_nested_value(array &$array, array $parents, $value, $f
  *   The array from which to get the value.
  * @param $parents
  *   An array of parent keys of the value, starting with the outermost key.
- * @param &$key_exists
+ * @param $key_exists
  *   (optional) If given, an already defined variable that is altered by
  *   reference.
  *
@@ -6651,30 +6729,27 @@ function drupal_schema_fields_sql($table, $prefix = NULL) {
 }
 
 /**
- * Saves a record to the database based upon the schema.
- *
- * Default values are filled in for missing items, and 'serial' (auto increment)
- * types are filled in with IDs.
+ * Saves (inserts or updates) a record to the database based upon the schema.
  *
  * @param $table
  *   The name of the table; this must be defined by a hook_schema()
  *   implementation.
  * @param $record
  *   An object or array representing the record to write, passed in by
- *   reference. The function will fill in defaults from the schema and add an
- *   ID value to serial fields.
+ *   reference. If inserting a new record, values not provided in $record will
+ *   be populated in $record and in the database with the default values from
+ *   the schema, as well as a single serial (auto-increment) field (if present).
+ *   If updating an existing record, only provided values are updated in the
+ *   database, and $record is not modified.
  * @param $primary_keys
- *   If this is an update, specify the primary keys' field names. If this is a
- *   new record, you must not provide this value. If there is only 1 field in
- *   the key, you may pass in a string; if there are multiple fields in the key,
- *   pass in an array.
+ *   To indicate that this is a new record to be inserted, omit this argument.
+ *   If this is an update, this argument specifies the primary keys' field
+ *   names. If there is only 1 field in the key, you may pass in a string; if
+ *   there are multiple fields in the key, pass in an array.
  *
  * @return
- *   Failure to write a record will return FALSE. Otherwise SAVED_NEW or
- *   SAVED_UPDATED is returned depending on the operation performed. The $object
- *   parameter will contain values for any serial fields defined by the $table.
- *   For example, $record->nid or $record['nid'] will be populated after
- *   inserting a new a new node.
+ *   If the record insert or update failed, returns FALSE. If it succeeded,
+ *   returns SAVED_NEW or SAVED_UPDATED, depending on the operation performed.
  */
 function drupal_write_record($table, &$record, $primary_keys = array()) {
   // Standardize $primary_keys to an array.
@@ -6815,7 +6890,7 @@ function drupal_write_record($table, &$record, $primary_keys = array()) {
  */
 
 /**
- * Parse Drupal module and theme info file format.
+ * Parses Drupal module and theme .info files.
  *
  * Info files are NOT for placing arbitrary theme and module-specific settings.
  * Use variable_get() and variable_set() for that.
@@ -6826,35 +6901,42 @@ function drupal_write_record($table, &$record, $primary_keys = array()) {
  * - dependencies: An array of shortnames of other modules this module requires.
  * - package: The name of the package of modules this module belongs to.
  *
- * @see forum.info
+ * See forum.info for an example of a module .info file.
  *
  * Information stored in a theme .info file:
- * - name: The real name of the theme for display purposes
- * - description: Brief description
+ * - name: The real name of the theme for display purposes.
+ * - description: Brief description.
  * - screenshot: Path to screenshot relative to the theme's .info file.
  * - engine: Theme engine; typically phptemplate.
- * - base: Name of a base theme, if applicable, eg: base = zen
- * - regions: Listed regions eg: region[left] = Left sidebar
- * - features: Features available eg: features[] = logo
- * - stylesheets: Theme stylesheets eg: stylesheets[all][] = my-style.css
- * - scripts: Theme scripts eg: scripts[] = my-script.css
+ * - base: Name of a base theme, if applicable; e.g., base = zen.
+ * - regions: Listed regions; e.g., region[left] = Left sidebar.
+ * - features: Features available; e.g., features[] = logo.
+ * - stylesheets: Theme stylesheets; e.g., stylesheets[all][] = my-style.css.
+ * - scripts: Theme scripts; e.g., scripts[] = my-script.js.
  *
- * @see bartik.info
+ * See bartik.info for an example of a theme .info file.
  *
  * @param $filename
  *   The file we are parsing. Accepts file with relative or absolute path.
+ *
  * @return
  *   The info array.
  *
  * @see drupal_parse_info_format()
  */
 function drupal_parse_info_file($filename) {
-  if (!file_exists($filename)) {
-    return array();
-  }
+  $info = &drupal_static(__FUNCTION__, array());
 
-  $data = file_get_contents($filename);
-  return drupal_parse_info_format($data);
+  if (!isset($info[$filename])) {
+    if (!file_exists($filename)) {
+      $info[$filename] = array();
+    }
+    else {
+      $data = file_get_contents($filename);
+      $info[$filename] = drupal_parse_info_format($data);
+    }
+  }
+  return $info[$filename];
 }
 
 /**
@@ -7319,8 +7401,7 @@ function entity_create_stub_entity($entity_type, $ids) {
 /**
  * Load entities from the database.
  *
- * This function should be used whenever you need to load more than one entity
- * from the database. The entities are loaded into memory and will not require
+ * The entities are stored in a static memory cache, and will not require
  * database access if loaded again during the same page request.
  *
  * The actual loading is done through a class that has to implement the
@@ -7415,8 +7496,15 @@ function entity_get_controller($entity_type) {
  *   The type of entity, i.e. 'node', 'user'.
  * @param $entities
  *   The entity objects which are being prepared for view, keyed by object ID.
+ * @param $langcode
+ *   (optional) A language code to be used for rendering. Defaults to the global
+ *   content language of the current request.
  */
-function entity_prepare_view($entity_type, $entities) {
+function entity_prepare_view($entity_type, $entities, $langcode = NULL) {
+  if (!isset($langcode)) {
+    $langcode = $GLOBALS['language_content']->language;
+  }
+
   // To ensure hooks are only run once per entity, check for an
   // entity_view_prepared flag and only process items without it.
   // @todo: resolve this more generally for both entity and field level hooks.
@@ -7432,7 +7520,7 @@ function entity_prepare_view($entity_type, $entities) {
   }
 
   if (!empty($prepare)) {
-    module_invoke_all('entity_prepare_view', $prepare, $entity_type);
+    module_invoke_all('entity_prepare_view', $prepare, $entity_type, $langcode);
   }
 }
 
@@ -7507,7 +7595,7 @@ function entity_label($entity_type, $entity) {
   $label = FALSE;
   $info = entity_get_info($entity_type);
   if (isset($info['label callback']) && function_exists($info['label callback'])) {
-    $label = $info['label callback']($entity);
+    $label = $info['label callback']($entity, $entity_type);
   }
   elseif (!empty($info['entity keys']['label']) && isset($entity->{$info['entity keys']['label']})) {
     $label = $entity->{$info['entity keys']['label']};

@@ -1,4 +1,3 @@
-// $Id$
 (function ($) {
 
 /**
@@ -113,19 +112,6 @@ Drupal.behaviors.dateTime = {
     }
   }
 };
-
-/**
- * Show the powered by Drupal image preview
- */
-Drupal.behaviors.poweredByPreview = {
-  attach: function (context, settings) {
-    $('#edit-color, #edit-size').change(function () {
-      var path = settings.basePath + 'misc/' + $('#edit-color').val() + '-' + $('#edit-size').val() + '.png';
-      $('img.powered-by-preview').attr('src', path);
-    });
-  }
-};
-
 
  /**
  * Show/hide settings for page caching depending on whether page caching is

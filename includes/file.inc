@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -202,9 +201,8 @@ function file_stream_wrapper_get_class($scheme) {
  * @see file_uri_target()
  */
 function file_uri_scheme($uri) {
-  $data = explode('://', $uri, 2);
-
-  return count($data) == 2 ? $data[0] : FALSE;
+  $position = strpos($uri, '://');
+  return $position ? substr($uri, 0, $position) : FALSE;
 }
 
 /**
@@ -424,7 +422,7 @@ function file_create_url($uri) {
  * Directories need to have execute permissions to be considered a directory by
  * FTP servers, etc.
  *
- * @param &$directory
+ * @param $directory
  *   A string reference containing the name of a directory path or URI. A
  *   trailing slash will be trimmed from a path.
  * @param $options

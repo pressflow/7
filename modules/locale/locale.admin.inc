@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -468,6 +467,9 @@ function locale_languages_delete_form_submit($form, &$form_state) {
       ->fields(array('language' => ''))
       ->condition('language', $form_state['values']['langcode'])
       ->execute();
+    if ($languages[$form_state['values']['langcode']]->enabled) {
+      variable_set('language_count', variable_get('language_count', 1) - 1);
+    }
     module_invoke_all('multilingual_settings_changed');
     $variables = array('%locale' => $languages[$form_state['values']['langcode']]->name);
     drupal_set_message(t('The language %locale has been removed.', $variables));
@@ -539,6 +541,12 @@ function _locale_languages_configure_form_language_table(&$form, $type) {
   asort($providers_weight);
 
   foreach ($providers_weight as $id => $weight) {
+    // A language provider might be no more available if the defining module has
+    // been disabled after the last configuration saving.
+    if (!isset($language_providers[$id])) {
+      continue;
+    }
+
     $enabled = isset($enabled_providers[$id]);
     $provider = $language_providers[$id];
 
@@ -656,7 +664,6 @@ function theme_locale_languages_configure_form($variables) {
  * Submit handler for language negotiation settings.
  */
 function locale_languages_configure_form_submit($form, &$form_state) {
-  $language_types = array();
   $configurable_types = $form['#language_types'];
 
   foreach ($configurable_types as $type) {
@@ -664,7 +671,6 @@ function locale_languages_configure_form_submit($form, &$form_state) {
     $enabled_providers = $form_state['values'][$type]['enabled'];
     $enabled_providers[LANGUAGE_NEGOTIATION_DEFAULT] = TRUE;
     $providers_weight = $form_state['values'][$type]['weight'];
-    $language_types[$type] = TRUE;
 
     foreach ($providers_weight as $id => $weight) {
       if ($enabled_providers[$id]) {
@@ -678,27 +684,11 @@ function locale_languages_configure_form_submit($form, &$form_state) {
     variable_set("locale_language_providers_weight_$type", $providers_weight);
   }
 
-  // Save non-configurable language types negotiation.
-  $language_types_info = language_types_info();
-  $defined_providers = $form['#language_providers'];
-  foreach ($language_types_info as $type => $info) {
-    if (isset($info['fixed'])) {
-      $language_types[$type] = FALSE;
-      $negotiation = array();
-      foreach ($info['fixed'] as $weight => $id) {
-        if (isset($defined_providers[$id])) {
-          $negotiation[$id] = $defined_providers[$id];
-          $negotiation[$id]['weight'] = $weight;
-        }
-      }
-      language_negotiation_set($type, $negotiation);
-    }
-  }
+  // Update non-configurable language types and the related language negotiation
+  // configuration.
+  language_types_set();
 
-  // Save language types.
-  variable_set('language_types', $language_types);
-
-  $form_state['redirect'] = 'admin/config/regional/language';
+  $form_state['redirect'] = 'admin/config/regional/language/configure';
   drupal_set_message(t('Language negotiation configuration saved.'));
 }
 

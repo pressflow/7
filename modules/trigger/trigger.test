@@ -1,5 +1,9 @@
 <?php
-// $Id$
+
+/**
+ * @file
+ * Tests for trigger.module.
+ */
 
 /**
  * Provides common helper methods.

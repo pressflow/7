@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -851,6 +850,19 @@ function user_update_7015() {
     'length' => 255,
     'not null' => FALSE,
     'description' => 'The {filter_format}.format of the signature.',
+  ));
+}
+
+/**
+ * Update the database to match the schema.
+ */
+function user_update_7016() {
+  // Add field default.
+  db_change_field('users', 'uid', 'uid', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
   ));
 }
 

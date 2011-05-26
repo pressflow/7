@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -106,6 +105,10 @@ function openid_test_yadis_xrds() {
           <Service>
             <Type>http://example.com/this-is-ignored</Type>
           </Service>
+          <Service priority="5">
+            <Type>http://openid.net/signon/1.0</Type>
+            <URI>http://example.com/this-is-only-openid-1.0</URI>
+          </Service>
           <Service priority="10">
             <Type>http://specs.openid.net/auth/2.0/signon</Type>
             <Type>http://openid.net/srv/ax/1.0</Type>
@@ -134,7 +137,7 @@ function openid_test_yadis_xrds() {
     }
     elseif (arg(3) == 'delegate') {
       print '
-          <Service priority="5">
+          <Service priority="0">
             <Type>http://specs.openid.net/auth/2.0/signon</Type>
             <Type>http://openid.net/srv/ax/1.0</Type>
             <URI>' . url('openid-test/endpoint', array('absolute' => TRUE)) . '</URI>
@@ -228,14 +231,14 @@ function _openid_test_endpoint_associate() {
 
   // Generate private Diffie-Helmann key.
   $r = _openid_dh_rand($mod);
-  $private = bcadd($r, 1);
+  $private = _openid_math_add($r, 1);
 
   // Calculate public Diffie-Helmann key.
-  $public = bcpowmod($gen, $private, $mod);
+  $public = _openid_math_powmod($gen, $private, $mod);
 
   // Calculate shared secret based on Relying Party's public key.
   $cpub = _openid_dh_base64_to_long($_REQUEST['openid_dh_consumer_public']);
-  $shared = bcpowmod($cpub, $private, $mod);
+  $shared = _openid_math_powmod($cpub, $private, $mod);
 
   // Encrypt the MAC key using the shared secret.
   $enc_mac_key = base64_encode(_openid_dh_xorsecret($shared, base64_decode(variable_get('mac_key'))));

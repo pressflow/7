@@ -1,26 +1,25 @@
-// $Id$
 (function ($) {
 
 /**
- * Provides AJAX page updating via jQuery $.ajax (Asynchronous JavaScript and XML).
+ * Provides Ajax page updating via jQuery $.ajax (Asynchronous JavaScript and XML).
  *
- * AJAX is a method of making a request via Javascript while viewing an HTML
+ * Ajax is a method of making a request via JavaScript while viewing an HTML
  * page. The request returns an array of commands encoded in JSON, which is
  * then executed to make any changes that are necessary to the page.
  *
  * Drupal uses this file to enhance form elements with #ajax['path'] and
  * #ajax['wrapper'] properties. If set, this file will automatically be included
- * to provide AJAX capabilities.
+ * to provide Ajax capabilities.
  */
 
 Drupal.ajax = Drupal.ajax || {};
 
 /**
- * Attaches the AJAX behavior to each AJAX form element.
+ * Attaches the Ajax behavior to each Ajax form element.
  */
 Drupal.behaviors.AJAX = {
   attach: function (context, settings) {
-    // Load all AJAX behaviors specified in the settings.
+    // Load all Ajax behaviors specified in the settings.
     for (var base in settings.ajax) {
       if (!$('#' + base + '.ajax-processed').length) {
         var element_settings = settings.ajax[base];
@@ -37,7 +36,7 @@ Drupal.behaviors.AJAX = {
       }
     }
 
-    // Bind AJAX behaviors to all items showing the class.
+    // Bind Ajax behaviors to all items showing the class.
     $('.use-ajax:not(.ajax-processed)').addClass('ajax-processed').each(function () {
       var element_settings = {};
       // Clicked links look better with the throbber than the progress bar.
@@ -53,11 +52,11 @@ Drupal.behaviors.AJAX = {
       Drupal.ajax[base] = new Drupal.ajax(base, this, element_settings);
     });
 
-    // This class means to submit the form to the action using AJAX.
+    // This class means to submit the form to the action using Ajax.
     $('.use-ajax-submit:not(.ajax-processed)').addClass('ajax-processed').each(function () {
       var element_settings = {};
 
-      // AJAX submits specified in this manner automatically submit to the
+      // Ajax submits specified in this manner automatically submit to the
       // normal form action.
       element_settings.url = $(this.form).attr('action');
       // Form submit button clicks need to tell the form what was clicked so
@@ -75,13 +74,13 @@ Drupal.behaviors.AJAX = {
 };
 
 /**
- * AJAX object.
+ * Ajax object.
  *
- * All AJAX objects on a page are accessible through the global Drupal.ajax
+ * All Ajax objects on a page are accessible through the global Drupal.ajax
  * object and are keyed by the submit button's ID. You can access them from
  * your module's JavaScript file to override properties or functions.
  *
- * For example, if your AJAX enabled button has the ID 'edit-submit', you can
+ * For example, if your Ajax enabled button has the ID 'edit-submit', you can
  * redefine the function that is called to insert the new content like this
  * (inside a Drupal.behaviors attach block):
  * @code
@@ -134,7 +133,7 @@ Drupal.ajax = function (base, element, element_settings) {
   this.wrapper = '#' + element_settings.wrapper;
 
   // If there isn't a form, jQuery.ajax() will be used instead, allowing us to
-  // bind AJAX to links as well.
+  // bind Ajax to links as well.
   if (this.element.form) {
     this.form = $(this.element.form);
   }
@@ -179,7 +178,7 @@ Drupal.ajax = function (base, element, element_settings) {
     return ajax.eventResponse(this, event);
   });
 
-  // If necessary, enable keyboard submission so that AJAX behaviors
+  // If necessary, enable keyboard submission so that Ajax behaviors
   // can be triggered through keyboard input as well as e.g. a mousedown
   // action.
   if (element_settings.keypress) {
@@ -192,7 +191,7 @@ Drupal.ajax = function (base, element, element_settings) {
 /**
  * Handle a key press.
  *
- * The AJAX object will, if instructed, bind to a key press response. This
+ * The Ajax object will, if instructed, bind to a key press response. This
  * will test to see if the key press is valid to trigger this event and
  * if it is, trigger it for us and prevent other keypresses from triggering.
  * In this case we're handling RETURN and SPACEBAR keypresses (event codes 13
@@ -214,10 +213,10 @@ Drupal.ajax.prototype.keypressResponse = function (element, event) {
 };
 
 /**
- * Handle an event that triggers an AJAX response.
+ * Handle an event that triggers an Ajax response.
  *
- * When an event that triggers an AJAX response happens, this method will
- * perform the actual AJAX call. It is bound to the event using
+ * When an event that triggers an Ajax response happens, this method will
+ * perform the actual Ajax call. It is bound to the event using
  * bind() in the constructor, and it uses the options specified on the
  * ajax object.
  */
@@ -315,23 +314,41 @@ Drupal.ajax.prototype.beforeSubmit = function (form_values, element, options) {
 }
 
 /**
- * Prepare the AJAX request before it is sent.
+ * Prepare the Ajax request before it is sent.
  */
 Drupal.ajax.prototype.beforeSend = function (xmlhttprequest, options) {
+  // For forms without file inputs, the jQuery Form plugin serializes the form
+  // values, and then calls jQuery's $.ajax() function, which invokes this
+  // handler. In this circumstance, options.extraData is never used. For forms
+  // with file inputs, the jQuery Form plugin uses the browser's normal form
+  // submission mechanism, but captures the response in a hidden IFRAME. In this
+  // circumstance, it calls this handler first, and then appends hidden fields
+  // to the form to submit the values in options.extraData. There is no simple
+  // way to know which submission mechanism will be used, so we add to extraData
+  // regardless, and allow it to be ignored in the former case.
+  if (this.form) {
+    options.extraData = options.extraData || {};
+
+    // Let the server know when the IFRAME submission mechanism is used. The
+    // server can use this information to wrap the JSON response in a TEXTAREA,
+    // as per http://jquery.malsup.com/form/#file-upload.
+    options.extraData.ajax_iframe_upload = '1';
+
+    // The triggering element is about to be disabled (see below), but if it
+    // contains a value (e.g., a checkbox, textfield, select, etc.), ensure that
+    // value is included in the submission. As per above, submissions that use
+    // $.ajax() are already serialized prior to the element being disabled, so
+    // this is only needed for IFRAME submissions.
+    var v = $.fieldValue(this.element);
+    if (v !== null) {
+      options.extraData[this.element.name] = v;
+    }
+  }
+
   // Disable the element that received the change to prevent user interface
-  // interaction while the AJAX request is in progress. ajax.ajaxing prevents
+  // interaction while the Ajax request is in progress. ajax.ajaxing prevents
   // the element from triggering a new request, but does not prevent the user
   // from changing its value.
-  // Forms without file inputs are already serialized before this function is
-  // called. Forms with file inputs use an IFRAME to perform a POST request
-  // similar to a browser, so disabled elements are not contained in the
-  // submitted values. Therefore, we manually add the element's value to
-  // options.extraData.
-  var v = $.fieldValue(this.element);
-  if (v !== null) {
-    options.extraData = options.extraData || {};
-    options.extraData[this.element.name] = v;
-  }
   $(this.element).addClass('progress-disabled').attr('disabled', true);
 
   // Insert progressbar or throbber.
@@ -470,7 +487,7 @@ Drupal.ajax.prototype.commands = {
     // sufficiently tested whether attachBehaviors() can be successfully called
     // with a context object that includes top-level text nodes. However, to
     // give developers full control of the HTML appearing in the page, and to
-    // enable AJAX content to be inserted in places where DIV elements are not
+    // enable Ajax content to be inserted in places where DIV elements are not
     // allowed (e.g., within TABLE, TR, and SPAN parents), we check if the new
     // content satisfies the requirement of a single top-level element, and
     // only use the container DIV created above when it doesn't. For more
