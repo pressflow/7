@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -1171,6 +1170,8 @@ class JavaScriptTestCase extends DrupalWebTestCase {
     $this->assertTrue(array_key_exists('misc/drupal.js', $javascript), t('Drupal.js is added when file is added.'));
     $this->assertTrue(array_key_exists('misc/collapse.js', $javascript), t('JavaScript files are correctly added.'));
     $this->assertEqual(base_path(), $javascript['settings']['data'][0]['basePath'], t('Base path JavaScript setting is correctly set.'));
+    url('', array('prefix' => &$prefix));
+    $this->assertEqual(empty($prefix) ? '' : $prefix, $javascript['settings']['data'][1]['pathPrefix'], t('Path prefix JavaScript setting is correctly set.'));
   }
 
   /**
@@ -1178,8 +1179,8 @@ class JavaScriptTestCase extends DrupalWebTestCase {
    */
   function testAddSetting() {
     $javascript = drupal_add_js(array('drupal' => 'rocks', 'dries' => 280342800), 'setting');
-    $this->assertEqual(280342800, $javascript['settings']['data'][1]['dries'], t('JavaScript setting is set correctly.'));
-    $this->assertEqual('rocks', $javascript['settings']['data'][1]['drupal'], t('The other JavaScript setting is set correctly.'));
+    $this->assertEqual(280342800, $javascript['settings']['data'][2]['dries'], t('JavaScript setting is set correctly.'));
+    $this->assertEqual('rocks', $javascript['settings']['data'][2]['drupal'], t('The other JavaScript setting is set correctly.'));
   }
 
   /**
@@ -1209,6 +1210,7 @@ class JavaScriptTestCase extends DrupalWebTestCase {
     $javascript = drupal_get_js('header');
     $this->assertTrue(strpos($javascript, 'basePath') > 0, t('Rendered JavaScript header returns basePath setting.'));
     $this->assertTrue(strpos($javascript, 'misc/jquery.js') > 0, t('Rendered JavaScript header includes jQuery.'));
+    $this->assertTrue(strpos($javascript, 'pathPrefix') > 0, t('Rendered JavaScript header returns pathPrefix setting.'));
 
     // Test whether drupal_add_js can be used to override a previous setting.
     $this->assertTrue(strpos($javascript, 'commonTestShouldAppear') > 0, t('Rendered JavaScript header returns custom setting.'));
@@ -1519,6 +1521,56 @@ class DrupalRenderTestCase extends DrupalWebTestCase {
 
     // The elements should appear in output in the same order as the array.
     $this->assertTrue(strpos($output, $second) < strpos($output, $first), t('Elements were not sorted.'));
+  }
+
+  /**
+   * Test #attached functionality in children elements.
+   */
+  function testDrupalRenderChildrenAttached() {
+    // The cache system is turned off for POST requests.
+    $request_method = $_SERVER['REQUEST_METHOD'];
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+
+    // Create an element with a child and subchild.  Each element loads a
+    // different JavaScript file using #attached.
+    $parent_js = drupal_get_path('module', 'user') . '/user.js';
+    $child_js = drupal_get_path('module', 'forum') . '/forum.js';
+    $subchild_js = drupal_get_path('module', 'book') . '/book.js';
+    $element = array(
+      '#type' => 'fieldset',
+      '#cache' => array(
+        'keys' => array('simpletest', 'drupal_render', 'children_attached'),
+      ),
+      '#attached' => array('js' => array($parent_js)),
+      '#title' => 'Parent',
+    );
+    $element['child'] = array(
+      '#type' => 'fieldset',
+      '#attached' => array('js' => array($child_js)),
+      '#title' => 'Child',
+    );
+    $element['child']['subchild'] = array(
+      '#attached' => array('js' => array($subchild_js)),
+      '#markup' => 'Subchild',
+    );
+
+    // Render the element and verify the presence of #attached JavaScript.
+    drupal_render($element);
+    $scripts = drupal_get_js();
+    $this->assertTrue(strpos($scripts, $parent_js), t('The element #attached JavaScript was included.'));
+    $this->assertTrue(strpos($scripts, $child_js), t('The child #attached JavaScript was included.'));
+    $this->assertTrue(strpos($scripts, $subchild_js), t('The subchild #attached JavaScript was included.'));
+
+    // Load the element from cache and verify the presence of the #attached
+    // JavaScript.
+    drupal_static_reset('drupal_add_js');
+    $this->assertTrue(drupal_render_cache_get($element), t('The element was retrieved from cache.'));
+    $scripts = drupal_get_js();
+    $this->assertTrue(strpos($scripts, $parent_js), t('The element #attached JavaScript was included when loading from cache.'));
+    $this->assertTrue(strpos($scripts, $child_js), t('The child #attached JavaScript was included when loading from cache.'));
+    $this->assertTrue(strpos($scripts, $subchild_js), t('The subchild #attached JavaScript was included when loading from cache.'));
+
+    $_SERVER['REQUEST_METHOD'] = $request_method;
   }
 
   /**

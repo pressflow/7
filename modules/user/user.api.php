@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -25,18 +24,17 @@
  * @see profile_user_load()
  */
 function hook_user_load($users) {
-  $result = db_query('SELECT * FROM {my_table} WHERE uid IN (:uids)', array(':uids' => array_keys($users)));
+  $result = db_query('SELECT uid, foo FROM {my_table} WHERE uid IN (:uids)', array(':uids' => array_keys($users)));
   foreach ($result as $record) {
-    $users[$record->uid]->foo = $result->foo;
+    $users[$record->uid]->foo = $record->foo;
   }
 }
 
 /**
  * Respond to user deletion.
  *
- * This hook is invoked from user_delete_multiple() after the account has been
- * removed from the user tables in the database, and before
- * field_attach_delete() is called.
+ * This hook is invoked from user_delete_multiple() before field_attach_delete()
+ * is called and before users are actually removed from the database.
  *
  * Modules should additionally implement hook_user_cancel() to process stored
  * user data for other account cancellation methods.
@@ -128,7 +126,7 @@ function hook_user_cancel($edit, $account, $method) {
  *   a method. If #access is defined, the method cannot be configured as default
  *   method.
  *
- * @param &$methods
+ * @param $methods
  *   An array containing user account cancellation methods, keyed by method id.
  *
  * @see user_cancel_methods()
@@ -215,7 +213,7 @@ function hook_user_categories() {
  * user account object is loaded, modules may add to $edit['data'] in order
  * to have their data serialized on save.
  *
- * @param &$edit
+ * @param $edit
  *   The array of form values submitted by the user.
  * @param $account
  *   The user object on which the operation is performed.
@@ -238,7 +236,7 @@ function hook_user_presave(&$edit, $account, $category) {
  * The module should save its custom additions to the user object into the
  * database.
  *
- * @param &$edit
+ * @param $edit
  *   The array of form values submitted by the user.
  * @param $account
  *   The user object on which the operation is being performed.
@@ -263,7 +261,7 @@ function hook_user_insert(&$edit, $account, $category) {
  * Modules may use this hook to update their user data in a custom storage
  * after a user account has been updated.
  *
- * @param &$edit
+ * @param $edit
  *   The array of form values submitted by the user.
  * @param $account
  *   The user object on which the operation is performed.
@@ -285,7 +283,7 @@ function hook_user_update(&$edit, $account, $category) {
 /**
  * The user just logged in.
  *
- * @param &$edit
+ * @param $edit
  *   The array of form values submitted by the user.
  * @param $account
  *   The user object on which the operation was just performed.
@@ -366,6 +364,25 @@ function hook_user_view_alter(&$build) {
 
   // Add a #post_render callback to act on the rendered HTML of the user.
   $build['#post_render'][] = 'my_module_user_post_render';
+}
+
+/**
+ * Inform other modules that a user role is about to be saved.
+ *
+ * Modules implementing this hook can act on the user role object before
+ * it has been saved to the database.
+ *
+ * @param $role
+ *   A user role object.
+ *
+ * @see hook_user_role_insert()
+ * @see hook_user_role_update()
+ */
+function hook_user_role_presave($role) {
+  // Set a UUID for the user role if it doesn't already exist
+  if (empty($role->uuid)) {
+    $role->uuid = uuid_uuid();
+  }
 }
 
 /**

@@ -1,5 +1,9 @@
 <?php
-// $Id$
+
+/**
+ * @file
+ * Tests for user.module.
+ */
 
 class UserRegistrationTestCase extends DrupalWebTestCase {
   public static function getInfo() {
@@ -102,6 +106,31 @@ class UserRegistrationTestCase extends DrupalWebTestCase {
     // Login after administrator approval.
     $this->drupalPost('user/login', $auth, t('Log in'));
     $this->assertText(t('Member for'), t('User can log in after administrator approval.'));
+  }
+
+  function testRegistrationEmailDuplicates() {
+    // Don't require e-mail verification.
+    variable_set('user_email_verification', FALSE);
+
+    // Allow registration by site visitors without administrator approval.
+    variable_set('user_register', USER_REGISTER_VISITORS);
+
+    // Set up a user to check for duplicates.
+    $duplicate_user = $this->drupalCreateUser();
+
+    $edit = array();
+    $edit['name'] = $this->randomName();
+    $edit['mail'] = $duplicate_user->mail;
+
+    // Attempt to create a new account using an existing e-mail address.
+    $this->drupalPost('user/register', $edit, t('Create new account'));
+    $this->assertText(t('The e-mail address @email is already registered.', array('@email' => $duplicate_user->mail)), t('Supplying an exact duplicate email address displays an error message'));
+
+    // Attempt to bypass duplicate email registration validation by adding spaces.
+    $edit['mail'] = '   ' . $duplicate_user->mail . '   ';
+
+    $this->drupalPost('user/register', $edit, t('Create new account'));
+    $this->assertText(t('The e-mail address @email is already registered.', array('@email' => $duplicate_user->mail)), t('Supplying a duplicate email address with added whitespace displays an error message'));
   }
 
   function testRegistrationDefaultValues() {
@@ -406,6 +435,7 @@ class UserLoginTestCase extends DrupalWebTestCase {
       'pass' => $account->pass_raw,
     );
     $this->drupalPost('user', $edit, t('Log in'));
+    $this->assertNoFieldByXPath("//input[@name='pass' and @value!='']", NULL, t('Password value attribute is blank.'));
     if (isset($flood_trigger)) {
       if ($flood_trigger == 'user') {
         $this->assertRaw(format_plural(variable_get('user_failed_login_user_limit', 5), 'Sorry, there has been more than one failed login attempt for this account. It is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', 'Sorry, there have been more than @count failed login attempts for this account. It is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', array('@url' => url('user/password'))));
@@ -1899,7 +1929,7 @@ class UserTokenReplaceTestCase extends DrupalWebTestCase {
 
     foreach ($tests as $input => $expected) {
       $output = token_replace($input, array('user' => $account), array('language' => $language));
-      $this->assertFalse(strcmp($output, $expected), t('Sanitized user token %token replaced.', array('%token' => $input)));
+      $this->assertEqual($output, $expected, t('Sanitized user token %token replaced.', array('%token' => $input)));
     }
 
     // Generate and test unsanitized tokens.
@@ -1909,7 +1939,7 @@ class UserTokenReplaceTestCase extends DrupalWebTestCase {
 
     foreach ($tests as $input => $expected) {
       $output = token_replace($input, array('user' => $account), array('language' => $language, 'sanitize' => FALSE));
-      $this->assertFalse(strcmp($output, $expected), t('Unsanitized user token %token replaced.', array('%token' => $input)));
+      $this->assertEqual($output, $expected, t('Unsanitized user token %token replaced.', array('%token' => $input)));
     }
   }
 }

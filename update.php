@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Root directory of Drupal installation.
@@ -57,9 +56,10 @@ function update_script_selection_form($form, &$form_state) {
   foreach ($updates as $module => $update) {
     if (!isset($update['start'])) {
       $form['start'][$module] = array(
-        '#title' => $module,
-        '#item'  => $update['warning'],
-        '#prefix' => '<div class="warning">',
+        '#type' => 'item',
+        '#title' => $module . ' module',
+        '#markup'  => $update['warning'],
+        '#prefix' => '<div class="messages warning">',
         '#suffix' => '</div>',
       );
       $incompatible_updates_exist = TRUE;
@@ -349,8 +349,17 @@ require_once DRUPAL_ROOT . '/includes/entity.inc';
 require_once DRUPAL_ROOT . '/includes/unicode.inc';
 update_prepare_d7_bootstrap();
 
+// Temporarily disable configurable timezones so the upgrade process uses the
+// site-wide timezone. This prevents a PHP notice during session initlization
+// and before offsets have been converted in user_update_7002().
+$configurable_timezones = variable_get('configurable_timezones', 1);
+$conf['configurable_timezones'] = 0;
+
 // Determine if the current user has access to run update.php.
 drupal_bootstrap(DRUPAL_BOOTSTRAP_SESSION);
+
+// Reset configurable timezones.
+$conf['configurable_timezones'] = $configurable_timezones;
 
 // Only allow the requirements check to proceed if the current user has access
 // to run updates (since it may expose sensitive information about the site's
@@ -375,6 +384,10 @@ if (empty($op) && update_access_allowed()) {
 
   // Set up theme system for the maintenance page.
   drupal_maintenance_theme();
+
+  // Rebuild the registry to ensure that removed hooks in modules do not result
+  // in undefined function errors and that newly defined hooks are called.
+  registry_rebuild();
 
   // Check the update requirements for Drupal.
   update_check_requirements();

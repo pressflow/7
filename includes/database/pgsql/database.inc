@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -34,6 +33,15 @@ class DatabaseConnection_pgsql extends DatabaseConnection {
     // PostgreSQL in trust mode doesn't require a password to be supplied.
     if (empty($connection_options['password'])) {
       $connection_options['password'] = NULL;
+    }
+    // If the password contains a backslash it is treated as an escape character
+    // http://bugs.php.net/bug.php?id=53217
+    // so backslashes in the password need to be doubled up.
+    // The bug was reported against pdo_pgsql 1.0.2, backslashes in passwords
+    // will break on this doubling up when the bug is fixed, so check the version
+    //elseif (phpversion('pdo_pgsql') < 'version_this_was_fixed_in') {
+    else {
+      $connection_options['password'] = str_replace('\\', '\\\\', $connection_options['password']);
     }
 
     $this->connectionOptions = $connection_options;

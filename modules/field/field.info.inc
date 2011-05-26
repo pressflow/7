@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -287,8 +286,6 @@ function _field_info_prepare_field($field) {
  *   Field instance array.
  */
 function _field_info_prepare_instance($instance, $field) {
-  $field_type = field_info_field_types($field['type']);
-
   // Make sure all expected instance settings are present.
   $instance['settings'] += field_info_instance_settings($field['type']);
 
@@ -735,7 +732,7 @@ function field_info_instance($entity_type, $field_name, $bundle_name) {
  *         'default' => array(
  *           'weight' => The weight of the component in displayed entities in
  *             this view mode,
- *           'visibility' => Whether the component is visible or hidden in
+ *           'visible' => TRUE if the component is visible, FALSE if hidden, in
  *             displayed entities in this view mode,
  *         ),
  *         'teaser' => array(
@@ -793,7 +790,7 @@ function field_info_max_weight($entity_type, $bundle, $context) {
     if ($context == 'form') {
       $weights[] = $instance['widget']['weight'];
     }
-    else {
+    elseif (isset($instance['display'][$context]['weight'])) {
       $weights[] = $instance['display'][$context]['weight'];
     }
   }

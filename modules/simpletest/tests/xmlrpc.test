@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Perform basic XML-RPC tests that do not require addition callbacks.
@@ -40,6 +39,16 @@ class XMLRPCBasicTestCase extends DrupalWebTestCase {
     }
 
     $this->assertEqual($count, count($minimum), 'system.listMethods returned at least the minimum listing');
+  }
+
+  /**
+   * Ensure that system.methodSignature returns an array of signatures.
+   */
+  protected function testMethodSignature() {
+    $url = url(NULL, array('absolute' => TRUE)) . 'xmlrpc.php';
+    $signature = xmlrpc($url, array('system.methodSignature' => array('system.listMethods')));
+    $this->assert(is_array($signature) && !empty($signature) && is_array($signature[0]),
+      t('system.methodSignature returns an array of signature arrays.'));
   }
 
   /**

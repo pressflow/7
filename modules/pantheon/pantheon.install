@@ -1,0 +1,20 @@
+<?php
+// $Id$
+/**
+ * @file pantheon.install
+ * TODO: Enter file description here.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function pantheon_install() {
+
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function pantheon_update($node) {
+
+}

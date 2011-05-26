@@ -1,4 +1,3 @@
-// $Id$
 
 Drupal core is maintained by the community.  To participate, go to
 
@@ -19,7 +18,7 @@ Drupal 7
 Component maintainers
 ---------------------
 
-AJAX system
+Ajax system
 - Alex Bronstein 'effulgentsia' <http://drupal.org/user/78040>
 - Randy Fay 'rfay' <http://drupal.org/user/30906>
 - Earl Miles 'merlinofchaos' <http://drupal.org/user/26979>
@@ -44,7 +43,7 @@ Database system
 
   - MySQL driver
     - Larry Garfield 'Crell' <http://drupal.org/user/26398>
-    - David Strauss 'David Strauss' <hhttp://drupal.org/user/93254>
+    - David Strauss 'David Strauss' <http://drupal.org/user/93254>
 
   - PostgreSQL driver
     - Damien Tournoud 'DamZ' <http://drupal.org/user/22211>
