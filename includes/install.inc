@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Indicates that a module has not been installed yet.
@@ -199,7 +198,7 @@ function drupal_install_profile_distribution_name() {
   // At all other times, we load the profile via standard methods.
   else {
     $profile = drupal_get_profile();
-    $info = install_profile_info($profile);
+    $info = system_get_info('module', $profile);
     return $info['distribution_name'];
   }
 }
@@ -548,7 +547,7 @@ abstract class DatabaseTasks {
    *
    * @param $database
    *   An array of driver specific configuration options.
-   * 
+   *
    * @return
    *   An array of driver configuration errors, keyed by form element name.
    */
@@ -783,44 +782,12 @@ function drupal_uninstall_modules($module_list = array(), $uninstall_dependents 
   }
 
   foreach ($module_list as $module) {
-    // First, retrieve all the module's menu paths from db.
-    drupal_load('module', $module);
-    $paths = module_invoke($module, 'menu');
-
     // Uninstall the module.
     module_load_install($module);
     module_invoke($module, 'uninstall');
     drupal_uninstall_schema($module);
 
     watchdog('system', '%module module uninstalled.', array('%module' => $module), WATCHDOG_INFO);
-
-    // Now remove the menu links for all paths declared by this module.
-    if (!empty($paths)) {
-      $paths = array_keys($paths);
-      // Clean out the names of load functions.
-      foreach ($paths as $index => $path) {
-        $parts = explode('/', $path, MENU_MAX_PARTS);
-        foreach ($parts as $k => $part) {
-          if (preg_match('/^%[a-z_]*$/', $part)) {
-            $parts[$k] = '%';
-          }
-        }
-        $paths[$index] = implode('/', $parts);
-      }
-
-      $result = db_select('menu_links')
-        ->fields('menu_links')
-        ->condition('router_path', $paths, 'IN')
-        ->condition('external', 0)
-        ->orderBy('depth')
-        ->execute();
-      // Remove all such items. Starting from those with the greatest depth will
-      // minimize the amount of re-parenting done by menu_link_delete().
-      foreach ($result as $item) {
-        _menu_delete_item($item, TRUE);
-      }
-    }
-
     drupal_set_installed_schema_version($module, SCHEMA_UNINSTALLED);
   }
 
@@ -1055,7 +1022,12 @@ function install_goto($path) {
  * Used during the install process, when database, theme, and localization
  * system is possibly not yet available.
  *
+ * Use t() if your code will never run during the Drupal installation phase.
+ * Use st() if your code will only run during installation and never any other
+ * time. Use get_t() if your code could run in either circumstance.
+ *
  * @see t()
+ * @see get_t()
  * @ingroup sanitization
  */
 function st($string, array $args = array(), array $options = array()) {
@@ -1198,6 +1170,10 @@ function drupal_check_module($module) {
  * - distribution_name: The name of the Drupal distribution that is being
  *   installed, to be shown throughout the installation process. Defaults to
  *   'Drupal'.
+ *
+ * Note that this function does an expensive file system scan to get info file
+ * information for dependencies. If you only need information from the info
+ * file itself, use system_get_info().
  *
  * Example of .info file:
  * @code

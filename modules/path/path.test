@@ -1,9 +1,8 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Tests for the path module
+ * Tests for path.module.
  */
 
 class PathTestCase extends DrupalWebTestCase {

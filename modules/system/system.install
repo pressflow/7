@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -33,7 +32,7 @@ function system_requirements($phase) {
     // is not running the default install profile.
     $profile = drupal_get_profile();
     if ($profile != 'standard') {
-      $info = install_profile_info($profile);
+      $info = system_get_info('module', $profile);
       $requirements['install_profile'] = array(
         'title' => $t('Install profile'),
         'value' => $t('%profile_name (%profile-%version)', array(
@@ -953,33 +952,6 @@ function system_schema() {
     ),
   );
 
-  $schema['history'] = array(
-    'description' => 'A record of which {users} have read which {node}s.',
-    'fields' => array(
-      'uid' => array(
-        'description' => 'The {users}.uid that read the {node} nid.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'nid' => array(
-        'description' => 'The {node}.nid that was read.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'timestamp' => array(
-        'description' => 'The Unix timestamp at which the read occurred.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-    'primary key' => array('uid', 'nid'),
-    'indexes' => array(
-      'nid' => array('nid'),
-    ),
-  );
   $schema['menu_router'] = array(
     'description' => 'Maps paths to various callbacks (access, page and title)',
     'fields' => array(
@@ -1555,7 +1527,7 @@ function system_schema() {
         'default' => '',
       ),
       'type' => array(
-        'description' => 'The type of the item, either module, theme, theme_engine, or profile.',
+        'description' => 'The type of the item, either module, theme, or theme_engine.',
         'type' => 'varchar',
         'length' => 12,
         'not null' => TRUE,
@@ -2970,6 +2942,27 @@ function system_update_7068() {
  */
 function system_update_7069() {
   variable_del('site_offline');
+}
+
+/**
+ * Remove the obsolete 'drupal_badge_color' and 'drupal_badge_size' variables.
+ */
+function system_update_7070() {
+  variable_del('drupal_badge_color');
+  variable_del('drupal_badge_size');
+}
+
+/**
+ * Add index missed during upgrade, and fix field default.
+ */
+function system_update_7071() {
+  db_drop_index('date_format_type', 'title');
+  db_add_index('date_format_type', 'title', array('title'));
+  db_change_field('registry', 'filename', 'filename', array(
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+  ));
 }
 
 /**

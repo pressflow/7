@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -365,7 +364,7 @@ function node_mark($nid, $timestamp) {
  *   Either a string or object, containing the node type information.
  *
  * @return
- *   Node type of the passed in data.
+ *   Node type of the passed-in data.
  */
 function _node_extract_type($node) {
   return is_object($node) ? $node->type : $node;
@@ -490,7 +489,6 @@ function node_type_load($name) {
  *   Status flag indicating outcome of the operation.
  */
 function node_type_save($info) {
-  $is_existing = FALSE;
   $existing_type = !empty($info->old_type) ? $info->old_type : $info->type;
   $is_existing = (bool) db_query_range('SELECT 1 FROM {node_type} WHERE type = :type', 0, 1, array(':type' => $existing_type))->fetchField();
   $type = node_type_set_defaults($info);
@@ -570,7 +568,7 @@ function node_add_body_field($type, $label = 'Body') {
       'entity_type' => 'node',
       'bundle' => $type->type,
       'label' => $label,
-      'widget_type' => 'text_textarea_with_summary',
+      'widget' => array('type' => 'text_textarea_with_summary'),
       'settings' => array('display_summary' => TRUE),
       'display' => array(
         'default' => array(
@@ -754,17 +752,20 @@ function node_type_cache_reset() {
 }
 
 /**
- * Set the default values for a node type.
+ * Sets the default values for a node type.
  *
- * The defaults are for a type defined through hook_node_info().
- * When populating a custom node type $info should have the 'custom'
- * key set to 1.
+ * The defaults are appropriate for a type defined through hook_node_info(),
+ * since 'custom' is TRUE for types defined in the user interface, and FALSE
+ * for types defined by modules. (The 'custom' flag prevents types from being
+ * deleted through the user interface.) Also, the default for 'locked' is TRUE,
+ * which prevents users from changing the machine name of the type.
  *
  * @param $info
- *   An object or array containing values to override the defaults.
+ *   An object or array containing values to override the defaults. See
+ *   hook_node_info() for details on what the array elements mean.
  *
  * @return
- *   A node type object.
+ *   A node type object, with missing values in $info set to their defaults.
  */
 function node_type_set_defaults($info = array()) {
   $info = (array) $info;
@@ -1349,15 +1350,15 @@ function node_build_content($node, $view_mode = 'full', $langcode = NULL) {
   // The 'view' hook can be implemented to overwrite the default function
   // to display nodes.
   if (node_hook($node, 'view')) {
-    $node = node_invoke($node, 'view', $view_mode);
+    $node = node_invoke($node, 'view', $view_mode, $langcode);
   }
 
   // Build fields content.
   // In case of a multiple view, node_view_multiple() already ran the
   // 'prepare_view' step. An internal flag prevents the operation from running
   // twice.
-  field_attach_prepare_view('node', array($node->nid => $node), $view_mode);
-  entity_prepare_view('node', array($node->nid => $node));
+  field_attach_prepare_view('node', array($node->nid => $node), $view_mode, $langcode);
+  entity_prepare_view('node', array($node->nid => $node), $langcode);
   $node->content += field_attach_view('node', $node, $view_mode, $langcode);
 
   // Always display a read more link on teasers because we have no way
@@ -1411,7 +1412,7 @@ function node_show($node, $message = FALSE) {
 }
 
 /**
- * Returns whether the current page is the full page view of the passed in node.
+ * Returns whether the current page is the full page view of the passed-in node.
  *
  * @param $node
  *   A node object.
@@ -1449,10 +1450,6 @@ function template_preprocess_node(&$variables) {
   $variables['node_url']  = url($uri['path'], $uri['options']);
   $variables['title']     = check_plain($node->title);
   $variables['page']      = $variables['view_mode'] == 'full' && node_is_page($node);
-
-  if (!empty($node->in_preview)) {
-    unset($node->content['links']);
-  }
 
   // Flatten the node object's member fields.
   $variables = array_merge((array) $node, $variables);
@@ -2190,7 +2187,7 @@ function node_get_recent($number = 10) {
   }
   $nids = $query
     ->fields('n', array('nid'))
-    ->orderBy('changed', 'DESC')
+    ->orderBy('n.changed', 'DESC')
     ->range(0, $number)
     ->addTag('node_access')
     ->execute()
@@ -2516,8 +2513,8 @@ function node_feed($nids = FALSE, $channel = array()) {
  *   An array in the format expected by drupal_render().
  */
 function node_view_multiple($nodes, $view_mode = 'teaser', $weight = 0, $langcode = NULL) {
-  field_attach_prepare_view('node', $nodes, $view_mode);
-  entity_prepare_view('node', $nodes);
+  field_attach_prepare_view('node', $nodes, $view_mode, $langcode);
+  entity_prepare_view('node', $nodes, $langcode);
   $build = array();
   foreach ($nodes as $node) {
     $build['nodes'][$node->nid] = node_view($node, $view_mode, $langcode);

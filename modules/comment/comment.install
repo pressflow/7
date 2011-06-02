@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -338,6 +337,33 @@ function comment_update_7006(&$sandbox) {
 }
 
 /**
+ * Add an index to the created column.
+ */
+function comment_update_7007() {
+  db_add_index('comment', 'comment_created', array('created'));
+}
+
+/**
+ * Update database to match Drupal 7 schema.
+ */
+function comment_update_7008() {
+  // Update default status to 1.
+  db_change_field('comment', 'status', 'status', array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 1,
+    'size' => 'tiny',
+  ));
+
+  // Realign indexes.
+  db_drop_index('comment', 'comment_status_pid');
+  db_add_index('comment', 'comment_status_pid', array('pid', 'status'));
+  db_drop_index('comment', 'comment_pid_status');
+  db_drop_index('comment', 'nid');
+}
+
+/**
  * @} End of "addtogroup updates-6.x-to-7.x"
  */
 
@@ -442,6 +468,7 @@ function comment_schema() {
       'comment_num_new' => array('nid', 'status', 'created', 'cid', 'thread'),
       'comment_uid' => array('uid'),
       'comment_nid_language' => array('nid', 'language'),
+      'comment_created' => array('created'),
     ),
     'primary key' => array('cid'),
     'foreign keys' => array(

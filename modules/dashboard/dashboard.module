@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Implements hook_help().
@@ -82,6 +81,9 @@ function dashboard_permission() {
   return array(
     'access dashboard' => array(
       'title' => t('View the administrative dashboard'),
+      // Note: We translate the 'Administer blocks' permission string here with
+      // a separate t() call, to make sure it gets the same translation as when
+      // it's in block_permission().
       'description' => t('Customizing the dashboard requires the !permission-name permission.', array(
         '!permission-name' => l(t('Administer blocks'), 'admin/people/permissions', array('fragment' => 'module-block')),
       )),
@@ -483,7 +485,7 @@ function dashboard_dashboard_regions() {
 }
 
 /**
- * AJAX callback to show disabled blocks in the dashboard customization mode.
+ * Ajax callback to show disabled blocks in the dashboard customization mode.
  */
 function dashboard_show_disabled() {
   global $theme_key;
@@ -504,7 +506,7 @@ function dashboard_show_disabled() {
 }
 
 /**
- * AJAX callback to display the rendered contents of a specific block.
+ * Ajax callback to display the rendered contents of a specific block.
  *
  * @param $module
  *   The block's module name.

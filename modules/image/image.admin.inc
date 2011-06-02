@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -227,7 +226,7 @@ function image_style_form_submit($form, &$form_state) {
 
   image_style_save($style);
   if ($form_state['values']['op'] == t('Update style')) {
-    drupal_set_message('Changes to the style have been saved.');
+    drupal_set_message(t('Changes to the style have been saved.'));
   }
   $form_state['redirect'] = 'admin/config/media/image-styles/edit/' . $style['name'];
 }

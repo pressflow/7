@@ -1,5 +1,9 @@
 <?php
-// $Id$
+
+/**
+ * @file
+ * Tests for node.module.
+ */
 
 /**
  * Test the node_load_multiple() function.
@@ -2126,7 +2130,7 @@ class NodeTokenReplaceTestCase extends DrupalWebTestCase {
 
     foreach ($tests as $input => $expected) {
       $output = token_replace($input, array('node' => $node), array('language' => $language));
-      $this->assertFalse(strcmp($output, $expected), t('Sanitized node token %token replaced.', array('%token' => $input)));
+      $this->assertEqual($output, $expected, t('Sanitized node token %token replaced.', array('%token' => $input)));
     }
 
     // Generate and test unsanitized tokens.
@@ -2138,7 +2142,7 @@ class NodeTokenReplaceTestCase extends DrupalWebTestCase {
 
     foreach ($tests as $input => $expected) {
       $output = token_replace($input, array('node' => $node), array('language' => $language, 'sanitize' => FALSE));
-      $this->assertFalse(strcmp($output, $expected), t('Unsanitized node token %token replaced.', array('%token' => $input)));
+      $this->assertEqual($output, $expected, t('Unsanitized node token %token replaced.', array('%token' => $input)));
     }
   }
 }

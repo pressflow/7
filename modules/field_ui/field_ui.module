@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -24,7 +23,7 @@ function field_ui_help($path, $arg) {
       $output .= '<dt>' . t('What type of data the field will store') . '</dt>';
       $output .= '<dd>' . t('Each field can store one type of data (text, number, file, etc.). When you define a field, you choose a particular <em>field type</em>, which corresponds to the type of data you want to store. The field type cannot be changed after you have created the field.') . '</dd>';
       $output .= '<dt>' . t('How the data will be input and displayed') . '</dt>';
-      $output .= '<dd>' . t('Each field type has one or more available <em>widgets</em> associated with it; each widget provides a mechanism for data input when you are editing (text box, select list, file upload, etc.). Each field type also has one or more display options, which determine how the field is displayed to site visitors. The widget and display display options can be changed after you have created the field.') . '</dd>';
+      $output .= '<dd>' . t('Each field type has one or more available <em>widgets</em> associated with it; each widget provides a mechanism for data input when you are editing (text box, select list, file upload, etc.). Each field type also has one or more display options, which determine how the field is displayed to site visitors. The widget and display options can be changed after you have created the field.') . '</dd>';
       $output .= '<dt>' . t('How many values the field will store') . '</dt>';
       $output .= '<dd>' . t('You can store one value, a specific maximum number of values, or an unlimited number of values in each field. For example, an employee identification number field might store a single number, whereas a phone number field might store multiple phone numbers. This setting can be changed after you have created the field, but if you reduce the maximum number of values, you may lose information.') . '</dd>';
       $output .= '</dl>';
@@ -234,7 +233,7 @@ function field_ui_menu_load($field_name, $entity_type, $bundle_name, $bundle_pos
  * Menu title callback.
  */
 function field_ui_menu_title($instance) {
-  return t($instance['label']);
+  return $instance['label'];
 }
 
 /**
@@ -363,4 +362,3 @@ function field_ui_form_node_type_form_submit($form, &$form_state) {
     $form_state['redirect'] = _field_ui_bundle_admin_path('node', $form_state['values']['type']) .'/fields';
   }
 }
-

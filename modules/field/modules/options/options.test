@@ -1,5 +1,9 @@
 <?php
-// $Id$
+
+/**
+ * @file 
+ * Tests for options.module.
+ */
 
 class OptionsWidgetsTestCase extends FieldTestCase {
   public static function getInfo() {

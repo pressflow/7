@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -321,7 +320,7 @@ abstract class DatabaseConnection extends PDO {
    *   PDO::FETCH_OBJ, PDO::FETCH_NUM, or a string representing the name of a
    *   class. If a string is specified, each record will be fetched into a new
    *   object of that class. The behavior of all other values is defined by PDO.
-   *   See http://www.php.net/PDOStatement-fetch
+   *   See http://php.net/manual/pdostatement.fetch.php
    * - return: Depending on the type of query, different return values may be
    *   meaningful. This directive instructs the system which type of return
    *   value is desired. The system will generally set the correct value
@@ -539,6 +538,63 @@ abstract class DatabaseConnection extends PDO {
    */
   public function makeSequenceName($table, $field) {
     return $this->prefixTables('{' . $table . '}_' . $field . '_seq');
+  }
+
+  /**
+   * Flatten an array of query comments into a single comment string.
+   *
+   * The comment string will be sanitized to avoid SQL injection attacks.
+   *
+   * @param $comments
+   *   An array of query comment strings.
+   *
+   * @return
+   *   A sanitized comment string.
+   */
+  public function makeComment($comments) {
+    if (empty($comments))
+      return '';
+
+    // Flatten the array of comments.
+    $comment = implode('; ', $comments);
+
+    // Sanitize the comment string so as to avoid SQL injection attacks.
+    return '/* ' . $this->filterComment($comment) . ' */ ';
+  }
+
+  /**
+   * Sanitize a query comment string.
+   *
+   * Ensure a query comment does not include strings such as "* /" that might
+   * terminate the comment early. This avoids SQL injection attacks via the
+   * query comment. The comment strings in this example are separated by a
+   * space to avoid PHP parse errors.
+   *
+   * For example, the comment:
+   * @code
+   * db_update('example')
+   *  ->condition('id', $id)
+   *  ->fields(array('field2' => 10))
+   *  ->comment('Exploit * / DROP TABLE node; --')
+   *  ->execute()
+   * @endcode
+   *
+   * Would result in the following SQL statement being generated:
+   * @code
+   * "/ * Exploit * / DROP TABLE node; -- * / UPDATE example SET field2=..."
+   * @endcode
+   *
+   * Unless the comment is sanitised first, the SQL server would drop the
+   * node table and ignore the rest of the SQL statement.
+   *
+   * @param $comment
+   *   A query comment string.
+   *
+   * @return
+   *   A sanitized version of the query comment string.
+   */
+  protected function filterComment($comment = '') {
+    return preg_replace('/(\/\*\s*)|(\s*\*\/)/', '', $comment);
   }
 
   /**

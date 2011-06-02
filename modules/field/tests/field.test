@@ -1,9 +1,8 @@
 <?php
-// $Id$
 
 /**
  * @file
- * Unit test file for fields in core.
+ * Tests for field.module.
  */
 
 /**
@@ -763,6 +762,55 @@ class FieldAttachOtherTestCase extends FieldAttachTestCase {
   }
 
   /**
+   * Tests the 'multiple entity' behavior of field_attach_prepare_view().
+   */
+  function testFieldAttachPrepareViewMultiple() {
+    $entity_type = 'test_entity';
+    $langcode = LANGUAGE_NONE;
+
+    // Set the instance to be hidden.
+    $this->instance['display']['full']['type'] = 'hidden';
+    field_update_instance($this->instance);
+
+    // Set up a second instance on another bundle, with a formatter that uses
+    // hook_field_formatter_prepare_view().
+    field_test_create_bundle('test_bundle_2');
+    $formatter_setting = $this->randomName();
+    $this->instance2 = $this->instance;
+    $this->instance2['bundle'] = 'test_bundle_2';
+    $this->instance2['display']['full'] = array(
+      'type' => 'field_test_with_prepare_view',
+      'settings' => array(
+        'test_formatter_setting_additional' => $formatter_setting,
+      )
+    );
+    field_create_instance($this->instance2);
+
+    // Create one entity in each bundle.
+    $entity1_init = field_test_create_stub_entity(1, 1, 'test_bundle');
+    $values1 = $this->_generateTestFieldValues($this->field['cardinality']);
+    $entity1_init->{$this->field_name}[$langcode] = $values1;
+
+    $entity2_init = field_test_create_stub_entity(2, 2, 'test_bundle_2');
+    $values2 = $this->_generateTestFieldValues($this->field['cardinality']);
+    $entity2_init->{$this->field_name}[$langcode] = $values2;
+
+    // Run prepare_view, and check that the entities come out as expected.
+    $entity1 = clone($entity1_init);
+    $entity2 = clone($entity2_init);
+    field_attach_prepare_view($entity_type, array($entity1->ftid => $entity1, $entity2->ftid => $entity2), 'full');
+    $this->assertFalse(isset($entity1->{$this->field_name}[$langcode][0]['additional_formatter_value']), 'Entity 1 did not run through the prepare_view hook.');
+    $this->assertTrue(isset($entity2->{$this->field_name}[$langcode][0]['additional_formatter_value']), 'Entity 2 ran through the prepare_view hook.');
+
+    // Same thing, reversed order.
+    $entity1 = clone($entity1_init);
+    $entity2 = clone($entity2_init);
+    field_attach_prepare_view($entity_type, array($entity2->ftid => $entity2, $entity1->ftid => $entity1), 'full');
+    $this->assertFalse(isset($entity1->{$this->field_name}[$langcode][0]['additional_formatter_value']), 'Entity 1 did not run through the prepare_view hook.');
+    $this->assertTrue(isset($entity2->{$this->field_name}[$langcode][0]['additional_formatter_value']), 'Entity 2 ran through the prepare_view hook.');
+  }
+
+  /**
    * Test field cache.
    */
   function testFieldAttachCache() {
@@ -1448,7 +1496,7 @@ class FieldFormTestCase extends FieldTestCase {
       $field_values[$weight]['value'] = (string) $value;
       $pattern[$weight] = "<input [^>]*value=\"$value\" [^>]*";
     }
-    // Press 'add more' button through AJAX, and place the expected HTML result
+    // Press 'add more' button through Ajax, and place the expected HTML result
     // as the tested content.
     $commands = $this->drupalPostAJAX(NULL, $edit, $this->field_name . '_add_more');
     $this->content = $commands[1]['data'];
@@ -1568,109 +1616,109 @@ class FieldFormTestCase extends FieldTestCase {
    * Tests Field API form integration within a subform.
    */
   function testNestedFieldForm() {
-     // Add two instances on the 'test_bundle'
-     field_create_field($this->field_single);
-     field_create_field($this->field_unlimited);
-     $this->instance['field_name'] = 'field_single';
-     $this->instance['label'] = 'Single field';
-     field_create_instance($this->instance);
-     $this->instance['field_name'] = 'field_unlimited';
-     $this->instance['label'] = 'Unlimited field';
-     field_create_instance($this->instance);
+    // Add two instances on the 'test_bundle'
+    field_create_field($this->field_single);
+    field_create_field($this->field_unlimited);
+    $this->instance['field_name'] = 'field_single';
+    $this->instance['label'] = 'Single field';
+    field_create_instance($this->instance);
+    $this->instance['field_name'] = 'field_unlimited';
+    $this->instance['label'] = 'Unlimited field';
+    field_create_instance($this->instance);
 
-     // Create two entities.
-     $entity_1 = field_test_create_stub_entity(1, 1);
-     $entity_1->is_new = TRUE;
-     $entity_1->field_single[LANGUAGE_NONE][] = array('value' => 0);
-     $entity_1->field_unlimited[LANGUAGE_NONE][] = array('value' => 1);
-     field_test_entity_save($entity_1);
+    // Create two entities.
+    $entity_1 = field_test_create_stub_entity(1, 1);
+    $entity_1->is_new = TRUE;
+    $entity_1->field_single[LANGUAGE_NONE][] = array('value' => 0);
+    $entity_1->field_unlimited[LANGUAGE_NONE][] = array('value' => 1);
+    field_test_entity_save($entity_1);
 
-     $entity_2 = field_test_create_stub_entity(2, 2);
-     $entity_2->is_new = TRUE;
-     $entity_2->field_single[LANGUAGE_NONE][] = array('value' => 10);
-     $entity_2->field_unlimited[LANGUAGE_NONE][] = array('value' => 11);
-     field_test_entity_save($entity_2);
+    $entity_2 = field_test_create_stub_entity(2, 2);
+    $entity_2->is_new = TRUE;
+    $entity_2->field_single[LANGUAGE_NONE][] = array('value' => 10);
+    $entity_2->field_unlimited[LANGUAGE_NONE][] = array('value' => 11);
+    field_test_entity_save($entity_2);
 
-     // Display the 'combined form'.
-     $this->drupalGet('test-entity/nested/1/2');
-     $this->assertFieldByName('field_single[und][0][value]', 0, t('Entity 1: field_single value appears correctly is the form.'));
-     $this->assertFieldByName('field_unlimited[und][0][value]', 1, t('Entity 1: field_unlimited value 0 appears correctly is the form.'));
-     $this->assertFieldByName('entity_2[field_single][und][0][value]', 10, t('Entity 2: field_single value appears correctly is the form.'));
-     $this->assertFieldByName('entity_2[field_unlimited][und][0][value]', 11, t('Entity 2: field_unlimited value 0 appears correctly is the form.'));
+    // Display the 'combined form'.
+    $this->drupalGet('test-entity/nested/1/2');
+    $this->assertFieldByName('field_single[und][0][value]', 0, t('Entity 1: field_single value appears correctly is the form.'));
+    $this->assertFieldByName('field_unlimited[und][0][value]', 1, t('Entity 1: field_unlimited value 0 appears correctly is the form.'));
+    $this->assertFieldByName('entity_2[field_single][und][0][value]', 10, t('Entity 2: field_single value appears correctly is the form.'));
+    $this->assertFieldByName('entity_2[field_unlimited][und][0][value]', 11, t('Entity 2: field_unlimited value 0 appears correctly is the form.'));
 
-     // Submit the form and check that the entities are updated accordingly.
-     $edit = array(
-       'field_single[und][0][value]' => 1,
-       'field_unlimited[und][0][value]' => 2,
-       'field_unlimited[und][1][value]' => 3,
-       'entity_2[field_single][und][0][value]' => 11,
-       'entity_2[field_unlimited][und][0][value]' => 12,
-       'entity_2[field_unlimited][und][1][value]' => 13,
-     );
-     $this->drupalPost(NULL, $edit, t('Save'));
-     field_cache_clear();
-     $entity_1 = field_test_create_stub_entity(1);
-     $entity_2 = field_test_create_stub_entity(2);
-     $this->assertFieldValues($entity_1, 'field_single', LANGUAGE_NONE, array(1));
-     $this->assertFieldValues($entity_1, 'field_unlimited', LANGUAGE_NONE, array(2, 3));
-     $this->assertFieldValues($entity_2, 'field_single', LANGUAGE_NONE, array(11));
-     $this->assertFieldValues($entity_2, 'field_unlimited', LANGUAGE_NONE, array(12, 13));
+    // Submit the form and check that the entities are updated accordingly.
+    $edit = array(
+      'field_single[und][0][value]' => 1,
+      'field_unlimited[und][0][value]' => 2,
+      'field_unlimited[und][1][value]' => 3,
+      'entity_2[field_single][und][0][value]' => 11,
+      'entity_2[field_unlimited][und][0][value]' => 12,
+      'entity_2[field_unlimited][und][1][value]' => 13,
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+    field_cache_clear();
+    $entity_1 = field_test_create_stub_entity(1);
+    $entity_2 = field_test_create_stub_entity(2);
+    $this->assertFieldValues($entity_1, 'field_single', LANGUAGE_NONE, array(1));
+    $this->assertFieldValues($entity_1, 'field_unlimited', LANGUAGE_NONE, array(2, 3));
+    $this->assertFieldValues($entity_2, 'field_single', LANGUAGE_NONE, array(11));
+    $this->assertFieldValues($entity_2, 'field_unlimited', LANGUAGE_NONE, array(12, 13));
 
-     // Submit invalid values and check that errors are reported on the
-     // correct widgets.
-     $edit = array(
-       'field_unlimited[und][1][value]' => -1,
-     );
-     $this->drupalPost('test-entity/nested/1/2', $edit, t('Save'));
-     $this->assertRaw(t('%label does not accept the value -1', array('%label' => 'Unlimited field')), t('Entity 1: the field validation error was reported.'));
-     $error_field = $this->xpath('//input[@id=:id and contains(@class, "error")]', array(':id' => 'edit-field-unlimited-und-1-value'));
-     $this->assertTrue($error_field, t('Entity 1: the error was flagged on the correct element.'));
-     $edit = array(
-       'entity_2[field_unlimited][und][1][value]' => -1,
-     );
-     $this->drupalPost('test-entity/nested/1/2', $edit, t('Save'));
-     $this->assertRaw(t('%label does not accept the value -1', array('%label' => 'Unlimited field')), t('Entity 2: the field validation error was reported.'));
-     $error_field = $this->xpath('//input[@id=:id and contains(@class, "error")]', array(':id' => 'edit-entity-2-field-unlimited-und-1-value'));
-     $this->assertTrue($error_field, t('Entity 2: the error was flagged on the correct element.'));
+    // Submit invalid values and check that errors are reported on the
+    // correct widgets.
+    $edit = array(
+      'field_unlimited[und][1][value]' => -1,
+    );
+    $this->drupalPost('test-entity/nested/1/2', $edit, t('Save'));
+    $this->assertRaw(t('%label does not accept the value -1', array('%label' => 'Unlimited field')), t('Entity 1: the field validation error was reported.'));
+    $error_field = $this->xpath('//input[@id=:id and contains(@class, "error")]', array(':id' => 'edit-field-unlimited-und-1-value'));
+    $this->assertTrue($error_field, t('Entity 1: the error was flagged on the correct element.'));
+    $edit = array(
+      'entity_2[field_unlimited][und][1][value]' => -1,
+    );
+    $this->drupalPost('test-entity/nested/1/2', $edit, t('Save'));
+    $this->assertRaw(t('%label does not accept the value -1', array('%label' => 'Unlimited field')), t('Entity 2: the field validation error was reported.'));
+    $error_field = $this->xpath('//input[@id=:id and contains(@class, "error")]', array(':id' => 'edit-entity-2-field-unlimited-und-1-value'));
+    $this->assertTrue($error_field, t('Entity 2: the error was flagged on the correct element.'));
 
-     // Test that reordering works on both entities.
-     $edit = array(
-       'field_unlimited[und][0][_weight]' => 0,
-       'field_unlimited[und][1][_weight]' => -1,
-       'entity_2[field_unlimited][und][0][_weight]' => 0,
-       'entity_2[field_unlimited][und][1][_weight]' => -1,
-     );
-     $this->drupalPost('test-entity/nested/1/2', $edit, t('Save'));
-     field_cache_clear();
-     $this->assertFieldValues($entity_1, 'field_unlimited', LANGUAGE_NONE, array(3, 2));
-     $this->assertFieldValues($entity_2, 'field_unlimited', LANGUAGE_NONE, array(13, 12));
+    // Test that reordering works on both entities.
+    $edit = array(
+      'field_unlimited[und][0][_weight]' => 0,
+      'field_unlimited[und][1][_weight]' => -1,
+      'entity_2[field_unlimited][und][0][_weight]' => 0,
+      'entity_2[field_unlimited][und][1][_weight]' => -1,
+    );
+    $this->drupalPost('test-entity/nested/1/2', $edit, t('Save'));
+    field_cache_clear();
+    $this->assertFieldValues($entity_1, 'field_unlimited', LANGUAGE_NONE, array(3, 2));
+    $this->assertFieldValues($entity_2, 'field_unlimited', LANGUAGE_NONE, array(13, 12));
 
-     // Test the 'add more' buttons. Only AJAX submission is tested, because
-     // the two 'add more' buttons present in the form have the same #value,
-     // which confuses drupalPost().
-     // 'Add more' button in the first entity:
-     $this->drupalGet('test-entity/nested/1/2');
-     $this->drupalPostAJAX(NULL, array(), 'field_unlimited_add_more');
-     $this->assertFieldByName('field_unlimited[und][0][value]', 3, t('Entity 1: field_unlimited value 0 appears correctly is the form.'));
-     $this->assertFieldByName('field_unlimited[und][1][value]', 2, t('Entity 1: field_unlimited value 1 appears correctly is the form.'));
-     $this->assertFieldByName('field_unlimited[und][2][value]', '', t('Entity 1: field_unlimited value 2 appears correctly is the form.'));
-     $this->assertFieldByName('field_unlimited[und][3][value]', '', t('Entity 1: an empty widget was added for field_unlimited value 3.'));
-     // 'Add more' button in the first entity (changing field values):
-     $edit = array(
-       'entity_2[field_unlimited][und][0][value]' => 13,
-       'entity_2[field_unlimited][und][1][value]' => 14,
-       'entity_2[field_unlimited][und][2][value]' => 15,
-     );
-     $this->drupalPostAJAX(NULL, $edit, 'entity_2_field_unlimited_add_more');
-     $this->assertFieldByName('entity_2[field_unlimited][und][0][value]', 13, t('Entity 2: field_unlimited value 0 appears correctly is the form.'));
-     $this->assertFieldByName('entity_2[field_unlimited][und][1][value]', 14, t('Entity 2: field_unlimited value 1 appears correctly is the form.'));
-     $this->assertFieldByName('entity_2[field_unlimited][und][2][value]', 15, t('Entity 2: field_unlimited value 2 appears correctly is the form.'));
-     $this->assertFieldByName('entity_2[field_unlimited][und][3][value]', '', t('Entity 2: an empty widget was added for field_unlimited value 3.'));
-     // Save the form and check values are saved correclty.
-     $this->drupalPost(NULL, array(), t('Save'));
-     field_cache_clear();
-     $this->assertFieldValues($entity_1, 'field_unlimited', LANGUAGE_NONE, array(3, 2));
-     $this->assertFieldValues($entity_2, 'field_unlimited', LANGUAGE_NONE, array(13, 14, 15));
+    // Test the 'add more' buttons. Only Ajax submission is tested, because
+    // the two 'add more' buttons present in the form have the same #value,
+    // which confuses drupalPost().
+    // 'Add more' button in the first entity:
+    $this->drupalGet('test-entity/nested/1/2');
+    $this->drupalPostAJAX(NULL, array(), 'field_unlimited_add_more');
+    $this->assertFieldByName('field_unlimited[und][0][value]', 3, t('Entity 1: field_unlimited value 0 appears correctly is the form.'));
+    $this->assertFieldByName('field_unlimited[und][1][value]', 2, t('Entity 1: field_unlimited value 1 appears correctly is the form.'));
+    $this->assertFieldByName('field_unlimited[und][2][value]', '', t('Entity 1: field_unlimited value 2 appears correctly is the form.'));
+    $this->assertFieldByName('field_unlimited[und][3][value]', '', t('Entity 1: an empty widget was added for field_unlimited value 3.'));
+    // 'Add more' button in the first entity (changing field values):
+    $edit = array(
+      'entity_2[field_unlimited][und][0][value]' => 13,
+      'entity_2[field_unlimited][und][1][value]' => 14,
+      'entity_2[field_unlimited][und][2][value]' => 15,
+    );
+    $this->drupalPostAJAX(NULL, $edit, 'entity_2_field_unlimited_add_more');
+    $this->assertFieldByName('entity_2[field_unlimited][und][0][value]', 13, t('Entity 2: field_unlimited value 0 appears correctly is the form.'));
+    $this->assertFieldByName('entity_2[field_unlimited][und][1][value]', 14, t('Entity 2: field_unlimited value 1 appears correctly is the form.'));
+    $this->assertFieldByName('entity_2[field_unlimited][und][2][value]', 15, t('Entity 2: field_unlimited value 2 appears correctly is the form.'));
+    $this->assertFieldByName('entity_2[field_unlimited][und][3][value]', '', t('Entity 2: an empty widget was added for field_unlimited value 3.'));
+    // Save the form and check values are saved correclty.
+    $this->drupalPost(NULL, array(), t('Save'));
+    field_cache_clear();
+    $this->assertFieldValues($entity_1, 'field_unlimited', LANGUAGE_NONE, array(3, 2));
+    $this->assertFieldValues($entity_2, 'field_unlimited', LANGUAGE_NONE, array(13, 14, 15));
   }
 }
 
@@ -1827,7 +1875,7 @@ class FieldDisplayAPITestCase extends FieldTestCase {
       $item = $this->entity->{$this->field_name}[LANGUAGE_NONE][$delta];
       $output = field_view_value('test_entity', $this->entity, $this->field_name, $item, $display);
       $this->drupalSetContent(drupal_render($output));
-      $this->assertText($setting . '|0:' .  $value['value'], t('Value @delta was displayed with expected setting.', array('@delta' => $delta)));
+      $this->assertText($setting . '|0:' . $value['value'], t('Value @delta was displayed with expected setting.', array('@delta' => $delta)));
     }
 
     // Check that prepare_view steps are invoked.
@@ -1843,7 +1891,7 @@ class FieldDisplayAPITestCase extends FieldTestCase {
       $item = $this->entity->{$this->field_name}[LANGUAGE_NONE][$delta];
       $output = field_view_value('test_entity', $this->entity, $this->field_name, $item, $display);
       $this->drupalSetContent(drupal_render($output));
-      $this->assertText($setting . '|' .  $value['value'] . '|' . ($value['value'] + 1), t('Value @delta was displayed with expected setting.', array('@delta' => $delta)));
+      $this->assertText($setting . '|' . $value['value'] . '|' . ($value['value'] + 1), t('Value @delta was displayed with expected setting.', array('@delta' => $delta)));
     }
 
     // View mode: check that display settings specified in the instance are
@@ -2642,7 +2690,7 @@ class FieldTranslationsTestCase extends FieldTestCase {
     $extra_languages = mt_rand(1, 4);
     $languages = $available_languages = field_available_languages($this->entity_type, $this->field);
     for ($i = 0; $i < $extra_languages; ++$i) {
-      $languages[] = $this->randomString(2);
+      $languages[] = $this->randomName(2);
     }
 
     // For each given language provide some random values.
@@ -2667,10 +2715,14 @@ class FieldTranslationsTestCase extends FieldTestCase {
    * Test the multilanguage logic of _field_invoke_multiple().
    */
   function testFieldInvokeMultiple() {
+    // Enable field translations for the entity.
+    field_test_entity_info_translatable('test_entity', TRUE);
+
     $values = array();
+    $options = array();
     $entities = array();
     $entity_type = 'test_entity';
-    $entity_count = mt_rand(1, 5);
+    $entity_count = mt_rand(2, 5);
     $available_languages = field_available_languages($this->entity_type, $this->field);
 
     for ($id = 1; $id <= $entity_count; ++$id) {
@@ -2681,28 +2733,54 @@ class FieldTranslationsTestCase extends FieldTestCase {
       // correctly uses the result of field_available_languages().
       $extra_languages = mt_rand(1, 4);
       for ($i = 0; $i < $extra_languages; ++$i) {
-        $languages[] = $this->randomString(2);
+        $languages[] = $this->randomName(2);
       }
 
       // For each given language provide some random values.
-      foreach ($languages as $langcode) {
-        for ($delta = 0; $delta < $this->field['cardinality']; $delta++) {
-          $values[$id][$langcode][$delta]['value'] = mt_rand(1, 127);
+      $language_count = count($languages);
+      for ($i = 0; $i < $language_count; ++$i) {
+        $langcode = $languages[$i];
+        // Avoid to populate at least one field translation to check that
+        // per-entity language suggestions work even when available field values
+        // are different for each language.
+        if ($i !== $id) {
+          for ($delta = 0; $delta < $this->field['cardinality']; $delta++) {
+            $values[$id][$langcode][$delta]['value'] = mt_rand(1, 127);
+          }
+        }
+        // Ensure that a language for which there is no field translation is
+        // used as display language to prepare per-entity language suggestions.
+        elseif (!isset($display_language)) {
+          $display_language = $langcode;
         }
       }
+
       $entity->{$this->field_name} = $values[$id];
       $entities[$id] = $entity;
+
+      // Store per-entity language suggestions.
+      $options['language'][$id] = field_language($entity_type, $entity, NULL, $display_language);
     }
 
     $grouped_results = _field_invoke_multiple('test_op_multiple', $entity_type, $entities);
     foreach ($grouped_results as $id => $results) {
       foreach ($results as $langcode => $result) {
-        $hash = hash('sha256', serialize(array($entity_type, $entities[$id], $this->field_name, $langcode, $values[$id][$langcode])));
-        // Check whether the parameters passed to _field_invoke() were correctly
-        // forwarded to the callback function.
-        $this->assertEqual($hash, $result, t('The result for entity %id/%language is correctly stored.', array('%id' => $id, '%language' => $langcode)));
+        if (isset($values[$id][$langcode])) {
+          $hash = hash('sha256', serialize(array($entity_type, $entities[$id], $this->field_name, $langcode, $values[$id][$langcode])));
+          // Check whether the parameters passed to _field_invoke() were correctly
+          // forwarded to the callback function.
+          $this->assertEqual($hash, $result, t('The result for entity %id/%language is correctly stored.', array('%id' => $id, '%language' => $langcode)));
+        }
       }
       $this->assertEqual(count($results), count($available_languages), t('No unavailable language has been processed for entity %id.', array('%id' => $id)));
+    }
+
+    $null = NULL;
+    $grouped_results = _field_invoke_multiple('test_op_multiple', $entity_type, $entities, $null, $null, $options);
+    foreach ($grouped_results as $id => $results) {
+      foreach ($results as $langcode => $result) {
+        $this->assertTrue(isset($options['language'][$id]), t('The result language %language for entity %id was correctly suggested (display language: %display_language).', array('%id' => $id, '%language' => $langcode, '%display_language' => $display_language)));
+      }
     }
   }
 
@@ -2880,7 +2958,7 @@ class FieldBulkDeleteTestCase extends FieldTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Field bulk delete tests',
-      'description'=> 'Bulk delete fields and instances, and clean up afterwards.',
+      'description' => 'Bulk delete fields and instances, and clean up afterwards.',
       'group' => 'Field API',
     );
   }
@@ -3127,7 +3205,7 @@ class EntityPropertiesTestCase extends FieldTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Entity properties',
-      'description'=> 'Tests entity properties.',
+      'description' => 'Tests entity properties.',
       'group' => 'Entity API',
     );
   }

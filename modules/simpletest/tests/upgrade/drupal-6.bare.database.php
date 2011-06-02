@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -7902,7 +7901,7 @@ db_insert('users')->fields(array(
   'access' => '0',
   'login' => '0',
   'status' => '0',
-  'timezone' => NULL,
+  'timezone' => '-21600',
   'language' => '',
   'picture' => '',
   'init' => '',
@@ -7923,7 +7922,7 @@ db_insert('users')->fields(array(
   'access' => '1277671612',
   'login' => '1277671612',
   'status' => '1',
-  'timezone' => NULL,
+  'timezone' => '-21600',
   'language' => '',
   'picture' => '',
   'init' => 'admin@example.com',

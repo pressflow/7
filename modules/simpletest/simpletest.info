@@ -1,4 +1,3 @@
-; $Id$
 name = Testing
 description = Provides a framework for unit and functional testing.
 package = Core
@@ -33,6 +32,7 @@ files[] = tests/path.test
 files[] = tests/registry.test
 files[] = tests/schema.test
 files[] = tests/session.test
+files[] = tests/tablesort.test
 files[] = tests/theme.test
 files[] = tests/unicode.test
 files[] = tests/update.test
@@ -40,6 +40,7 @@ files[] = tests/xmlrpc.test
 files[] = tests/upgrade/upgrade.test
 files[] = tests/upgrade/upgrade.comment.test
 files[] = tests/upgrade/upgrade.filter.test
+files[] = tests/upgrade/upgrade.forum.test
 files[] = tests/upgrade/upgrade.node.test
 files[] = tests/upgrade/upgrade.taxonomy.test
 files[] = tests/upgrade/upgrade.upload.test
