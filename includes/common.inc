@@ -752,7 +752,8 @@ function drupal_access_denied() {
  *     received.
  *   - redirect_code: If redirected, an integer containing the initial response
  *     status code.
- *   - redirect_url: If redirected, a string containing the redirection location.
+ *   - redirect_url: If redirected, a string containing the URL of the redirect
+ *     target.
  *   - error: If an error occurred, the error message. Otherwise not set.
  *   - headers: An array containing the response headers as name/value pairs.
  *     HTTP header names are case-insensitive (RFC 2616, section 4.2), so for
@@ -1008,7 +1009,9 @@ function drupal_http_request($url, array $options = array()) {
         $result = drupal_http_request($location, $options);
         $result->redirect_code = $code;
       }
-      $result->redirect_url = $location;
+      if (!isset($result->redirect_url)) {
+        $result->redirect_url = $location;
+      }
       break;
     default:
       $result->error = $status_message;
@@ -2822,6 +2825,8 @@ function drupal_add_html_head_link($attributes, $header = FALSE) {
  *
  * @return
  *   An array of queued cascading stylesheets.
+ *
+ * @see drupal_get_css()
  */
 function drupal_add_css($data = NULL, $options = NULL) {
   $css = &drupal_static(__FUNCTION__, array());
@@ -2902,8 +2907,11 @@ function drupal_add_css($data = NULL, $options = NULL) {
  *   (optional) If set to TRUE, this function skips calling drupal_alter() on
  *   $css, useful when the calling function passes a $css array that has already
  *   been altered.
+ *
  * @return
  *   A string of XHTML CSS tags.
+ *
+ * @see drupal_add_css()
  */
 function drupal_get_css($css = NULL, $skip_alter = FALSE) {
   if (!isset($css)) {
@@ -7431,7 +7439,8 @@ function entity_create_stub_entity($entity_type, $ids) {
  *   Whether to reset the internal cache for the requested entity type.
  *
  * @return
- *   An array of entity objects indexed by their ids.
+ *   An array of entity objects indexed by their ids. When no results are
+ *   found, an empty array is returned.
  *
  * @todo Remove $conditions in Drupal 8.
  */
