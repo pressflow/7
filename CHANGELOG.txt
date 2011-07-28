@@ -1,4 +1,8 @@
 
+Drupal 7.5, 2011-07-27
+----------------------
+- Fixed security issue (Access bypass), see SA-CORE-2011-003.
+
 Drupal 7.4, 2011-06-29
 ----------------------
 - Rolled back patch that caused fatal errors in CTools, Feeds, and other modules using the class registry.
