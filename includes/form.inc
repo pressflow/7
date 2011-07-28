@@ -272,7 +272,8 @@ function drupal_get_form($form_id) {
  *   form submission may be found in drupal_redirect_form().
  *
  * @return
- *   The rendered form or NULL, depending upon the $form_state flags that were set.
+ *   The rendered form. This function may also perform a redirect and hence may
+ *   not return at all, depending upon the $form_state flags that were set.
  *
  * @see drupal_redirect_form()
  */
@@ -995,6 +996,8 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
   $form += array('#tree' => FALSE, '#parents' => array());
 
   if (!isset($form['#validate'])) {
+    // Ensure that modules can rely on #validate being set.
+    $form['#validate'] = array();
     // Check for a handler specific to $form_id.
     if (function_exists($form_id . '_validate')) {
       $form['#validate'][] = $form_id . '_validate';
@@ -1007,6 +1010,8 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
   }
 
   if (!isset($form['#submit'])) {
+    // Ensure that modules can rely on #submit being set.
+    $form['#submit'] = array();
     // Check for a handler specific to $form_id.
     if (function_exists($form_id . '_submit')) {
       $form['#submit'][] = $form_id . '_submit';
@@ -2853,9 +2858,9 @@ function form_process_date($element) {
 /**
  * Validates the date type to stop dates like February 30, 2006.
  */
-function date_validate($form) {
-  if (!checkdate($form['#value']['month'], $form['#value']['day'], $form['#value']['year'])) {
-    form_error($form, t('The specified date is invalid.'));
+function date_validate($element) {
+  if (!checkdate($element['#value']['month'], $element['#value']['day'], $element['#value']['year'])) {
+    form_error($element, t('The specified date is invalid.'));
   }
 }
 

@@ -2255,7 +2255,7 @@ function drupal_http_header_attributes(array $attributes = array()) {
  *   An associative array of key-value pairs to be converted to attributes.
  *
  * @return
- *   A string ready for insertion in a tag.
+ *   A string ready for insertion in a tag (starts with a space).
  *
  * @ingroup sanitization
  */
@@ -2291,7 +2291,9 @@ function drupal_attributes(array $attributes = array()) {
  *     to work in a call to drupal_attributes($options['attributes']).
  *   - 'html' (default FALSE): Whether $text is HTML or just plain-text. For
  *     example, to make an image tag into a link, this must be set to TRUE, or
- *     you will see the escaped HTML image tag.
+ *     you will see the escaped HTML image tag. $text is not sanitized if
+ *     'html' is TRUE. The calling function must ensure that $text is already
+ *     safe.
  *   - 'language': An optional language object. If the path being linked to is
  *     internal to the site, $options['language'] is used to determine whether
  *     the link is "active", or pointing to the current page (the language as
@@ -7047,6 +7049,7 @@ function drupal_parse_info_format($data) {
  *   Array of the possible severity levels for log messages.
  *
  * @see watchdog()
+ * @ingroup logging_severity_levels
  */
 function watchdog_severity_levels() {
   return array(

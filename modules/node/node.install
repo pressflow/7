@@ -476,7 +476,7 @@ function _update_7000_node_get_types() {
   $extra_types = array_diff($all_types, array_keys($node_types));
 
   foreach ($extra_types as $type) {
-    $type_object = new stdClass;
+    $type_object = new stdClass();
     $type_object->type = $type;
 
     // In Drupal 6, whether you have a body field or not is a flag in the node
@@ -610,7 +610,6 @@ function node_update_7006(&$sandbox) {
       'module' => 'text',
       'cardinality' => 1,
       'entity_types' => array('node'),
-      'translatable' => TRUE,
     );
     _update_7000_field_create_field($body_field);
 
@@ -628,6 +627,8 @@ function node_update_7006(&$sandbox) {
           'entity_type' => 'node',
           'bundle' => $node_type->type,
           'label' => $node_type->body_label,
+          'description' => isset($node_type->description) ? $node_type->description : '',
+          'required' => (isset($node_type->min_word_count) && $node_type->min_word_count > 0) ? 1 : 0,
           'widget' => array(
             'type' => 'text_textarea_with_summary',
             'settings' => array(

@@ -38,92 +38,68 @@ define('CACHE_PERMANENT', 0);
 define('CACHE_TEMPORARY', -1);
 
 /**
- * Log message severity -- Emergency: system is unusable.
+ * @defgroup logging_severity_levels Logging severity levels
+ * @{
+ * Logging severity levels as defined in RFC 3164.
  *
  * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
+ * defined in RFC 3164, section 4.1.1.  PHP supplies predefined LOG_* constants
+ * for use in the syslog() function, but their values on Windows builds do not
+ * correspond to RFC 3164.  The associated PHP bug report was closed with the
+ * comment, "And it's also not a bug, as Windows just have less log levels,"
+ * and "So the behavior you're seeing is perfectly normal."
  *
+ * @see http://www.faqs.org/rfcs/rfc3164.html
+ * @see http://bugs.php.net/bug.php?id=18090
+ * @see http://php.net/manual/function.syslog.php
+ * @see http://php.net/manual/network.constants.php
  * @see watchdog()
  * @see watchdog_severity_levels()
+ */
+
+/**
+ * Log message severity -- Emergency: system is unusable.
  */
 define('WATCHDOG_EMERGENCY', 0);
 
 /**
  * Log message severity -- Alert: action must be taken immediately.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
- *
- * @see watchdog()
- * @see watchdog_severity_levels()
  */
 define('WATCHDOG_ALERT', 1);
 
 /**
  * Log message severity -- Critical: critical conditions.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
- *
- * @see watchdog()
- * @see watchdog_severity_levels()
  */
 define('WATCHDOG_CRITICAL', 2);
 
 /**
  * Log message severity -- Error: error conditions.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
- *
- * @see watchdog()
- * @see watchdog_severity_levels()
  */
 define('WATCHDOG_ERROR', 3);
 
 /**
  * Log message severity -- Warning: warning conditions.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
- *
- * @see watchdog()
- * @see watchdog_severity_levels()
  */
 define('WATCHDOG_WARNING', 4);
 
 /**
  * Log message severity -- Notice: normal but significant condition.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
- *
- * @see watchdog()
- * @see watchdog_severity_levels()
  */
 define('WATCHDOG_NOTICE', 5);
 
 /**
  * Log message severity -- Informational: informational messages.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
- *
- * @see watchdog()
- * @see watchdog_severity_levels()
  */
 define('WATCHDOG_INFO', 6);
 
 /**
  * Log message severity -- Debug: debug-level messages.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1: http://www.faqs.org/rfcs/rfc3164.html
- *
- * @see watchdog()
- * @see watchdog_severity_levels()
  */
 define('WATCHDOG_DEBUG', 7);
+
+/**
+ * @} End of "defgroup logging_severity_levels".
+ */
 
 /**
  * First bootstrap phase: initialize configuration.
@@ -216,8 +192,11 @@ define('LANGUAGE_RTL', 1);
 
 /**
  * For convenience, define a short form of the request time global.
+ *
+ * REQUEST_TIME is a float with microseconds since PHP 5.4.0, but float
+ * timestamps confuses most of the PHP functions (including date_create()).
  */
-define('REQUEST_TIME', $_SERVER['REQUEST_TIME']);
+define('REQUEST_TIME', (int) $_SERVER['REQUEST_TIME']);
 
 /**
  * Flag for drupal_set_title(); text is not sanitized, so run check_plain().
@@ -311,31 +290,30 @@ function timer_stop($name) {
 }
 
 /**
- * Find the appropriate configuration directory.
+ * Finds the appropriate configuration directory.
  *
- * Try finding a matching configuration directory by stripping the website's
+ * Finds a matching configuration directory by stripping the website's
  * hostname from left to right and pathname from right to left. The first
- * configuration file found will be used; the remaining will ignored. If no
- * configuration file is found, return a default value '$confdir/default'.
+ * configuration file found will be used and the remaining ones will be ignored.
+ * If no configuration file is found, return a default value '$confdir/default'.
  *
- * Example for a fictitious site installed at
- * http://www.drupal.org:8080/mysite/test/ the 'settings.php' is searched in
- * the following directories:
+ * With a site located at http://www.example.com:8080/mysite/test/, the file,
+ * settings.php, is searched for in the following directories:
  *
- *  1. $confdir/8080.www.drupal.org.mysite.test
- *  2. $confdir/www.drupal.org.mysite.test
- *  3. $confdir/drupal.org.mysite.test
- *  4. $confdir/org.mysite.test
+ *  1. $confdir/8080.www.example.com.mysite.test
+ *  2. $confdir/www.example.com.mysite.test
+ *  3. $confdir/example.com.mysite.test
+ *  4. $confdir/com.mysite.test
  *
- *  5. $confdir/8080.www.drupal.org.mysite
- *  6. $confdir/www.drupal.org.mysite
- *  7. $confdir/drupal.org.mysite
- *  8. $confdir/org.mysite
+ *  5. $confdir/8080.www.example.com.mysite
+ *  6. $confdir/www.example.com.mysite
+ *  7. $confdir/example.com.mysite
+ *  8. $confdir/com.mysite
  *
- *  9. $confdir/8080.www.drupal.org
- * 10. $confdir/www.drupal.org
- * 11. $confdir/drupal.org
- * 12. $confdir/org
+ *  9. $confdir/8080.www.example.com
+ * 10. $confdir/www.example.com
+ * 11. $confdir/example.com
+ * 12. $confdir/com
  *
  * 13. $confdir/default
  *
@@ -343,18 +321,18 @@ function timer_stop($name) {
  * prior to scanning for directories. It should define an associative array
  * named $sites, which maps domains to directories. It should be in the form
  * of:
- *
+ * @code
  * $sites = array(
  *   'The url to alias' => 'A directory within the sites directory'
  * );
- *
+ * @endcode
  * For example:
- *
+ * @code
  * $sites = array(
  *   'devexample.com' => 'example.com',
  *   'localhost.example' => 'example.com',
  * );
- *
+ * @endcode
  * The above array will cause Drupal to look for a directory named
  * "example.com" in the sites directory whenever a request comes from
  * "example.com", "devexample.com", or "localhost/example". That is useful
@@ -363,14 +341,15 @@ function timer_stop($name) {
  * (files, system table, etc.) this will ensure the paths are correct while
  * accessed on development servers.
  *
- * @param $require_settings
+ * @param bool $require_settings
  *   Only configuration directories with an existing settings.php file
  *   will be recognized. Defaults to TRUE. During initial installation,
  *   this is set to FALSE so that Drupal can detect a matching directory,
  *   then create a new settings.php file in it.
- * @param reset
+ * @param bool $reset
  *   Force a full search for matching directories even if one had been
- *   found previously.
+ *   found previously. Defaults to FALSE.
+ *
  * @return
  *   The path of the matching directory.
  */

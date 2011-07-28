@@ -558,7 +558,6 @@ function node_add_body_field($type, $label = 'Body') {
       'field_name' => 'body',
       'type' => 'text_with_summary',
       'entity_types' => array('node'),
-      'translatable' => TRUE,
     );
     $field = field_create_field($field);
   }
@@ -1404,11 +1403,13 @@ function node_show($node, $message = FALSE) {
     drupal_set_title(t('Revision of %title from %date', array('%title' => $node->title, '%date' => format_date($node->revision_timestamp))), PASS_THROUGH);
   }
 
+  // For markup consistency with other pages, use node_view_multiple() rather than node_view().
+  $nodes = node_view_multiple(array($node->nid => $node), 'full');
+
   // Update the history table, stating that this user viewed this node.
   node_tag_new($node);
 
-  // For markup consistency with other pages, use node_view_multiple() rather than node_view().
-  return node_view_multiple(array($node->nid => $node), 'full');
+  return $nodes;
 }
 
 /**
@@ -2159,7 +2160,7 @@ function node_block_save($delta = '', $edit = array()) {
 }
 
 /**
- * Find the most recent nodes that are available to the current user.
+ * Finds the most recently changed nodes that are available to the current user.
  *
  * @param $number
  *   (optional) The maximum number of nodes to find. Defaults to 10.
@@ -2415,7 +2416,10 @@ function node_block_list_alter(&$blocks) {
 }
 
 /**
- * A generic function for generating RSS feeds from a set of nodes.
+ * Generates and prints an RSS feed.
+ *
+ * Generates an RSS feed from an array of node IDs, and prints it with an HTTP
+ * header, with Content Type set to RSS/XML.
  *
  * @param $nids
  *   An array of node IDs (nid). Defaults to FALSE so empty feeds can be
@@ -3336,6 +3340,9 @@ function node_access_acquire_grants($node, $delete = TRUE) {
  * will always delete a grant from the 'all' realm. Modules that utilize
  * node_access can use this function when doing mass updates due to widespread
  * permission changes.
+ *
+ * Note: Don't call this function directly from a contributed module. Call
+ * node_access_acquire_grants() instead.
  *
  * @param $node
  *   The $node being written to. All that is necessary is that it contains a
