@@ -554,6 +554,22 @@ function drupal_settings_initialize() {
   }
   $is_https = isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on';
 
+  // Load environmental config, if present.
+  if (isset($_SERVER['PRESSFLOW_SETTINGS'])) {
+    $pressflow_settings = json_decode($_SERVER['PRESSFLOW_SETTINGS']);
+    foreach ($pressflow_settings as $key => $value) {
+      // One level of depth should be enough for $conf and $database.
+      if ($key == 'conf') {
+        foreach($value as $conf_key => $conf_value) {
+          $conf[$conf_key] = $value;
+        }
+      }
+      else {
+        $$key = $value;
+      }
+    }
+  }
+
   if (isset($base_url)) {
     // Parse fixed base URL from settings.php.
     $parts = parse_url($base_url);
