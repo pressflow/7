@@ -178,6 +178,14 @@ function update_prepare_d7_bootstrap() {
       $_COOKIE[session_name()] = $sid;
       session_id($sid);
     }
+
+    // Upgrading from D6 to D7.{0,1,2,3,4,8,...} is different than upgrading
+    // from D6 to D7.{5,6,7} which should be considered broken. To be able to
+    // properly handle this difference in node_update_7012 we need to keep track
+    // of whether a D6 > D7 upgrade or a D7 > D7 update is running.
+    // Since variable_set() is not available here, the D6 status is being saved
+    // in a local variable to be able to store it later.
+    $update_d6 = TRUE;
   }
 
   // Create the registry tables.
@@ -302,6 +310,11 @@ function update_prepare_d7_bootstrap() {
     // Set the timezone for this request only.
     $GLOBALS['conf']['date_default_timezone'] = 'UTC';
   }
+
+  // This allows update functions to tell if an upgrade from D6 is running.
+  if (!empty($update_d6)) {
+    variable_set('update_d6', TRUE);
+  }
 }
 
 /**
@@ -355,6 +368,12 @@ function update_fix_d7_block_deltas(&$sandbox, $renamed_deltas, $moved_deltas) {
             ))
             ->fetchField();
           if ($block_exists) {
+            // Delete any existing blocks with the new module+delta.
+            db_delete($table)
+              ->condition('module', $module)
+              ->condition('delta', $new_delta)
+              ->execute();
+            // Rename the old block to the new module+delta.
             db_update($table)
               ->fields(array('delta' => $new_delta))
               ->condition('module', $module)
@@ -372,6 +391,12 @@ function update_fix_d7_block_deltas(&$sandbox, $renamed_deltas, $moved_deltas) {
             ))
             ->fetchField();
           if ($block_exists) {
+            // Delete any existing blocks with the new module+delta.
+            db_delete($table)
+              ->condition('module', $new_module)
+              ->condition('delta', $delta)
+              ->execute();
+            // Rename the old block to the new module+delta.
             db_update($table)
               ->fields(array('module' => $new_module))
               ->condition('module', $old_module)
@@ -1069,6 +1094,10 @@ function update_batch($start, $redirect = NULL, $url = NULL, $batch = array(), $
  * @see update_batch()
  */
 function update_finished($success, $results, $operations) {
+  // Remove the D6 upgrade flag variable so that subsequent update runs do not
+  // get the wrong context.
+  variable_del('update_d6');
+
   // Clear the caches in case the data has been updated.
   drupal_flush_all_caches();
 

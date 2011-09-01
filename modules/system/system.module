@@ -649,7 +649,7 @@ function system_menu() {
   // Modules.
   $items['admin/modules'] = array(
     'title' => 'Modules',
-    'description' => 'Enable or disable modules.',
+    'description' => 'Extend site functionality.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('system_modules'),
     'access arguments' => array('administer modules'),
@@ -1790,6 +1790,13 @@ function system_authorized_get_url(array $options = array()) {
 }
 
 /**
+ * Returns the URL for the authorize.php script when it is processing a batch.
+ */
+function system_authorized_batch_processing_url() {
+  return system_authorized_get_url(array('query' => array('batch' => '1')));
+}
+
+/**
  * Setup and invoke an operation using authorize.php.
  *
  * @see system_authorized_init()
@@ -1806,7 +1813,7 @@ function system_authorized_run($callback, $file, $arguments = array(), $page_tit
  */
 function system_authorized_batch_process() {
   $finish_url = system_authorized_get_url();
-  $process_url = system_authorized_get_url(array('query' => array('batch' => '1')));
+  $process_url = system_authorized_batch_processing_url();
   batch_process($finish_url, $process_url);
 }
 
@@ -2997,7 +3004,7 @@ function system_cron() {
     }
   }
 
-  $core = array('cache', 'cache_filter', 'cache_page', 'cache_form', 'cache_menu');
+  $core = array('cache', 'cache_path', 'cache_filter', 'cache_page', 'cache_form', 'cache_menu');
   $cache_tables = array_merge(module_invoke_all('flush_caches'), $core);
   foreach ($cache_tables as $table) {
     cache_clear_all(NULL, $table);
@@ -3864,7 +3871,7 @@ function system_date_format_save($date_format, $dfid = 0) {
   if (!empty($date_format['locales'])) {
     foreach ($date_format['locales'] as $langcode) {
       // Only proceed if language is enabled.
-      if (in_array($langcode, $languages)) {
+      if (isset($languages[$langcode])) {
         $is_existing = (bool) db_query_range('SELECT 1 FROM {date_format_locale} WHERE type = :type AND language = :language', 0, 1, array(':type' => $date_format['type'], ':language' => $langcode))->fetchField();
         if (!$is_existing) {
           $locale_format['language'] = $langcode;

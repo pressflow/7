@@ -583,13 +583,20 @@ function poll_update($node) {
           'chvotes' => (int) $choice['chvotes'],
           'weight' => $choice['weight'],
         ))
-        ->insertFields(array('nid' => $node->nid))
+        ->insertFields(array(
+           'nid' => $node->nid,
+           'chtext' => $choice['chtext'],
+        ))
         ->execute();
     }
     else {
       db_delete('poll_vote')
         ->condition('nid', $node->nid)
         ->condition('chid', $key)
+        ->execute();
+      db_delete('poll_choice')
+        ->condition('nid', $node->nid)
+        ->condition('chid', $choice['chid'])
         ->execute();
     }
   }
