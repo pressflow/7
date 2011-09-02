@@ -447,17 +447,23 @@ function node_install() {
  * Implements hook_update_dependencies().
  */
 function node_update_dependencies() {
-  // Node update 7006 migrates node data to fields and therefore must run after
-  // the Field module has been enabled, but before upgrading field data.
+  // node_update_7006() migrates node data to fields and therefore must run
+  // after all Field modules have been enabled, which happens in
+  // system_update_7027(). It also needs to query the {filter_format} table to
+  // get a list of existing text formats, so it must run after
+  // filter_update_7000(), which creates that table.
   $dependencies['node'][7006] = array(
-    'system' => 7049,
-    // It must also run after filter_update_7000() because it needs to query
-    // the list of existing text formats.
+    'system' => 7027,
     'filter' => 7000,
   );
-  $dependencies['system'][7050] = array(
-    'node' => 7006,
+
+  // node_update_7008() migrates role permissions and therefore must run after
+  // the {role} and {role_permission} tables are properly set up, which happens
+  // in user_update_7007().
+  $dependencies['node'][7008] = array(
+    'user' => 7007,
   );
+
   return $dependencies;
 }
 
@@ -476,7 +482,7 @@ function _update_7000_node_get_types() {
   $extra_types = array_diff($all_types, array_keys($node_types));
 
   foreach ($extra_types as $type) {
-    $type_object = new stdClass;
+    $type_object = new stdClass();
     $type_object->type = $type;
 
     // In Drupal 6, whether you have a body field or not is a flag in the node
@@ -628,6 +634,8 @@ function node_update_7006(&$sandbox) {
           'entity_type' => 'node',
           'bundle' => $node_type->type,
           'label' => $node_type->body_label,
+          'description' => isset($node_type->description) ? $node_type->description : '',
+          'required' => (isset($node_type->min_word_count) && $node_type->min_word_count > 0) ? 1 : 0,
           'widget' => array(
             'type' => 'text_textarea_with_summary',
             'settings' => array(
@@ -857,6 +865,38 @@ function node_update_7011() {
     'length' => 255,
     'not null' => TRUE,
   ));
+}
+
+/**
+ * Switches body fields to untranslatable while upgrading from D6 and makes them language neutral.
+ */
+function node_update_7012() {
+  // If we are upgrading from D6, then body fields should be set back to
+  // untranslatable, as D6 did not know about the idea of translating fields,
+  // but only nodes. If a D7 > D7 update is running we need to skip this update,
+  // as it is a valid use case to have translatable body fields in this context.
+  if (variable_get('update_d6', FALSE)) {
+    // Make node bodies untranslatable: field_update_field() cannot be used
+    // throughout the upgrade process and we do not have an update counterpart
+    // for _update_7000_field_create_field(). Hence we are forced to update the
+    // 'field_config' table directly. This is a safe operation since it is
+    // being performed while upgrading from D6. Perfoming the same operation
+    // during a D7 update is highly discouraged.
+    db_update('field_config')
+      ->fields(array('translatable' => 0))
+      ->condition('field_name', 'body')
+      ->execute();
+
+    // Switch field languages to LANGUAGE_NONE, since initially they were
+    // assigned $node->language.
+    foreach (array('field_data_body', 'field_revision_body') as $table) {
+      db_update($table)
+        ->fields(array('language' => LANGUAGE_NONE))
+        ->execute();
+    }
+
+    node_type_cache_reset();
+  }
 }
 
 /**

@@ -272,7 +272,8 @@ function drupal_get_form($form_id) {
  *   form submission may be found in drupal_redirect_form().
  *
  * @return
- *   The rendered form or NULL, depending upon the $form_state flags that were set.
+ *   The rendered form. This function may also perform a redirect and hence may
+ *   not return at all, depending upon the $form_state flags that were set.
  *
  * @see drupal_redirect_form()
  */
@@ -995,6 +996,8 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
   $form += array('#tree' => FALSE, '#parents' => array());
 
   if (!isset($form['#validate'])) {
+    // Ensure that modules can rely on #validate being set.
+    $form['#validate'] = array();
     // Check for a handler specific to $form_id.
     if (function_exists($form_id . '_validate')) {
       $form['#validate'][] = $form_id . '_validate';
@@ -1007,6 +1010,8 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
   }
 
   if (!isset($form['#submit'])) {
+    // Ensure that modules can rely on #submit being set.
+    $form['#submit'] = array();
     // Check for a handler specific to $form_id.
     if (function_exists($form_id . '_submit')) {
       $form['#submit'][] = $form_id . '_submit';
@@ -2853,9 +2858,9 @@ function form_process_date($element) {
 /**
  * Validates the date type to stop dates like February 30, 2006.
  */
-function date_validate($form) {
-  if (!checkdate($form['#value']['month'], $form['#value']['day'], $form['#value']['year'])) {
-    form_error($form, t('The specified date is invalid.'));
+function date_validate($element) {
+  if (!checkdate($element['#value']['month'], $element['#value']['day'], $element['#value']['year'])) {
+    form_error($element, t('The specified date is invalid.'));
   }
 }
 
@@ -3999,6 +4004,36 @@ function _form_set_class(&$element, $class = array()) {
 }
 
 /**
+ * Helper form element validator: integer.
+ */
+function element_validate_integer($element, &$form_state) {
+  $value = $element['#value'];
+  if ($value !== '' && (!is_numeric($value) || intval($value) != $value)) {
+    form_error($element, t('%name must be an integer.', array('%name' => $element['#title'])));
+  }
+}
+
+/**
+ * Helper form element validator: integer > 0.
+ */
+function element_validate_integer_positive($element, &$form_state) {
+  $value = $element['#value'];
+  if ($value !== '' && (!is_numeric($value) || intval($value) != $value || $value <= 0)) {
+    form_error($element, t('%name must be a positive integer.', array('%name' => $element['#title'])));
+  }
+}
+
+/**
+ * Helper form element validator: number.
+ */
+function element_validate_number($element, &$form_state) {
+  $value = $element['#value'];
+  if ($value != '' && !is_numeric($value)) {
+    form_error($element, t('%name must be a number.', array('%name' => $element['#title'])));
+  }
+}
+
+/**
  * @} End of "defgroup form_api".
  */
 
@@ -4028,8 +4063,9 @@ function _form_set_class(&$element, $class = array()) {
  *   'file' => 'path_to_file_containing_myfunctions',
  * );
  * batch_set($batch);
- * // only needed if not inside a form _submit handler :
- * batch_process();
+ * // Only needed if not inside a form _submit handler.
+ * // Setting redirect in batch_process.
+ * batch_process('node/1');
  * @endcode
  *
  * Note: if the batch 'title', 'init_message', 'progress_message', or

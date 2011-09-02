@@ -1016,8 +1016,33 @@ function hook_menu_get_item_alter(&$router_item, $path, $original_map) {
  *     return db_query("SELECT * FROM {mymodule_abc} WHERE abc_id = :abc_id", array(':abc_id' => $abc_id))->fetchObject();
  *   }
  * @endcode
- * This 'abc' object will then be passed into the page callback function
- * mymodule_abc_edit() to replace the integer 1 in the page arguments.
+ * This 'abc' object will then be passed into the callback functions defined
+ * for the menu item, such as the page callback function mymodule_abc_edit()
+ * to replace the integer 1 in the argument array.
+ *
+ * You can also define a %wildcard_to_arg() function (for the example menu
+ * entry above this would be 'mymodule_abc_to_arg()'). The _to_arg() function
+ * is invoked to retrieve a value that is used in the path in place of the
+ * wildcard. A good example is user.module, which defines
+ * user_uid_optional_to_arg() (corresponding to the menu entry
+ * 'user/%user_uid_optional'). This function returns the user ID of the
+ * current user.
+ *
+ * The _to_arg() function will get called with three arguments:
+ * - $arg: A string representing whatever argument may have been supplied by
+ *   the caller (this is particularly useful if you want the _to_arg()
+ *   function only supply a (default) value if no other value is specified,
+ *   as in the case of user_uid_optional_to_arg().
+ * - $map: An array of all path fragments (e.g. array('node','123','edit') for
+ *   'node/123/edit').
+ * - $index: An integer indicating which element of $map corresponds to $arg.
+ *
+ * _load() and _to_arg() functions may seem similar at first glance, but they
+ * have different purposes and are called at different times. _load()
+ * functions are called when the menu system is collecting arguments to pass
+ * to the callback functions defined for the menu item. _to_arg() functions
+ * are called when the menu system is generating links to related paths, such
+ * as the tabs for a set of MENU_LOCAL_TASK items.
  *
  * You can also make groups of menu items to be rendered (by default) as tabs
  * on a page. To do that, first create one menu item of type MENU_NORMAL_ITEM,
@@ -1972,8 +1997,8 @@ function hook_permission() {
  *   containing information about the hook. Each array may contain the
  *   following elements:
  *   - variables: (required if "render element" not present) An array of
- *     variables that this theme hook uses. This value allows the theme layer to
- *     properly utilize templates. Each array key represents the name of the
+ *     variables that this theme hook uses. This value allows the theme layer
+ *     to properly utilize templates. Each array key represents the name of the
  *     variable and the value will be used as the default value if it is not
  *     given when theme() is called. Template implementations receive these
  *     arguments as variables in the template file. Function implementations
@@ -1989,20 +2014,20 @@ function hook_permission() {
  *     preprocess function (as needed) is actually loaded; this makes it
  *     possible to split theme functions out into separate files quite easily.
  *   - path: Override the path of the file to be used. Ordinarily the module or
- *     theme path will be used, but if the file will not be in the default path,
- *     include it here. This path should be relative to the Drupal root
+ *     theme path will be used, but if the file will not be in the default
+ *     path, include it here. This path should be relative to the Drupal root
  *     directory.
- *   - template: If specified, this theme implementation is a template, and this
- *     is the template file without an extension. Do not put .tpl.php on this
- *     file; that extension will be added automatically by the default rendering
- *     engine (which is PHPTemplate). If 'path', above, is specified, the
- *     template should also be in this path.
- *   - function: If specified, this will be the function name to invoke for this
- *     implementation. If neither file nor function is specified, a default
- *     function name will be assumed. For example, if a module registers
- *     the 'node' theme hook, 'theme_node' will be assigned to its function.
- *     If the chameleon theme registers the node hook, it will be assigned
- *     'chameleon_node' as its function.
+ *   - template: If specified, this theme implementation is a template, and
+ *     this is the template file without an extension. Do not put .tpl.php on
+ *     this file; that extension will be added automatically by the default
+ *     rendering engine (which is PHPTemplate). If 'path', above, is specified,
+ *     the template should also be in this path.
+ *   - function: If specified, this will be the function name to invoke for
+ *     this implementation. If neither 'template' nor 'function' is specified,
+ *     a default function name will be assumed. For example, if a module
+ *     registers the 'node' theme hook, 'theme_node' will be assigned to its
+ *     function. If the chameleon theme registers the node hook, it will be
+ *     assigned 'chameleon_node' as its function.
  *   - pattern: A regular expression pattern to be used to allow this theme
  *     implementation to have a dynamic name. The convention is to use __ to
  *     differentiate the dynamic portion of the theme. For example, to allow
@@ -2017,11 +2042,11 @@ function hook_permission() {
  *     a theme this will be filled in as phptemplate_preprocess and
  *     phptemplate_preprocess_HOOK as well as themename_preprocess and
  *     themename_preprocess_HOOK.
- *   - override preprocess functions: Set to TRUE when a theme does NOT want the
- *     standard preprocess functions to run. This can be used to give a theme
- *     FULL control over how variables are set. For example, if a theme wants
- *     total control over how certain variables in the page.tpl.php are set,
- *     this can be set to true. Please keep in mind that when this is used
+ *   - override preprocess functions: Set to TRUE when a theme does NOT want
+ *     the standard preprocess functions to run. This can be used to give a
+ *     theme FULL control over how variables are set. For example, if a theme
+ *     wants total control over how certain variables in the page.tpl.php are
+ *     set, this can be set to true. Please keep in mind that when this is used
  *     by a theme, that theme becomes responsible for making sure necessary
  *     variables are set.
  *   - type: (automatically derived) Where the theme hook is defined:
@@ -2687,22 +2712,21 @@ function hook_file_delete($file) {
  *   NULL.
  *
  * @see file_download()
- * @see upload_file_download()
  */
 function hook_file_download($uri) {
   // Check if the file is controlled by the current module.
   if (!file_prepare_directory($uri)) {
     $uri = FALSE;
   }
-  $result = db_query("SELECT f.* FROM {file_managed} f INNER JOIN {upload} u ON f.fid = u.fid WHERE uri = :uri", array('uri' => $uri));
-  foreach ($result as $file) {
-    if (!user_access('view uploaded files')) {
+  if (strpos(file_uri_target($uri), variable_get('user_picture_path', 'pictures') . '/picture-') === 0) {
+    if (!user_access('access user profiles')) {
+      // Access to the file is denied.
       return -1;
     }
-    return array(
-      'Content-Type' => $file->filemime,
-      'Content-Length' => $file->filesize,
-    );
+    else {
+      $info = image_get_info($uri);
+      return array('Content-Type' => $info['mime_type']);
+    }
   }
 }
 
@@ -2860,7 +2884,7 @@ function hook_requirements($phase) {
       );
     }
 
-    $requirements['cron']['description'] .= ' ' . t('You can <a href="@cron">run cron manually</a>.', array('@cron' => url('admin/logs/status/run-cron')));
+    $requirements['cron']['description'] .= ' ' . $t('You can <a href="@cron">run cron manually</a>.', array('@cron' => url('admin/logs/status/run-cron')));
 
     $requirements['cron']['title'] = $t('Cron maintenance tasks');
   }
