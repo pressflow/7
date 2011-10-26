@@ -215,7 +215,7 @@ function forum_menu_local_tasks_alter(&$data, $router_item, $root_path) {
  * Implements hook_entity_info_alter().
  */
 function forum_entity_info_alter(&$info) {
-  // Take over URI constuction for taxonomy terms that are forums.
+  // Take over URI construction for taxonomy terms that are forums.
   if ($vid = variable_get('forum_nav_vocabulary', 0)) {
     // Within hook_entity_info(), we can't invoke entity_load() as that would
     // cause infinite recursion, so we call taxonomy_vocabulary_get_names()
@@ -582,7 +582,7 @@ function forum_field_storage_pre_update($entity_type, $entity, &$skip_fields) {
  */
 function forum_form_alter(&$form, $form_state, $form_id) {
   $vid = variable_get('forum_nav_vocabulary', 0);
-  if (isset($form['vid']) && $form['vid']['#value'] == $vid) {
+  if (isset($form['vid']['#value']) && $form['vid']['#value'] == $vid) {
     // Hide critical options from forum vocabulary.
     if ($form_id == 'taxonomy_form_vocabulary') {
       $form['help_forum_vocab'] = array(
@@ -1127,7 +1127,6 @@ function template_preprocess_forum_topic_list(&$variables) {
         $variables['topics'][$id]->title = l($topic->title, "node/$topic->nid");
         $variables['topics'][$id]->message = '';
       }
-      $topic->uid = $topic->last_comment_uid ? $topic->last_comment_uid : $topic->uid;
       $variables['topics'][$id]->created = theme('forum_submitted', array('topic' => $topic));
       $variables['topics'][$id]->last_reply = theme('forum_submitted', array('topic' => isset($topic->last_reply) ? $topic->last_reply : NULL));
 

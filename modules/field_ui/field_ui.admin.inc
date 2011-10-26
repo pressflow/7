@@ -254,12 +254,17 @@ function theme_field_ui_table($variables) {
         $row += $element['#attributes'];
       }
 
+      // Render children as table cells.
       foreach (element_children($element) as $cell_key) {
-        $cell = array('data' => drupal_render($element[$cell_key]));
-        if (isset($element[$cell_key]['#cell_attributes'])) {
-          $cell += $element[$cell_key]['#cell_attributes'];
+        $child = &$element[$cell_key];
+        // Do not render a cell for children of #type 'value'.
+        if (!(isset($child['#type']) && $child['#type'] == 'value')) {
+          $cell = array('data' => drupal_render($child));
+          if (isset($child['#cell_attributes'])) {
+            $cell += $child['#cell_attributes'];
+          }
+          $row['data'][] = $cell;
         }
-        $row['data'][] = $cell;
       }
       $table['rows'][] = $row;
     }
@@ -519,6 +524,8 @@ function field_ui_field_overview_form($form, &$form_state, $entity_type, $bundle
         '#cell_attributes' => array('colspan' => 3),
         '#prefix' => '<div class="add-new-placeholder">&nbsp;</div>',
       ),
+      // Place the 'translatable' property as an explicit value so that contrib
+      // modules can form_alter() the value for newly created fields.
       'translatable' => array(
         '#type' => 'value',
         '#value' => FALSE,
@@ -792,7 +799,7 @@ function field_ui_field_overview_form_submit($form, &$form_state) {
       $form_state['fields_added']['_add_new_field'] = $field['field_name'];
     }
     catch (Exception $e) {
-      drupal_set_message(t('There was a problem creating field %label: @message.', array('%label' => $instance['label'], '@message' => $e->getMessage())));
+      drupal_set_message(t('There was a problem creating field %label: @message.', array('%label' => $instance['label'], '@message' => $e->getMessage())), 'error');
     }
   }
 
@@ -822,7 +829,7 @@ function field_ui_field_overview_form_submit($form, &$form_state) {
         $form_state['fields_added']['_add_existing_field'] = $instance['field_name'];
       }
       catch (Exception $e) {
-        drupal_set_message(t('There was a problem creating field instance %label: @message.', array('%label' => $instance['label'], '@message' => $e->getMessage())));
+        drupal_set_message(t('There was a problem creating field instance %label: @message.', array('%label' => $instance['label'], '@message' => $e->getMessage())), 'error');
       }
     }
   }
@@ -1590,10 +1597,8 @@ function field_ui_field_settings_form_submit($form, &$form_state) {
     drupal_set_message(t('Updated field %label field settings.', array('%label' => $instance['label'])));
     $form_state['redirect'] = field_ui_next_destination($entity_type, $bundle);
   }
-  catch (FieldException $e) {
+  catch (Exception $e) {
     drupal_set_message(t('Attempt to update field %label failed: %message.', array('%label' => $instance['label'], '%message' => $e->getMessage())), 'error');
-    // TODO: Where do we go from here?
-    $form_state['redirect'] = field_ui_next_destination($entity_type, $bundle);
   }
 }
 
@@ -1664,7 +1669,7 @@ function field_ui_widget_type_form_submit($form, &$form_state) {
     field_update_instance($instance);
     drupal_set_message(t('Changed the widget for field %label.', array('%label' => $instance['label'])));
   }
-  catch (FieldException $e) {
+  catch (Exception $e) {
     drupal_set_message(t('There was a problem changing the widget for field %label.', array('%label' => $instance['label'])));
   }
 
@@ -1992,7 +1997,13 @@ function field_ui_field_edit_form_submit($form, &$form_state) {
   // Update any field settings that have changed.
   $field_source = field_info_field($instance['field_name']);
   $field = array_merge($field_source, $field);
-  field_update_field($field);
+  try {
+    field_update_field($field);
+  }
+  catch (Exception $e) {
+    drupal_set_message(t('Attempt to update field %label failed: %message.', array('%label' => $instance['label'], '%message' => $e->getMessage())), 'error');
+    return;
+  }
 
   // Handle the default value.
   if (isset($form['instance']['default_value_widget'])) {

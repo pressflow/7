@@ -135,11 +135,11 @@ function node_tokens($type, $tokens, array $data = array(), array $options = arr
 
         case 'body':
         case 'summary':
-          if (!empty($node->body)) {
-            $item = $node->body[$node->language][0];
+          if ($items = field_get_items('node', $node, 'body', $language_code)) {
             $column = ($name == 'body') ? 'value' : 'summary';
             $instance = field_info_instance('node', 'body', $node->type);
-            $replacements[$original] = $sanitize ? _text_sanitize($instance, $node->language, $item, $column) : $item[$column];
+            $field_langcode = field_language('node', $node, 'body', $language_code);
+            $replacements[$original] = $sanitize ? _text_sanitize($instance, $field_langcode, $items[0], $column) : $items[0][$column];
           }
           break;
 
@@ -157,8 +157,9 @@ function node_tokens($type, $tokens, array $data = array(), array $options = arr
 
         // Default values for the chained tokens handled below.
         case 'author':
-          $name = ($node->uid == 0) ? variable_get('anonymous', t('Anonymous')) : $node->name;
-          $replacements[$original] = $sanitize ? filter_xss($name) : $name;
+          $account = user_load($node->uid);
+          $name = format_username($account);
+          $replacements[$original] = $sanitize ? check_plain($name) : $name;
           break;
 
         case 'created':
