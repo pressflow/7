@@ -275,7 +275,7 @@ function _theme_registry_callback($callback = NULL, array $arguments = array()) 
  * @param $base_theme
  *   An array of loaded $theme objects representing the ancestor themes in
  *   oldest first order.
- * @param theme_engine
+ * @param $theme_engine
  *   The name of the theme engine.
  */
 function _theme_load_registry($theme, $base_theme = NULL, $theme_engine = NULL) {
@@ -512,22 +512,33 @@ function _theme_process_registry(&$cache, $name, $type, $theme, $path) {
 }
 
 /**
- * Rebuild the theme registry cache.
+ * Build the theme registry cache.
  *
  * @param $theme
  *   The loaded $theme object as returned by list_themes().
  * @param $base_theme
  *   An array of loaded $theme objects representing the ancestor themes in
  *   oldest first order.
- * @param theme_engine
+ * @param $theme_engine
  *   The name of the theme engine.
  */
 function _theme_build_registry($theme, $base_theme, $theme_engine) {
   $cache = array();
   // First, process the theme hooks advertised by modules. This will
-  // serve as the basic registry.
-  foreach (module_implements('theme') as $module) {
-    _theme_process_registry($cache, $module, 'module', $module, drupal_get_path('module', $module));
+  // serve as the basic registry. Since the list of enabled modules is the same
+  // regardless of the theme used, this is cached in its own entry to save
+  // building it for every theme.
+  if ($cached = cache_get('theme_registry:build:modules')) {
+    $cache = $cached->data;
+  }
+  else {
+    foreach (module_implements('theme') as $module) {
+      _theme_process_registry($cache, $module, 'module', $module, drupal_get_path('module', $module));
+    }
+    // Only cache this registry if all modules are loaded.
+    if (module_load_all(NULL)) {
+      cache_set('theme_registry:build:modules', $cache);
+    }
   }
 
   // Process each base theme.
@@ -1388,7 +1399,8 @@ function theme_link($variables) {
  *     - html: (optional) Whether or not 'title' is HTML. If set, the title
  *       will not be passed through check_plain().
  *     - attributes: (optional) Attributes for the anchor, or for the <span> tag
- *       used in its place if no 'href' is supplied.
+ *       used in its place if no 'href' is supplied. If element 'class' is
+ *       included, it must be an array of one or more class names.
  *     If the 'href' element is supplied, the entire link array is passed to l()
  *     as its $options parameter.
  *   - attributes: A keyed array of attributes for the UL containing the
@@ -1902,11 +1914,12 @@ function theme_feed_icon($variables) {
  */
 function theme_html_tag($variables) {
   $element = $variables['element'];
+  $attributes = isset($element['#attributes']) ? drupal_attributes($element['#attributes']) : '';
   if (!isset($element['#value'])) {
-    return '<' . $element['#tag'] . drupal_attributes($element['#attributes']) . " />\n";
+    return '<' . $element['#tag'] . $attributes . " />\n";
   }
   else {
-    $output = '<' . $element['#tag'] . drupal_attributes($element['#attributes']) . '>';
+    $output = '<' . $element['#tag'] . $attributes . '>';
     if (isset($element['#value_prefix'])) {
       $output .= $element['#value_prefix'];
     }
@@ -2085,7 +2098,7 @@ function template_preprocess(&$variables, $hook) {
 }
 
 /**
- * Returns hook-independant variables to template_preprocess().
+ * Returns hook-independent variables to template_preprocess().
  */
 function _template_preprocess_default_variables() {
   global $user;
