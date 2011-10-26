@@ -211,19 +211,19 @@ function user_field_extra_fields() {
   $return['user']['user'] = array(
     'form' => array(
       'account' => array(
-        'label' => 'User name and password',
-        'description' => t('User module account form elements'),
+        'label' => t('User name and password'),
+        'description' => t('User module account form elements.'),
         'weight' => -10,
       ),
       'timezone' => array(
-        'label' => 'Timezone',
+        'label' => t('Timezone'),
         'description' => t('User module timezone form element.'),
         'weight' => 6,
       ),
     ),
     'display' => array(
       'summary' => array(
-        'label' => 'History',
+        'label' => t('History'),
         'description' => t('User module history view element.'),
         'weight' => 5,
       ),
@@ -1007,6 +1007,7 @@ function user_account_form(&$form, &$form_state) {
 
   // Account information.
   $form['account'] = array(
+    '#type'   => 'container',
     '#weight' => -10,
   );
   // Only show name field on registration form or user can change own username.
@@ -1065,6 +1066,7 @@ function user_account_form(&$form, &$form_state) {
         '#access' => !empty($protected_values),
         '#description' => $current_pass_description,
         '#weight' => -5,
+        '#attributes' => array('autocomplete' => 'off'),
       );
       $form['#validate'][] = 'user_validate_current_pass';
     }
