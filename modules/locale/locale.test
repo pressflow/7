@@ -180,6 +180,73 @@ class LocaleConfigurationTest extends DrupalWebTestCase {
 }
 
 /**
+ * Functional tests for JavaScript parsing for translatable strings.
+ */
+class LocaleJavascriptTranslationTest extends DrupalWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Javascript translation',
+      'description' => 'Tests parsing js files for translatable strings',
+      'group' => 'Locale',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('locale', 'locale_test');
+  }
+
+  function testFileParsing() {
+
+    $filename = drupal_get_path('module', 'locale_test') . '/locale_test.js';
+
+    // Parse the file to look for source strings.
+    _locale_parse_js_file($filename);
+
+    // Get all of the source strings that were found.
+    $source_strings = db_select('locales_source', 's')
+      ->fields('s', array('source', 'lid'))
+      ->condition('s.location', $filename)
+      ->execute()
+      ->fetchAllKeyed();
+
+    // List of all strings that should be in the file.
+    $test_strings = array(
+      "Standard Call t",
+      "Whitespace Call t",
+
+      "Single Quote t",
+      "Single Quote \\'Escaped\\' t",
+      "Single Quote Concat strings t",
+
+      "Double Quote t",
+      "Double Quote \\\"Escaped\\\" t",
+      "Double Quote Concat strings t",
+
+      "Standard Call plural",
+      "Standard Call @count plural",
+      "Whitespace Call plural",
+      "Whitespace Call @count plural",
+
+      "Single Quote plural",
+      "Single Quote @count plural",
+      "Single Quote \\'Escaped\\' plural",
+      "Single Quote \\'Escaped\\' @count plural",
+
+      "Double Quote plural",
+      "Double Quote @count plural",
+      "Double Quote \\\"Escaped\\\" plural",
+      "Double Quote \\\"Escaped\\\" @count plural",
+    );
+
+    // Assert that all strings were found properly.
+    foreach ($test_strings as $str) {
+      $this->assertTrue(isset($source_strings[$str]), t("Found source string: %source", array('%source' => $str)));
+    }
+
+    $this->assertEqual(count($source_strings), count($test_strings), t("Found correct number of source strings."));
+  }
+}
+/**
  * Functional test for string translation and validation.
  */
 class LocaleTranslationFunctionalTest extends DrupalWebTestCase {
@@ -291,9 +358,8 @@ class LocaleTranslationFunctionalTest extends DrupalWebTestCase {
     $this->assertRaw(t('The language %locale has been removed.', array('%locale' => $name)), t('The test language has been removed.'));
     // Reload to remove $name.
     $this->drupalGet($path);
-    $this->assertNoText($langcode, t('Language code not found.'));
-    $this->assertNoText($name, t('Name not found.'));
-    $this->assertNoText($native, t('Native not found.'));
+    // Verify that language is no longer found.
+    $this->assertResponse(404, t('Language no longer found.'));
     $this->drupalLogout();
 
     // Delete the string.
@@ -1322,6 +1388,125 @@ class LocaleLanguageSwitchingFunctionalTest extends DrupalWebTestCase {
 }
 
 /**
+ * Test browser language detection.
+ */
+class LocaleBrowserDetectionTest extends DrupalUnitTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Browser language detection',
+      'description' => 'Tests for the browser language detection.',
+      'group' => 'Locale',
+    );
+  }
+
+  /**
+   * Unit tests for the locale_language_from_browser() function.
+   */
+  function testLanguageFromBrowser() {
+    // Load the required functions.
+    require_once DRUPAL_ROOT . '/includes/locale.inc';
+
+    $languages = array(
+      // In our test case, 'en' has priority over 'en-US'.
+      'en' => (object) array(
+        'language' => 'en',
+      ),
+      'en-US' => (object) array(
+        'language' => 'en-US',
+      ),
+      // But 'fr-CA' has priority over 'fr'.
+      'fr-CA' => (object) array(
+        'language' => 'fr-CA',
+      ),
+      'fr' => (object) array(
+        'language' => 'fr',
+      ),
+      // 'es-MX' is alone.
+      'es-MX' => (object) array(
+        'language' => 'es-MX',
+      ),
+      // 'pt' is alone.
+      'pt' => (object) array(
+        'language' => 'pt',
+      ),
+      // Language codes with more then one dash are actually valid.
+      // eh-oh-laa-laa is the official language code of the Teletubbies.
+      'eh-oh-laa-laa' => (object) array(
+        'language' => 'eh-oh-laa-laa',
+      ),
+    );
+
+    $test_cases = array(
+      // Equal qvalue for each language, choose the site prefered one.
+      'en,en-US,fr-CA,fr,es-MX' => 'en',
+      'en-US,en,fr-CA,fr,es-MX' => 'en',
+      'fr,en' => 'en',
+      'en,fr' => 'en',
+      'en-US,fr' => 'en',
+      'fr,en-US' => 'en',
+      'fr,fr-CA' => 'fr-CA',
+      'fr-CA,fr' => 'fr-CA',
+      'fr' => 'fr-CA',
+      'fr;q=1' => 'fr-CA',
+      'fr,es-MX' => 'fr-CA',
+      'fr,es' => 'fr-CA',
+      'es,fr' => 'fr-CA',
+      'es-MX,de' => 'es-MX',
+      'de,es-MX' => 'es-MX',
+
+      // Different cases and whitespace.
+      'en' => 'en',
+      'En' => 'en',
+      'EN' => 'en',
+      ' en' => 'en',
+      'en ' => 'en',
+
+      // A less specific language from the browser matches a more specific one
+      // from the website, and the other way around for compatibility with
+      // some versions of Internet Explorer.
+      'es' => 'es-MX',
+      'es-MX' => 'es-MX',
+      'pt' => 'pt',
+      'pt-PT' => 'pt',
+      'pt-PT;q=0.5,pt-BR;q=1,en;q=0.7' => 'en',
+      'pt-PT;q=1,pt-BR;q=0.5,en;q=0.7' => 'en',
+      'pt-PT;q=0.4,pt-BR;q=0.1,en;q=0.7' => 'en',
+      'pt-PT;q=0.1,pt-BR;q=0.4,en;q=0.7' => 'en',
+
+      // Language code with several dashes are valid. The less specific language
+      // from the browser matches the more specific one from the website.
+      'eh-oh-laa-laa' => 'eh-oh-laa-laa',
+      'eh-oh-laa' => 'eh-oh-laa-laa',
+      'eh-oh' => 'eh-oh-laa-laa',
+      'eh' => 'eh-oh-laa-laa',
+
+      // Different qvalues.
+      'en-US,en;q=0.5,fr;q=0.25' => 'en-US',
+      'fr,en;q=0.5' => 'fr-CA',
+      'fr,en;q=0.5,fr-CA;q=0.25' => 'fr',
+
+      // Silly wildcards are also valid.
+      '*,fr-CA;q=0.5' => 'en',
+      '*,en;q=0.25' => 'fr-CA',
+      'en,en-US;q=0.5,fr;q=0.25' => 'en',
+      'en-US,en;q=0.5,fr;q=0.25' => 'en-US',
+
+      // Unresolvable cases.
+      '' => FALSE,
+      'de,pl' => FALSE,
+      $this->randomName(10) => FALSE,
+    );
+
+    foreach ($test_cases as $accept_language => $expected_result) {
+      $_SERVER['HTTP_ACCEPT_LANGUAGE'] = $accept_language;
+      $result = locale_language_from_browser($languages);
+      $this->assertIdentical($result, $expected_result, t("Language selection '@accept-language' selects '@result', result = '@actual'", array('@accept-language' => $accept_language, '@result' => $expected_result, '@actual' => isset($result) ? $result : 'none')));
+    }
+  }
+}
+
+/**
  * Functional tests for a user's ability to change their default language.
  */
 class LocaleUserLanguageFunctionalTest extends DrupalWebTestCase {
@@ -1930,8 +2115,8 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
     $this->assertResponse(404, "Unknown language path prefix should return 404");
 
     // Setup for domain negotiation, first configure the language to have domain
-    // URL.
-    $edit = array('prefix' => '', 'domain' => "http://$language_domain");
+    // URL. We use https and a port to make sure that only the domain name is used.
+    $edit = array('prefix' => '', 'domain' => "https://$language_domain:99");
     $this->drupalPost("admin/config/regional/language/edit/$language", $edit, t('Save language'));
     // Set the site to use domain language negotiation.
 

@@ -26,7 +26,7 @@ class FieldUITestCase extends DrupalWebTestCase {
     $this->drupalLogin($admin_user);
 
     // Create content type, with underscores.
-    $type_name =  strtolower($this->randomName(8)) . '_' .'test';
+    $type_name = strtolower($this->randomName(8)) . '_test';
     $type = $this->drupalCreateContentType(array('name' => $type_name, 'type' => $type_name));
     $this->type = $type->type;
     // Store a valid URL name, with hyphens instead of underscores.
@@ -343,7 +343,7 @@ class FieldUIManageFieldsTestCase extends FieldUITestCase {
     $this->fieldUIAddNewField($bundle_path1, $edit1);
 
     // Create an additional node type.
-    $type_name2 =  strtolower($this->randomName(8)) . '_' .'test';
+    $type_name2 = strtolower($this->randomName(8)) . '_test';
     $type2 = $this->drupalCreateContentType(array('name' => $type_name2, 'type' => $type_name2));
     $type_name2 = $type2->type;
     $hyphen_type2 = str_replace('_', '-', $type_name2);
@@ -410,6 +410,21 @@ class FieldUIManageFieldsTestCase extends FieldUITestCase {
     $bundle_path = 'admin/structure/types/manage/article/fields/';
     $this->drupalGet($bundle_path);
     $this->assertFalse($this->xpath('//select[@id="edit-add-existing-field-field-name"]//option[@value=:field_name]', array(':field_name' => $field_name)), t("The 'add existing field' select respects field types 'no_ui' property."));
+  }
+
+  /**
+   * Tests renaming a bundle.
+   */
+  function testRenameBundle() {
+    $type2 = strtolower($this->randomName(8)) . '_' .'test';
+    $hyphen_type2 = str_replace('_', '-', $type2);
+
+    $options = array(
+      'type' => $type2,
+    );
+    $this->drupalPost('admin/structure/types/manage/' . $this->hyphen_type, $options, t('Save content type'));
+
+    $this->drupalGet('admin/structure/types/manage/' . $hyphen_type2 . '/fields');
   }
 }
 
