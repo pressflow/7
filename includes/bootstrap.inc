@@ -726,12 +726,12 @@ function drupal_settings_initialize() {
 
   // Load environmental config, if present.
   if (isset($_SERVER['PRESSFLOW_SETTINGS'])) {
-    $pressflow_settings = json_decode($_SERVER['PRESSFLOW_SETTINGS']);
+    $pressflow_settings = json_decode($_SERVER['PRESSFLOW_SETTINGS'], TRUE);
     foreach ($pressflow_settings as $key => $value) {
       // One level of depth should be enough for $conf and $database.
       if ($key == 'conf') {
         foreach($value as $conf_key => $conf_value) {
-          $conf[$conf_key] = $value;
+          $conf[$conf_key] = $conf_value;
         }
       }
       else {
