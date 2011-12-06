@@ -77,21 +77,17 @@ function contextual_element_info() {
 }
 
 /**
- * Template variable preprocessor for contextual links.
+ * Implements hook_preprocess().
  *
  * @see contextual_pre_render_links()
  */
 function contextual_preprocess(&$variables, $hook) {
-  static $hooks;
-
   // Nothing to do here if the user is not permitted to access contextual links.
   if (!user_access('access contextual links')) {
     return;
   }
 
-  if (!isset($hooks)) {
-    $hooks = theme_get_registry();
-  }
+  $hooks = theme_get_registry(FALSE);
 
   // Determine the primary theme function argument.
   if (!empty($hooks[$hook]['variables'])) {
@@ -136,6 +132,7 @@ function contextual_preprocess(&$variables, $hook) {
  *   A renderable array representing contextual links.
  *
  * @see menu_contextual_links()
+ * @see contextual_element_info()
  */
 function contextual_pre_render_links($element) {
   // Retrieve contextual menu links.
