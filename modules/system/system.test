@@ -272,12 +272,32 @@ class EnableDisableTestCase extends ModuleTestCase {
   }
 
   /**
-   * Tests entity cache after enabling a module with a dependency on an enitity
-   * providing module.
+   * Ensures entity info cache is updated after changes.
+   */
+  function testEntityInfoChanges() {
+    module_enable(array('entity_cache_test'));
+    $entity_info = entity_get_info();
+    $this->assertTrue(isset($entity_info['entity_cache_test']), 'Test entity type found.');
+
+    // Change the label of the test entity type and make sure changes appear
+    // after flushing caches.
+    variable_set('entity_cache_test_label', 'New label.');
+    drupal_flush_all_caches();
+    $info = entity_get_info('entity_cache_test');
+    $this->assertEqual($info['label'], 'New label.', 'New label appears in entity info.');
+
+    // Disable the providing module and make sure the entity type is gone.
+    module_disable(array('entity_cache_test', 'entity_cache_test_dependency'));
+    $entity_info = entity_get_info();
+    $this->assertFalse(isset($entity_info['entity_cache_test']), 'Entity type of the providing module is gone.');
+  }
+
+  /**
+   * Tests entity info cache after enabling a module with a dependency on an entity providing module.
    *
    * @see entity_cache_test_watchdog()
    */
-  function testEntityCache() {
+  function testEntityInfoCacheWatchdog() {
     module_enable(array('entity_cache_test'));
     $info = variable_get('entity_cache_test');
     $this->assertEqual($info['label'], 'Entity Cache Test', 'Entity info label is correct.');
@@ -1861,6 +1881,9 @@ class TokenReplaceTestCase extends DrupalWebTestCase {
 
     $generated = token_generate('node', $raw_tokens, array('node' => $node), array('sanitize' => FALSE));
     $this->assertEqual($generated['[node:title]'], $node->title, t('Unsanitized token generated properly.'));
+
+    // Test token replacement when the string contains no tokens.
+    $this->assertEqual(token_replace('No tokens here.'), 'No tokens here.');
   }
 
   /**
@@ -2274,7 +2297,7 @@ class RetrieveFileTestCase extends DrupalWebTestCase {
   function testFileRetrieving() {
     // Test 404 handling by trying to fetch a randomly named file.
     drupal_mkdir($sourcedir = 'public://' . $this->randomName());
-    $filename = $this->randomName();
+    $filename = 'Файл для тестирования ' . $this->randomName();
     $url = file_create_url($sourcedir . '/' . $filename);
     $retrieved_file = system_retrieve_file($url);
     $this->assertFalse($retrieved_file, t('Non-existent file not fetched.'));
@@ -2282,7 +2305,12 @@ class RetrieveFileTestCase extends DrupalWebTestCase {
     // Actually create that file, download it via HTTP and test the returned path.
     file_put_contents($sourcedir . '/' . $filename, 'testing');
     $retrieved_file = system_retrieve_file($url);
-    $this->assertEqual($retrieved_file, 'public://' . $filename, t('Sane path for downloaded file returned (public:// scheme).'));
+
+    // URLs could not contains characters outside the ASCII set so $filename
+    // has to be encoded.
+    $encoded_filename = rawurlencode($filename);
+
+    $this->assertEqual($retrieved_file, 'public://' . $encoded_filename, t('Sane path for downloaded file returned (public:// scheme).'));
     $this->assertTrue(is_file($retrieved_file), t('Downloaded file does exist (public:// scheme).'));
     $this->assertEqual(filesize($retrieved_file), 7, t('File size of downloaded file is correct (public:// scheme).'));
     file_unmanaged_delete($retrieved_file);
@@ -2290,7 +2318,7 @@ class RetrieveFileTestCase extends DrupalWebTestCase {
     // Test downloading file to a different location.
     drupal_mkdir($targetdir = 'temporary://' . $this->randomName());
     $retrieved_file = system_retrieve_file($url, $targetdir);
-    $this->assertEqual($retrieved_file, "$targetdir/$filename", t('Sane path for downloaded file returned (temporary:// scheme).'));
+    $this->assertEqual($retrieved_file, "$targetdir/$encoded_filename", t('Sane path for downloaded file returned (temporary:// scheme).'));
     $this->assertTrue(is_file($retrieved_file), t('Downloaded file does exist (temporary:// scheme).'));
     $this->assertEqual(filesize($retrieved_file), 7, t('File size of downloaded file is correct (temporary:// scheme).'));
     file_unmanaged_delete($retrieved_file);

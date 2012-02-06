@@ -1019,7 +1019,11 @@ function hook_menu_get_item_alter(&$router_item, $path, $original_map) {
  * @endcode
  * This 'abc' object will then be passed into the callback functions defined
  * for the menu item, such as the page callback function mymodule_abc_edit()
- * to replace the integer 1 in the argument array.
+ * to replace the integer 1 in the argument array. Note that a load function
+ * should return FALSE when it is unable to provide a loadable object. For 
+ * example, the node_load() function for the 'node/%node/edit' menu item will
+ * return FALSE for the path 'node/999/edit' if a node with a node ID of 999
+ * does not exist. The menu routing system will return a 404 error in this case.
  *
  * You can also define a %wildcard_to_arg() function (for the example menu
  * entry above this would be 'mymodule_abc_to_arg()'). The _to_arg() function
@@ -1579,12 +1583,21 @@ function hook_page_alter(&$page) {
  * One popular use of this hook is to add form elements to the node form. When
  * altering a node form, the node object can be accessed at $form['#node'].
  *
- * Note that instead of hook_form_alter(), which is called for all forms, you
- * can also use hook_form_FORM_ID_alter() to alter a specific form. For each
- * module (in system weight order) the general form alter hook implementation
- * is invoked first, then the form ID specific alter implementation is called.
- * After all module hook implementations are invoked, the hook_form_alter()
- * implementations from themes are invoked in the same manner.
+ * In addition to hook_form_alter(), which is called for all forms, there are
+ * two more specific form hooks available. The first,
+ * hook_form_BASE_FORM_ID_alter(), allows targeting of a form/forms via a base
+ * form (if one exists). The second, hook_form_FORM_ID_alter(), can be used to
+ * target a specific form directly.
+ *
+ * The call order is as follows: all existing form alter functions are called
+ * for module A, then all for module B, etc., followed by all for any base
+ * theme(s), and finally for the theme itself. The module order is determined
+ * by system weight, then by module name.
+ *
+ * Within each module, form alter hooks are called in the following order:
+ * first, hook_form_alter(); second, hook_form_BASE_FORM_ID_alter(); third,
+ * hook_form_FORM_ID_alter(). So, for each module, the more general hooks are
+ * called first followed by the more specific.
  *
  * @param $form
  *   Nested array of form elements that comprise the form.
@@ -1596,6 +1609,7 @@ function hook_page_alter(&$page) {
  *   String representing the name of the form itself. Typically this is the
  *   name of the function that generated the form.
  *
+ * @see hook_form_BASE_FORM_ID_alter()
  * @see hook_form_FORM_ID_alter()
  */
 function hook_form_alter(&$form, &$form_state, $form_id) {
@@ -1616,6 +1630,10 @@ function hook_form_alter(&$form, &$form_state, $form_id) {
  * rather than implementing hook_form_alter() and checking the form ID, or
  * using long switch statements to alter multiple forms.
  *
+ * Form alter hooks are called in the following order: hook_form_alter(),
+ * hook_form_BASE_FORM_ID_alter(), hook_form_FORM_ID_alter(). See
+ * hook_form_alter() for more details.
+ *
  * @param $form
  *   Nested array of form elements that comprise the form.
  * @param $form_state
@@ -1627,6 +1645,7 @@ function hook_form_alter(&$form, &$form_state, $form_id) {
  *   name of the function that generated the form.
  *
  * @see hook_form_alter()
+ * @see hook_form_BASE_FORM_ID_alter()
  * @see drupal_prepare_form()
  */
 function hook_form_FORM_ID_alter(&$form, &$form_state, $form_id) {
@@ -1643,17 +1662,27 @@ function hook_form_FORM_ID_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Provide a form-specific alteration for shared forms.
+ * Provide a form-specific alteration for shared ('base') forms.
+ *
+ * By default, when drupal_get_form() is called, Drupal looks for a function
+ * with the same name as the form ID, and uses that function to build the form.
+ * In contrast, base forms allow multiple form IDs to be mapped to a single base
+ * (also called 'factory') form function.
  *
  * Modules can implement hook_form_BASE_FORM_ID_alter() to modify a specific
- * form belonging to multiple form_ids, rather than implementing
- * hook_form_alter() and checking for conditions that would identify the
- * shared form constructor.
+ * base form, rather than implementing hook_form_alter() and checking for
+ * conditions that would identify the shared form constructor.
  *
- * Examples for such forms are node_form() or comment_form().
+ * To identify the base form ID for a particular form (or to determine whether
+ * one exists) check the $form_state. The base form ID is stored under
+ * $form_state['build_info']['base_form_id'].
  *
- * Note that this hook fires after hook_form_FORM_ID_alter() and before
- * hook_form_alter().
+ * See hook_forms() for more information on how to implement base forms in
+ * Drupal.
+ *
+ * Form alter hooks are called in the following order: hook_form_alter(),
+ * hook_form_BASE_FORM_ID_alter(), hook_form_FORM_ID_alter(). See
+ * hook_form_alter() for more details.
  *
  * @param $form
  *   Nested array of form elements that comprise the form.
@@ -1663,8 +1692,10 @@ function hook_form_FORM_ID_alter(&$form, &$form_state, $form_id) {
  *   String representing the name of the form itself. Typically this is the
  *   name of the function that generated the form.
  *
+ * @see hook_form_alter()
  * @see hook_form_FORM_ID_alter()
  * @see drupal_prepare_form()
+ * @see hook_forms()
  */
 function hook_form_BASE_FORM_ID_alter(&$form, &$form_state, $form_id) {
   // Modification for the form with the given BASE_FORM_ID goes here. For
@@ -1684,13 +1715,25 @@ function hook_form_BASE_FORM_ID_alter(&$form, &$form_state, $form_id) {
  *
  * By default, when drupal_get_form() is called, the system will look for a
  * function with the same name as the form ID, and use that function to build
- * the form. This hook allows you to override that behavior in two ways.
+ * the form. If no such function is found, Drupal calls this hook. Modules
+ * implementing this hook can then provide their own instructions for mapping
+ * form IDs to constructor functions. As a result, you can easily map multiple
+ * form IDs to a single form constructor (referred to as a 'base' form).
+ *
+ * Using a base form can help to avoid code duplication, by allowing many
+ * similar forms to use the same code base. Another benefit is that it becomes
+ * much easier for other modules to apply a general change to the group of
+ * forms; hook_form_BASE_FORM_ID_alter() can be used to easily alter multiple
+ * forms at once by directly targeting the shared base form.
+ *
+ * Two example use cases where base forms may be useful are given below.
  *
  * First, you can use this hook to tell the form system to use a different
  * function to build certain forms in your module; this is often used to define
  * a form "factory" function that is used to build several similar forms. In
  * this case, your hook implementation will likely ignore all of the input
- * arguments. See node_forms() for an example of this.
+ * arguments. See node_forms() for an example of this. Note, node_forms() is the
+ * hook_forms() implementation; the base form itself is defined in node_form().
  *
  * Second, you could use this hook to define how to build a form with a
  * dynamically-generated form ID. In this case, you would need to verify that
@@ -1707,7 +1750,9 @@ function hook_form_BASE_FORM_ID_alter(&$form, &$form_state, $form_id) {
  * @return
  *   An associative array whose keys define form_ids and whose values are an
  *   associative array defining the following keys:
- *   - callback: The name of the form builder function to invoke.
+ *   - callback: The name of the form builder function to invoke. This will be
+ *     used for the base form ID, for example, to target a base form using
+ *     hook_form_BASE_FORM_ID_alter().
  *   - callback arguments: (optional) Additional arguments to pass to the
  *     function defined in 'callback', which are prepended to $args.
  *   - wrapper_callback: (optional) The name of a form builder function to
@@ -1862,12 +1907,20 @@ function hook_image_toolkits() {
  *  - 'language':
  *     The language object used to build the message before hook_mail_alter()
  *     is invoked.
+ *  - 'send':
+ *     Set to FALSE to abort sending this email message.
  *
  * @see drupal_mail()
  */
 function hook_mail_alter(&$message) {
   if ($message['id'] == 'modulename_messagekey') {
-    $message['body'][] = "--\nMail sent out from " . variable_get('sitename', t('Drupal'));
+    if (!example_notifications_optin($message['to'], $message['id'])) {
+      // If the recipient has opted to not receive such messages, cancel
+      // sending.
+      $message['send'] = FALSE;
+      return;
+    }
+    $message['body'][] = "--\nMail sent out from " . variable_get('site_name', t('Drupal'));
   }
 }
 
@@ -1904,6 +1957,25 @@ function hook_module_implements_alter(&$implementations, $hook) {
     unset($implementations['my_module']);
     $implementations['my_module'] = $group;
   }
+}
+
+/**
+ * Return additional themes provided by modules.
+ *
+ * Only use this hook for testing purposes. Use a hidden MYMODULE_test.module
+ * to implement this hook. Testing themes should be hidden, too.
+ *
+ * This hook is invoked from _system_rebuild_theme_data() and allows modules to
+ * register additional themes outside of the regular 'themes' directories of a
+ * Drupal installation.
+ *
+ * @return
+ *   An associative array. Each key is the system name of a theme and each value
+ *   is the corresponding path to the theme's .info file.
+ */
+function hook_system_theme_info() {
+  $themes['mymodule_test_theme'] = drupal_get_path('module', 'mymodule') . '/mymodule_test_theme/mymodule_test_theme.info';
+  return $themes;
 }
 
 /**
@@ -2593,7 +2665,7 @@ function hook_stream_wrappers_alter(&$wrappers) {
  *   An array of file objects, indexed by fid.
  *
  * @see file_load_multiple()
- * @see upload_file_load()
+ * @see file_load()
  */
 function hook_file_load($files) {
   // Add the upload specific data into the file object.
@@ -2718,7 +2790,6 @@ function hook_file_move($file, $source) {
  *   The file that has just been deleted.
  *
  * @see file_delete()
- * @see upload_file_delete()
  */
 function hook_file_delete($file) {
   // Delete all information associated with the file.
@@ -3171,13 +3242,10 @@ function hook_install() {
  *
  * A good rule of thumb is to remove updates older than two major releases of
  * Drupal. See hook_update_last_removed() to notify Drupal about the removals.
+ * For further information about releases and release numbers see:
+ * @link http://drupal.org/node/711070 Maintaining a drupal.org project with Git @endlink
  *
  * Never renumber update functions.
- *
- * Further information about releases and release numbers:
- * - @link http://drupal.org/handbook/version-info http://drupal.org/handbook/version-info @endlink
- * - @link http://drupal.org/node/93999 http://drupal.org/node/93999 @endlink (Overview of contributions branches and tags)
- * - @link http://drupal.org/handbook/cvs/releases http://drupal.org/handbook/cvs/releases @endlink
  *
  * Implementations of this hook should be placed in a mymodule.install file in
  * the same directory as mymodule.module. Drupal core's updates are implemented
@@ -4044,7 +4112,7 @@ function hook_url_inbound_alter(&$path, $original_path, $path_language) {
  * @param $path
  *   The outbound path to alter, not adjusted for path aliases yet. It won't be
  *   adjusted for path aliases until all modules are finished altering it, thus
- *   being consistent with hook_url_alter_inbound(), which adjusts for all path
+ *   being consistent with hook_url_inbound_alter(), which adjusts for all path
  *   aliases before allowing modules to alter it. This may have been altered by
  *   other modules before this one.
  * @param $options

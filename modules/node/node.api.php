@@ -570,6 +570,10 @@ function hook_node_load($nodes, $types) {
  * block access, return NODE_ACCESS_IGNORE or simply return nothing.
  * Blindly returning FALSE will break other node access modules.
  *
+ * Also note that this function isn't called for node listings (e.g., RSS feeds,
+ * the default home page at path 'node', a recent content block, etc.) See
+ * @link node_access Node access rights @endlink for a full explanation.
+ *
  * @param $node
  *   Either a node object or the machine name of the content type on which to
  *   perform the access check.
@@ -972,6 +976,7 @@ function hook_ranking() {
  *   The node type object that is being created.
  */
 function hook_node_type_insert($info) {
+  drupal_set_message(t('You have just created a content type with a machine name %type.', array('%type' => $info->type)));
 }
 
 /**
@@ -1229,9 +1234,12 @@ function hook_validate($node, $form, &$form_state) {
 /**
  * Display a node.
  *
- * This is a hook used by node modules. It allows a module to define a
- * custom method of displaying its nodes, usually by displaying extra
- * information particular to that node type.
+ * This hook is invoked only on the module that defines the node's content type
+ * (use hook_node_view() to act on all node views).
+ *
+ * This hook is invoked during node viewing after the node is fully loaded,
+ * so that the node type module can define a custom method for display, or
+ * add to the default display.
  *
  * @param $node
  *   The node to be displayed, as returned by node_load().
@@ -1248,8 +1256,6 @@ function hook_validate($node, $form, &$form_state) {
  *   hook_node_view_alter(), so if you want to affect the final
  *   view of the node, you might consider implementing one of these hooks
  *   instead.
- *
- * For a detailed usage example, see node_example.module.
  *
  * @ingroup node_api_hooks
  */

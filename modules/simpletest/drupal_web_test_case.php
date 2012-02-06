@@ -74,6 +74,18 @@ abstract class DrupalTestCase {
   protected $skipClasses = array(__CLASS__ => TRUE);
 
   /**
+   * Flag to indicate whether the test has been set up.
+   *
+   * The setUp() method isolates the test from the parent Drupal site by
+   * creating a random prefix for the database and setting up a clean file
+   * storage directory. The tearDown() method then cleans up this test
+   * environment. We must ensure that setUp() has been run. Otherwise,
+   * tearDown() will act on the parent Drupal site rather than the test
+   * environment, destroying live data.
+   */
+  protected $setup = FALSE;
+
+  /**
    * Constructor for DrupalTestCase.
    *
    * @param $test_id
@@ -127,7 +139,15 @@ abstract class DrupalTestCase {
     );
 
     // Store assertion for display after the test has completed.
-    Database::getConnection('default', 'simpletest_original_default')
+    try {
+      $connection = Database::getConnection('default', 'simpletest_original_default');
+    }
+    catch (DatabaseConnectionNotDefinedException $e) {
+      // If the test was not set up, the simpletest_original_default
+      // connection does not exist.
+      $connection = Database::getConnection('default', 'default');
+    }
+    $connection
       ->insert('simpletest')
       ->fields($assertion)
       ->execute();
@@ -474,14 +494,19 @@ abstract class DrupalTestCase {
         );
         $completion_check_id = DrupalTestCase::insertAssert($this->testId, $class, FALSE, t('The test did not complete due to a fatal error.'), 'Completion check', $caller);
         $this->setUp();
-        try {
-          $this->$method();
-          // Finish up.
+        if ($this->setup) {
+          try {
+            $this->$method();
+            // Finish up.
+          }
+          catch (Exception $e) {
+            $this->exceptionHandler($e);
+          }
+          $this->tearDown();
         }
-        catch (Exception $e) {
-          $this->exceptionHandler($e);
+        else {
+          $this->fail(t("The test cannot be executed because it has not been set up properly."));
         }
-        $this->tearDown();
         // Remove the completion check record.
         DrupalTestCase::deleteAssert($completion_check_id);
       }
@@ -691,6 +716,7 @@ class DrupalUnitTestCase extends DrupalTestCase {
       unset($module_list['locale']);
       module_list(TRUE, FALSE, FALSE, $module_list);
     }
+    $this->setup = TRUE;
   }
 
   protected function tearDown() {
@@ -1045,28 +1071,35 @@ class DrupalWebTestCase extends DrupalTestCase {
   }
 
   /**
-   * Create a user with a given set of permissions. The permissions correspond to the
-   * names given on the privileges page.
+   * Create a user with a given set of permissions.
    *
-   * @param $permissions
-   *   Array of permission names to assign to user.
-   * @return
+   * @param array $permissions
+   *   Array of permission names to assign to user. Note that the user always
+   *   has the default permissions derived from the "authenticated users" role.
+   *
+   * @return object|false
    *   A fully loaded user object with pass_raw property, or FALSE if account
    *   creation fails.
    */
-  protected function drupalCreateUser($permissions = array('access comments', 'access content', 'post comments', 'skip comment approval')) {
-    // Create a role with the given permission set.
-    if (!($rid = $this->drupalCreateRole($permissions))) {
-      return FALSE;
+  protected function drupalCreateUser(array $permissions = array()) {
+    // Create a role with the given permission set, if any.
+    $rid = FALSE;
+    if ($permissions) {
+      $rid = $this->drupalCreateRole($permissions);
+      if (!$rid) {
+        return FALSE;
+      }
     }
 
     // Create a user assigned to that role.
     $edit = array();
     $edit['name']   = $this->randomName();
     $edit['mail']   = $edit['name'] . '@example.com';
-    $edit['roles']  = array($rid => $rid);
     $edit['pass']   = user_password();
     $edit['status'] = 1;
+    if ($rid) {
+      $edit['roles'] = array($rid => $rid);
+    }
 
     $account = user_save(drupal_anonymous_user(), $edit);
 
@@ -1294,6 +1327,13 @@ class DrupalWebTestCase extends DrupalTestCase {
     $test_info['test_run_id'] = $this->databasePrefix;
     $test_info['in_child_site'] = FALSE;
 
+    // Preset the 'install_profile' system variable, so the first call into
+    // system_rebuild_module_data() (in drupal_install_system()) will register
+    // the test's profile as a module. Without this, the installation profile of
+    // the parent site (executing the test) is registered, and the test
+    // profile's hook_install() and other hook implementations are never invoked.
+    $conf['install_profile'] = $this->profile;
+
     include_once DRUPAL_ROOT . '/includes/install.inc';
     drupal_install_system();
 
@@ -1357,6 +1397,7 @@ class DrupalWebTestCase extends DrupalTestCase {
     variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
 
     drupal_set_time_limit($this->timeLimit);
+    $this->setup = TRUE;
   }
 
   /**
@@ -1631,7 +1672,16 @@ class DrupalWebTestCase extends DrupalTestCase {
    *   An header.
    */
   protected function curlHeaderCallback($curlHandler, $header) {
-    $this->headers[] = $header;
+    // Header fields can be extended over multiple lines by preceding each
+    // extra line with at least one SP or HT. They should be joined on receive.
+    // Details are in RFC2616 section 4.
+    if ($header[0] == ' ' || $header[0] == "\t") {
+      // Normalize whitespace between chucks.
+      $this->headers[] = array_pop($this->headers) . ' ' . trim($header);
+    }
+    else {
+      $this->headers[] = $header;
+    }
 
     // Errors are being sent via X-Drupal-Assertion-* headers,
     // generated by _drupal_log_error() in the exact form required
@@ -3069,8 +3119,21 @@ class DrupalWebTestCase extends DrupalTestCase {
    * @return
    *   TRUE on pass, FALSE on fail.
    */
-  protected function assertFieldByName($name, $value = '', $message = '') {
-    return $this->assertFieldByXPath($this->constructFieldXpath('name', $name), $value, $message ? $message : t('Found field by name @name', array('@name' => $name)), t('Browser'));
+  protected function assertFieldByName($name, $value = NULL, $message = NULL) {
+    if (!isset($message)) {
+      if (!isset($value)) {
+        $message = t('Found field with name @name', array(
+          '@name' => var_export($name, TRUE),
+        ));
+      }
+      else {
+        $message = t('Found field with name @name and value @value', array(
+          '@name' => var_export($name, TRUE),
+          '@value' => var_export($value, TRUE),
+        ));
+      }
+    }
+    return $this->assertFieldByXPath($this->constructFieldXpath('name', $name), $value, $message, t('Browser'));
   }
 
   /**

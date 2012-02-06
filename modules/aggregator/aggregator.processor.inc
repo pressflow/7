@@ -117,7 +117,7 @@ function aggregator_form_aggregator_admin_form_alter(&$form, $form_state) {
     $form['modules']['aggregator']['aggregator_teaser_length'] = array(
       '#type' => 'select',
       '#title' => t('Length of trimmed description'),
-      '#default_value' => 600,
+      '#default_value' => variable_get('aggregator_teaser_length', 600),
       '#options' => drupal_map_assoc(array(0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000), '_aggregator_characters'),
       '#description' => t("The maximum number of characters used in the trimmed version of content.")
     );
@@ -126,14 +126,17 @@ function aggregator_form_aggregator_admin_form_alter(&$form, $form_state) {
 }
 
 /**
- * Helper function for teaser length choices.
+ * Creates display text for teaser length option values.
+ *
+ * Callback for drupal_map_assoc() within
+ * aggregator_form_aggregator_admin_form_alter().
  */
 function _aggregator_characters($length) {
   return ($length == 0) ? t('Unlimited') : format_plural($length, '1 character', '@count characters');
 }
 
 /**
- * Add/edit/delete an aggregator item.
+ * Adds/edits/deletes an aggregator item.
  *
  * @param $edit
  *   An associative array describing the item to be added/edited/deleted.
@@ -175,7 +178,7 @@ function aggregator_save_item($edit) {
 }
 
 /**
- * Expire feed items on $feed that are older than aggregator_clear.
+ * Expires items from a feed depending on expiration settings.
  *
  * @param $feed
  *   Object describing feed.

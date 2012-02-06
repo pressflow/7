@@ -372,21 +372,29 @@ class ThemeRegistry Extends DrupalCacheArray {
       $data = $cached->data;
     }
     else {
-      $complete_registry = theme_get_registry();
+      // If there is no runtime cache stored, fetch the full theme registry,
+      // but then initialize each value to NULL. This allows offsetExists()
+      // to function correctly on non-registered theme hooks without triggering
+      // a call to resolveCacheMiss().
+      $data = $this->initializeRegistry();
       if ($this->persistable) {
-        // If there is no runtime cache stored, fetch the full theme registry,
-        // but then initialize each value to NULL. This allows
-        // offsetExists() to function correctly on non-registered theme hooks
-        // without triggering a call to resolveCacheMiss().
-        $data = array_fill_keys(array_keys($complete_registry), NULL);
-        $this->set($this->cid, $data, $this->bin);
-        $this->completeRegistry = $complete_registry;
-      }
-      else {
-        $data = $complete_registry;
+        $this->set($data);
       }
     }
     $this->storage = $data;
+  }
+
+  /**
+   * Initializes the full theme registry.
+   *
+   * @return
+   *   An array with the keys of the full theme registry, but the values
+   *   initialized to NULL.
+   */
+  function initializeRegistry() {
+    $this->completeRegistry = theme_get_registry();
+
+    return array_fill_keys(array_keys($this->completeRegistry), NULL);
   }
 
   public function offsetExists($offset) {
@@ -420,15 +428,19 @@ class ThemeRegistry Extends DrupalCacheArray {
     return $this->storage[$offset];
   }
 
-  public function set($cid, $data, $bin, $lock = TRUE) {
-    $lock_name = $cid . ':' . $bin;
+  public function set($data, $lock = TRUE) {
+    $lock_name = $this->cid . ':' . $this->bin;
     if (!$lock || lock_acquire($lock_name)) {
-      if ($cached = cache_get($cid, $this->bin)) {
+      if ($cached = cache_get($this->cid, $this->bin)) {
         // Use array merge instead of union so that filled in values in $data
         // overwrite empty values in the current cache.
         $data = array_merge($cached->data, $data);
       }
-      cache_set($cid, $data, $bin);
+      else {
+        $registry = $this->initializeRegistry();
+        $data = array_merge($registry, $data);
+      }
+      cache_set($this->cid, $data, $this->bin);
       if ($lock) {
         lock_release($lock_name);
       }
@@ -781,8 +793,9 @@ function list_themes($refresh = FALSE) {
  * Generates themed output.
  *
  * All requests for themed output must go through this function. It examines
- * the request and routes it to the appropriate theme function or template, by
- * checking the theme registry.
+ * the request and routes it to the appropriate
+ * @link themeable theme function or template @endlink, by checking the theme
+ * registry.
  *
  * The first argument to this function is the name of the theme hook. For
  * instance, to theme a table, the theme hook name is 'table'. By default, this
@@ -882,6 +895,8 @@ function list_themes($refresh = FALSE) {
  *
  * @return
  *   An HTML string representing the themed output.
+ *
+ * @see themeable
  */
 function theme($hook, $variables = array()) {
   static $hooks = NULL;
@@ -1515,7 +1530,7 @@ function theme_link($variables) {
  * @param $variables
  *   An associative array containing:
  *   - links: An associative array of links to be themed. The key for each link
- *     is used as its css class. Each link should be itself an array, with the
+ *     is used as its CSS class. Each link should be itself an array, with the
  *     following elements:
  *     - title: The link text.
  *     - href: The link URL. If omitted, the 'title' is shown as a plain text
@@ -2104,6 +2119,8 @@ function theme_username($variables) {
 
 /**
  * Returns HTML for a progress bar.
+ *
+ * Note that the core Batch API uses this only for non-JavaScript batch jobs.
  *
  * @param $variables
  *   An associative array containing:
