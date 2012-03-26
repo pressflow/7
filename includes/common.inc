@@ -4777,10 +4777,15 @@ function drupal_add_tabledrag($table_id, $action, $relationship, $group, $subgro
 }
 
 function drupal_aggregated_file_exists($uri) {
-  $exists = apc_exists('file_exists_' . $uri);
-  if (!$exists && file_exists($uri)) {
-    $exists = TRUE;
-    apc_store('file_exists_' . $uri, TRUE, 86400);
+  if (function_exists('apc_fetch')) {
+    $exists = apc_fetch('file_exists_' . $uri);
+    if (!$exists && file_exists($uri)) {
+      $exists = TRUE;
+      apc_store('file_exists_' . $uri, TRUE, 86400);
+    }
+  }
+  else {
+    $exists = file_exists($uri);
   }
   return $exists;
 }
