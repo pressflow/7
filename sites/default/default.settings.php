@@ -520,3 +520,18 @@ $conf['404_fast_html'] = '<html xmlns="http://www.w3.org/1999/xhtml"><head><titl
  */
 # $conf['pressflow_smart_start'] = TRUE;
 
+
+/**
+ * External access proxy settings:
+ *
+ * If your site must access the internet via a web proxy then you can enter
+ * the proxy settings here. Currently only basic authentication is supported
+ * by using the username and password variables. The proxy_exceptions variable
+ * is an array of host names to be accessed directly, not via proxy.
+ */
+# $conf['proxy_server'] = '';
+# $conf['proxy_port'] = 8080;
+# $conf['proxy_username'] = '';
+# $conf['proxy_password'] = '';
+# $conf['proxy_exceptions'] = array('127.0.0.1', 'localhost');
+
