@@ -23,7 +23,7 @@ function forum_help($path, $arg) {
       $output .= '</ul>';
       $output .= '</ul>';
       $output .= '</ul>';
-      $output .= '<p>' . t('For more information, see the online handbook entry for <a href="@forum">Forum module</a>.', array('@forum' => 'http://drupal.org/handbook/modules/forum')) . '</p>';
+      $output .= '<p>' . t('For more information, see the online handbook entry for <a href="@forum">Forum module</a>.', array('@forum' => 'http://drupal.org/documentation/modules/forum')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Setting up forum structure') . '</dt>';
@@ -468,10 +468,10 @@ function forum_permission() {
 /**
  * Implements hook_taxonomy_term_delete().
  */
-function forum_taxonomy_term_delete($tid) {
+function forum_taxonomy_term_delete($term) {
   // For containers, remove the tid from the forum_containers variable.
   $containers = variable_get('forum_containers', array());
-  $key = array_search($tid, $containers);
+  $key = array_search($term->tid, $containers);
   if ($key !== FALSE) {
     unset($containers[$key]);
   }
@@ -545,56 +545,81 @@ function forum_field_storage_pre_insert($entity_type, $entity, &$skip_fields) {
 function forum_field_storage_pre_update($entity_type, $entity, &$skip_fields) {
   $first_call = &drupal_static(__FUNCTION__, array());
 
-  if ($entity_type == 'node' && $entity->status && _forum_node_check_node_type($entity)) {
-    // We don't maintain data for old revisions, so clear all previous values
-    // from the table. Since this hook runs once per field, per object, make
-    // sure we only wipe values once.
-    if (!isset($first_call[$entity->nid])) {
-      $first_call[$entity->nid] = FALSE;
+  if ($entity_type == 'node' && _forum_node_check_node_type($entity)) {
+
+    // If the node is published, update the forum index.
+    if ($entity->status) {
+
+      // We don't maintain data for old revisions, so clear all previous values
+      // from the table. Since this hook runs once per field, per object, make
+      // sure we only wipe values once.
+      if (!isset($first_call[$entity->nid])) {
+        $first_call[$entity->nid] = FALSE;
+        db_delete('forum_index')->condition('nid', $entity->nid)->execute();
+      }
+      $query = db_insert('forum_index')->fields(array('nid', 'title', 'tid', 'sticky', 'created', 'comment_count', 'last_comment_timestamp'));
+      foreach ($entity->taxonomy_forums as $language) {
+        foreach ($language as $item) {
+          $query->values(array(
+            'nid' => $entity->nid,
+            'title' => $entity->title,
+            'tid' => $item['tid'],
+            'sticky' => $entity->sticky,
+            'created' => $entity->created,
+            'comment_count' => 0,
+            'last_comment_timestamp' => $entity->created,
+          ));
+        }
+      }
+      $query->execute();
+      // The logic for determining last_comment_count is fairly complex, so
+      // call _forum_update_forum_index() too.
+      _forum_update_forum_index($entity->nid);
+    }
+
+    // When a forum node is unpublished, remove it from the forum_index table.
+    else {
       db_delete('forum_index')->condition('nid', $entity->nid)->execute();
     }
-    $query = db_insert('forum_index')->fields(array('nid', 'title', 'tid', 'sticky', 'created', 'comment_count', 'last_comment_timestamp'));
-    foreach ($entity->taxonomy_forums as $language) {
-      foreach ($language as $item) {
-        $query->values(array(
-          'nid' => $entity->nid,
-          'title' => $entity->title,
-          'tid' => $item['tid'],
-          'sticky' => $entity->sticky,
-          'created' => $entity->created,
-          'comment_count' => 0,
-          'last_comment_timestamp' => $entity->created,
-        ));
-      }
-    }
-    $query->execute();
-    // The logic for determining last_comment_count is fairly complex, so
-    // call _forum_update_forum_index() too.
-    _forum_update_forum_index($entity->nid);
+
   }
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter() for taxonomy_form_vocabulary().
  */
-function forum_form_alter(&$form, $form_state, $form_id) {
+function forum_form_taxonomy_form_vocabulary_alter(&$form, &$form_state, $form_id) {
   $vid = variable_get('forum_nav_vocabulary', 0);
   if (isset($form['vid']['#value']) && $form['vid']['#value'] == $vid) {
-    // Hide critical options from forum vocabulary.
-    if ($form_id == 'taxonomy_form_vocabulary') {
-      $form['help_forum_vocab'] = array(
-        '#markup' => t('This is the designated forum vocabulary. Some of the normal vocabulary options have been removed.'),
-        '#weight' => -1,
-      );
-      $form['hierarchy'] = array('#type' => 'value', '#value' => 1);
-      $form['delete']['#access'] = FALSE;
-    }
-    // Hide multiple parents select from forum terms.
-    elseif ($form_id == 'taxonomy_form_term') {
-      $form['advanced']['parent']['#access'] = FALSE;
-    }
+    $form['help_forum_vocab'] = array(
+      '#markup' => t('This is the designated forum vocabulary. Some of the normal vocabulary options have been removed.'),
+      '#weight' => -1,
+    );
+    // Forum's vocabulary always has single hierarchy. Forums and containers
+    // have only one parent or no parent for root items. By default this value
+    // is 0.
+    $form['hierarchy']['#value'] = 1;
+    // Do not allow to delete forum's vocabulary.
+    $form['actions']['delete']['#access'] = FALSE;
   }
-  if (!empty($form['#node_edit_form']) && isset($form['taxonomy_forums'])) {
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for taxonomy_form_term().
+ */
+function forum_form_taxonomy_form_term_alter(&$form, &$form_state, $form_id) {
+   $vid = variable_get('forum_nav_vocabulary', 0);
+   if (isset($form['vid']['#value']) && $form['vid']['#value'] == $vid) {
+    // Hide multiple parents select from forum terms.
+    $form['relations']['parent']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for node_form().
+ */
+function forum_form_node_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['taxonomy_forums'])) {
     $langcode = $form['taxonomy_forums']['#language'];
     // Make the vocabulary required for 'real' forum-nodes.
     $form['taxonomy_forums'][$langcode]['#required'] = TRUE;
@@ -773,7 +798,7 @@ function forum_forum_load($tid = NULL) {
     $query->addExpression('SUM(ncs.comment_count)', 'comment_count');
     $counts = $query
       ->fields('f', array('tid'))
-      ->condition('status', 1)
+      ->condition('n.status', 1)
       ->groupBy('tid')
       ->addTag('node_access')
       ->execute()

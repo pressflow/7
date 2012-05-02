@@ -41,7 +41,7 @@ function image_help($path, $arg) {
     case 'admin/help#image':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Image module allows you to manipulate images on your website. It exposes a setting for using the <em>Image toolkit</em>, allows you to configure <em>Image styles</em> that can be used for resizing or adjusting images on display, and provides an <em>Image</em> field for attaching images to content. For more information, see the online handbook entry for <a href="@image">Image module</a>.', array('@image' => 'http://drupal.org/handbook/modules/image')) . '</p>';
+      $output .= '<p>' . t('The Image module allows you to manipulate images on your website. It exposes a setting for using the <em>Image toolkit</em>, allows you to configure <em>Image styles</em> that can be used for resizing or adjusting images on display, and provides an <em>Image</em> field for attaching images to content. For more information, see the online handbook entry for <a href="@image">Image module</a>.', array('@image' => 'http://drupal.org/documentation/modules/image')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Manipulating images') . '</dt>';
@@ -297,12 +297,9 @@ function image_file_download($uri) {
           // Send headers describing the image's size, and MIME-type...
           'Content-Type' => $info['mime_type'],
           'Content-Length' => $info['file_size'],
-          // ...and allow the file to be cached for two weeks (matching the
-          // value we/ use for the mod_expires settings in .htaccess) and
-          // ensure that caching proxies do not share the image with other
-          // users.
-          'Expires' => gmdate(DATE_RFC1123, REQUEST_TIME + 1209600),
-          'Cache-Control' => 'max-age=1209600, private, must-revalidate',
+          // By not explicitly setting them here, this uses normal Drupal
+          // Expires, Cache-Control and ETag headers to prevent proxy or
+          // browser caching of private images.
         );
       }
     }
@@ -326,7 +323,7 @@ function image_file_download($uri) {
  */
 function image_file_move($file, $source) {
   // Delete any image derivatives at the original image path.
-  image_path_flush($file->uri);
+  image_path_flush($source->uri);
 }
 
 /**
@@ -455,6 +452,73 @@ function image_field_update_field($field, $prior_field, $has_data) {
     // Is there an old file?
     if ($fid_old && ($file_old = file_load($fid_old))) {
       file_usage_delete($file_old, 'image', 'default_image', $field['id']);
+    }
+  }
+
+  // If the upload destination changed, then move the file.
+  if ($file_new && (file_uri_scheme($file_new->uri) != $field['settings']['uri_scheme'])) {
+    $directory = $field['settings']['uri_scheme'] . '://default_images/';
+    file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+    file_move($file_new, $directory . $file_new->filename);
+  }
+}
+
+/**
+ * Implements hook_field_delete_instance().
+ */
+function image_field_delete_instance($instance) {
+  // Only act on image fields.
+  $field = field_read_field($instance['field_name']);
+  if ($field['type'] != 'image') {
+    return;
+  }
+
+  // The value of a managed_file element can be an array if the #extended
+  // property is set to TRUE.
+  $fid = $instance['settings']['default_image'];
+  if (is_array($fid)) {
+    $fid = $fid['fid'];
+  }
+
+  // Remove the default image when the instance is deleted.
+  if ($fid && ($file = file_load($fid))) {
+    file_usage_delete($file, 'image', 'default_image', $instance['id']);
+  }
+}
+
+/**
+ * Implements hook_field_update_instance().
+ */
+function image_field_update_instance($instance, $prior_instance) {
+  // Only act on image fields.
+  $field = field_read_field($instance['field_name']);
+  if ($field['type'] != 'image') {
+    return;
+  }
+
+  // The value of a managed_file element can be an array if the #extended
+  // property is set to TRUE.
+  $fid_new = $instance['settings']['default_image'];
+  if (is_array($fid_new)) {
+    $fid_new = $fid_new['fid'];
+  }
+  $fid_old = $prior_instance['settings']['default_image'];
+  if (is_array($fid_old)) {
+    $fid_old = $fid_old['fid'];
+  }
+
+  // If the old and new files do not match, update the default accordingly.
+  $file_new = $fid_new ? file_load($fid_new) : FALSE;
+  if ($fid_new != $fid_old) {
+    // Save the new file, if present.
+    if ($file_new) {
+      $file_new->status = FILE_STATUS_PERMANENT;
+      file_save($file_new);
+      file_usage_add($file_new, 'image', 'default_image', $instance['id']);
+    }
+    // Delete the old file, if present.
+    if ($fid_old && ($file_old = file_load($fid_old))) {
+      file_usage_delete($file_old, 'image', 'default_image', $instance['id']);
     }
   }
 
@@ -682,7 +746,10 @@ function image_style_options($include_empty = TRUE) {
   if ($include_empty && !empty($styles)) {
     $options[''] = t('<none>');
   }
-  $options = array_merge($options, drupal_map_assoc(array_keys($styles)));
+  // Use the array concatenation operator '+' here instead of array_merge(),
+  // because the latter loses the datatype of the array keys, turning
+  // associative string keys into numeric ones without warning.
+  $options = $options + drupal_map_assoc(array_keys($styles));
   if (empty($options)) {
     $options[''] = t('No defined styles');
   }
@@ -1171,7 +1238,9 @@ function image_effect_apply($image, $effect) {
  *   - style_name: The name of the style to be used to alter the original image.
  *   - path: The path of the image file relative to the Drupal files directory.
  *     This function does not work with images outside the files directory nor
- *     with remotely hosted images.
+ *     with remotely hosted images. This should be in a format such as
+ *     'images/image.jpg', or using a stream wrapper such as
+ *     'public://images/image.jpg'.
  *   - width: The width of the source image (if known).
  *   - height: The height of the source image (if known).
  *   - alt: The alternative text for text-based browsers.

@@ -76,7 +76,7 @@ function comment_help($path, $arg) {
   switch ($path) {
     case 'admin/help#comment':
       $output = '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Comment module allows users to comment on site content, set commenting defaults and permissions, and moderate comments. For more information, see the online handbook entry for <a href="@comment">Comment module</a>.', array('@comment' => 'http://drupal.org/handbook/modules/comment/')) . '</p>';
+      $output .= '<p>' . t('The Comment module allows users to comment on site content, set commenting defaults and permissions, and moderate comments. For more information, see the online handbook entry for <a href="@comment">Comment module</a>.', array('@comment' => 'http://drupal.org/documentation/modules/comment/')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Default and custom settings') . '</dt>';
@@ -1499,8 +1499,11 @@ function comment_save($comment) {
         $max = db_query('SELECT MAX(thread) FROM {comment} WHERE nid = :nid', array(':nid' => $comment->nid))->fetchField();
         // Strip the "/" from the end of the thread.
         $max = rtrim($max, '/');
+        // We need to get the value at the correct depth.
+        $parts = explode('.', $max);
+        $firstsegment = $parts[0];
         // Finally, build the thread field for this new comment.
-        $thread = int2vancode(vancode2int($max) + 1) . '/';
+        $thread = int2vancode(vancode2int($firstsegment) + 1) . '/';
       }
       else {
         // This is a comment with a parent comment, so increase the part of the
@@ -2062,6 +2065,9 @@ function comment_preview($comment) {
     if (!empty($account->uid)) {
       $comment->uid = $account->uid;
       $comment->name = check_plain($account->name);
+      $comment->signature = $account->signature;
+      $comment->signature_format = $account->signature_format;
+      $comment->picture = $account->picture;
     }
     elseif (empty($comment->name)) {
       $comment->name = variable_get('anonymous', t('Anonymous'));

@@ -19,6 +19,10 @@ Drupal.behaviors.machineName = {
    *     disallowed characters in the machine name; e.g., '[^a-z0-9]+'.
    *   - replace: A character to replace disallowed characters with; e.g., '_'
    *     or '-'.
+   *   - standalone: Whether the preview should stay in its own element rather
+   *     than the suffix of the source element.
+   *   - field_prefix: The #field_prefix of the form element.
+   *   - field_suffix: The #field_suffix of the form element.
    */
   attach: function (context, settings) {
     var self = this;
@@ -26,7 +30,7 @@ Drupal.behaviors.machineName = {
       var $source = $(source_id, context).addClass('machine-name-source');
       var $target = $(options.target, context).addClass('machine-name-target');
       var $suffix = $(options.suffix, context);
-      var $wrapper = $target.parents('.form-item:first');
+      var $wrapper = $target.closest('.form-item');
       // All elements have to exist.
       if (!$source.length || !$target.length || !$suffix.length || !$wrapper.length) {
         return;
@@ -49,10 +53,12 @@ Drupal.behaviors.machineName = {
         var machine = self.transliterate($source.val(), options);
       }
       // Append the machine name preview to the source field.
-      var $preview = $('<span class="machine-name-value">' + machine + '</span>');
-      $suffix.empty()
-        .append(' ').append('<span class="machine-name-label">' + options.label + ':</span>')
-        .append(' ').append($preview);
+      var $preview = $('<span class="machine-name-value">' + options.field_prefix + Drupal.checkPlain(machine) + options.field_suffix + '</span>');
+      $suffix.empty();
+      if (options.label) {
+        $suffix.append(' ').append('<span class="machine-name-label">' + options.label + ':</span>');
+      }
+      $suffix.append(' ').append($preview);
 
       // If the machine name cannot be edited, stop further processing.
       if ($target.is(':disabled')) {
@@ -77,9 +83,11 @@ Drupal.behaviors.machineName = {
         $source.bind('keyup.machineName change.machineName', function () {
           machine = self.transliterate($(this).val(), options);
           // Set the machine name to the transliterated value.
-          if (machine != options.replace && machine != '') {
-            $target.val(machine);
-            $preview.text(machine);
+          if (machine != '') {
+            if (machine != options.replace) {
+              $target.val(machine);
+              $preview.html(options.field_prefix + Drupal.checkPlain(machine) + options.field_suffix);
+            }
             $suffix.show();
           }
           else {

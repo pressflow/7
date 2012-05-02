@@ -21,7 +21,7 @@ function taxonomy_help($path, $arg) {
     case 'admin/help#taxonomy':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Taxonomy module allows you to classify the content of your website. To classify content, you define <em>vocabularies</em> that contain related <em>terms</em>, and then assign the vocabularies to content types. For more information, see the online handbook entry for the <a href="@taxonomy">Taxonomy module</a>.', array('@taxonomy' => 'http://drupal.org/handbook/modules/taxonomy/')) . '</p>';
+      $output .= '<p>' . t('The Taxonomy module allows you to classify the content of your website. To classify content, you define <em>vocabularies</em> that contain related <em>terms</em>, and then assign the vocabularies to content types. For more information, see the online handbook entry for the <a href="@taxonomy">Taxonomy module</a>.', array('@taxonomy' => 'http://drupal.org/documentation/modules/taxonomy/')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Creating vocabularies') . '</dt>';
@@ -195,7 +195,7 @@ function taxonomy_field_extra_fields() {
  * @param $limit
  *   Integer. The maximum number of nodes to find.
  *   Set to FALSE for no limit.
- * @order
+ * @param $order
  *   An array of fields and directions.
  *
  * @return
@@ -475,6 +475,30 @@ function taxonomy_vocabulary_delete($vid) {
     module_invoke_all('taxonomy_vocabulary_delete', $vocabulary);
     module_invoke_all('entity_delete', $vocabulary, 'taxonomy_vocabulary');
 
+    // Load all Taxonomy module fields and delete those which use only this
+    // vocabulary.
+    $taxonomy_fields = field_read_fields(array('module' => 'taxonomy'));
+    foreach ($taxonomy_fields as $field_name => $taxonomy_field) {
+      $modified_field = FALSE;
+      // Term reference fields may reference terms from more than one
+      // vocabulary.
+      foreach ($taxonomy_field['settings']['allowed_values'] as $key => $allowed_value) {
+        if ($allowed_value['vocabulary'] == $vocabulary->machine_name) {
+          unset($taxonomy_field['settings']['allowed_values'][$key]);
+          $modified_field = TRUE;
+        }
+      }
+      if ($modified_field) {
+        if (empty($taxonomy_field['settings']['allowed_values'])) {
+          field_delete_field($field_name);
+        }
+        else {
+          // Update the field definition with the new allowed values.
+          field_update_field($taxonomy_field);
+        }
+      }
+    }
+
     cache_clear_all();
     taxonomy_vocabulary_static_reset();
 
@@ -544,7 +568,7 @@ function taxonomy_check_vocabulary_hierarchy($vocabulary, $changed_term) {
       $hierarchy = 2;
       break;
     }
-    elseif (count($term->parents) == 1 && 0 !== array_shift($term->parents)) {
+    elseif (count($term->parents) == 1 && !isset($term->parents[0])) {
       $hierarchy = 1;
     }
   }
@@ -847,7 +871,11 @@ function taxonomy_get_vocabularies() {
  * Get names for all taxonomy vocabularies.
  *
  * @return
- *   An array of vocabulary ids, names, machine names, keyed by machine name.
+ *   An associative array of objects keyed by vocabulary machine name with
+ *   information about taxonomy vocabularies. Each object has properties:
+ *   - name: The vocabulary name.
+ *   - machine_name: The machine name.
+ *   - vid: The vocabulary ID.
  */
 function taxonomy_vocabulary_get_names() {
   $names = &drupal_static(__FUNCTION__);
@@ -1071,12 +1099,25 @@ function taxonomy_get_tree($vid, $parent = 0, $max_depth = NULL, $load_entities 
  *
  * @param $name
  *   Name of the term to search for.
+ * @param $vocabulary
+ *   (optional) Vocabulary machine name to limit the search. Defaults to NULL.
  *
  * @return
  *   An array of matching term objects.
  */
-function taxonomy_get_term_by_name($name) {
-  return taxonomy_term_load_multiple(array(), array('name' => trim($name)));
+function taxonomy_get_term_by_name($name, $vocabulary = NULL) {
+  $conditions = array('name' => trim($name));
+  if (isset($vocabulary)) {
+    $vocabularies = taxonomy_vocabulary_get_names();
+    if (isset($vocabularies[$vocabulary])) {
+      $conditions['vid'] = $vocabularies[$vocabulary]->vid;
+    }
+    else {
+      // Return an empty array when filtering by a non-existing vocabulary.
+      return array();
+    }
+  }
+  return taxonomy_term_load_multiple(array(), $conditions);
 }
 
 /**
@@ -1331,7 +1372,7 @@ function taxonomy_field_widget_info_alter(&$info) {
 /**
  * Implements hook_options_list().
  */
-function taxonomy_options_list($field) {
+function taxonomy_options_list($field, $instance, $entity_type, $entity) {
   $function = !empty($field['settings']['options_list_callback']) ? $field['settings']['options_list_callback'] : 'taxonomy_allowed_values';
   return $function($field);
 }
@@ -1418,6 +1459,10 @@ function taxonomy_field_formatter_info() {
       'label' => t('Plain text'),
       'field types' => array('taxonomy_term_reference'),
     ),
+    'taxonomy_term_reference_rss_category' => array(
+      'label' => t('RSS category'),
+      'field types' => array('taxonomy_term_reference'),
+    ),
   );
 }
 
@@ -1457,6 +1502,18 @@ function taxonomy_field_formatter_view($entity_type, $entity, $field, $instance,
         $name = ($item['tid'] != 'autocreate' ? $item['taxonomy_term']->name : $item['name']);
         $element[$delta] = array(
           '#markup' => check_plain($name),
+        );
+      }
+      break;
+
+    case 'taxonomy_term_reference_rss_category':
+      foreach ($items as $delta => $item) {
+        $entity->rss_elements[] = array(
+          'key' => 'category',
+          'value' => $item['tid'] != 'autocreate' ? $item['taxonomy_term']->name : $item['name'],
+          'attributes' => array(
+            'domain' => $item['tid'] != 'autocreate' ? url('taxonomy/term/' . $item['tid'], array('absolute' => TRUE)) : '',
+          ),
         );
       }
       break;
@@ -1519,7 +1576,7 @@ function taxonomy_field_formatter_prepare_view($entity_type, $entities, $field, 
           $items[$id][$delta]['taxonomy_term'] = $terms[$item['tid']];
         }
         // Terms to be created are not in $terms, but are still legitimate.
-        else if ($item['tid'] == 'autocreate') {
+        elseif ($item['tid'] == 'autocreate') {
           // Leave the item in place.
         }
         // Otherwise, unset the instance value, since the term does not exist.

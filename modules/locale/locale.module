@@ -22,7 +22,7 @@ function locale_help($path, $arg) {
     case 'admin/help#locale':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Locale module allows your Drupal site to be presented in languages other than the default English, and to be multilingual. The Locale module works by maintaining a database of translations, and examining text as it is about to be displayed. When a translation of the text is available in the language to be displayed, the translation is displayed rather than the original text. When a translation is unavailable, the original text is displayed, and then stored for review by a translator. For more information, see the online handbook entry for <a href="@locale">Locale module</a>.', array('@locale' => 'http://drupal.org/handbook/modules/locale/')) . '</p>';
+      $output .= '<p>' . t('The Locale module allows your Drupal site to be presented in languages other than the default English, and to be multilingual. The Locale module works by maintaining a database of translations, and examining text as it is about to be displayed. When a translation of the text is available in the language to be displayed, the translation is displayed rather than the original text. When a translation is unavailable, the original text is displayed, and then stored for review by a translator. For more information, see the online handbook entry for <a href="@locale">Locale module</a>.', array('@locale' => 'http://drupal.org/documentation/modules/locale/')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Translating interface text') . '</dt>';
@@ -253,6 +253,7 @@ function locale_permission() {
     ),
     'translate interface' => array(
       'title' => t('Translate interface texts'),
+      'restrict access' => TRUE,
     ),
   );
 }
@@ -699,13 +700,15 @@ function locale($string = NULL, $context = NULL, $langcode = NULL) {
     }
     else {
       // We don't have the source string, cache this as untranslated.
-      db_insert('locales_source')
-        ->fields(array(
+      db_merge('locales_source')
+        ->insertFields(array(
           'location' => request_uri(),
+          'version' => VERSION,
+        ))
+        ->key(array(
           'source' => $string,
           'context' => (string) $context,
           'textgroup' => 'default',
-          'version' => VERSION,
         ))
         ->execute();
       $locale_t[$langcode][$context][$string] = TRUE;
@@ -734,30 +737,51 @@ function locale_reset() {
  * @param $langcode
  *   Optional language code to translate to a language other than
  *   what is used to display the page.
+ *
+ * @return
+ *   The numeric index of the plural variant to use for this $langcode and
+ *   $count combination or -1 if the language was not found or does not have a
+ *   plural formula.
  */
 function locale_get_plural($count, $langcode = NULL) {
   global $language;
-  $locale_formula = &drupal_static(__FUNCTION__, array());
-  $plurals = &drupal_static(__FUNCTION__ . ':plurals', array());
+
+  // Used to locally cache the plural formulas for all languages.
+  $plural_formulas = &drupal_static(__FUNCTION__, array());
+
+  // Used to store precomputed plural indexes corresponding to numbers
+  // individually for each language.
+  $plural_indexes = &drupal_static(__FUNCTION__ . ':plurals', array());
 
   $langcode = $langcode ? $langcode : $language->language;
 
-  if (!isset($plurals[$langcode][$count])) {
-    if (empty($locale_formula)) {
+  if (!isset($plural_indexes[$langcode][$count])) {
+    // Retrieve and statically cache the plural formulas for all languages.
+    if (empty($plural_formulas)) {
       $language_list = language_list();
-      $locale_formula[$langcode] = $language_list[$langcode]->formula;
+      foreach ($language_list as $langcode => $lang) {
+        $plural_formulas[$langcode] = $lang->formula;
+      }
     }
-    if ($locale_formula[$langcode]) {
+    // If there is a plural formula for the language, evaluate it for the given
+    // $count and statically cache the result for the combination of language
+    // and count, since the result will always be identical.
+    if (!empty($plural_formulas[$langcode])) {
+      // $n is used inside the expression in the eval().
       $n = $count;
-      $plurals[$langcode][$count] = @eval('return intval(' . $locale_formula[$langcode] . ');');
-      return $plurals[$langcode][$count];
+      $plural_indexes[$langcode][$count] = @eval('return intval(' . $plural_formulas[$langcode] . ');');
     }
+    // In case there is no plural formula for English (no imported translation
+    // for English), use a default formula.
+    elseif ($langcode == 'en') {
+      $plural_indexes[$langcode][$count] = (int) ($count != 1);
+    }
+    // Otherwise, return -1 (unknown).
     else {
-      $plurals[$langcode][$count] = -1;
-      return -1;
+      $plural_indexes[$langcode][$count] = -1;
     }
   }
-  return $plurals[$langcode][$count];
+  return $plural_indexes[$langcode][$count];
 }
 
 

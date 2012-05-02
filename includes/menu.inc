@@ -321,7 +321,14 @@ function menu_get_ancestors($parts) {
   $ancestors = array();
   $length =  $number_parts - 1;
   $end = (1 << $number_parts) - 1;
-  $masks = variable_get('menu_masks', array());
+  $masks = variable_get('menu_masks');
+  // If the optimized menu_masks array is not available use brute force to get
+  // the correct $ancestors and $placeholders returned. Do not use this as the
+  // default value of the menu_masks variable to avoid building such a big
+  // array.
+  if (!$masks) {
+    $masks = range(511, 1);
+  }
   // Only examine patterns that actually exist as router items (the masks).
   foreach ($masks as $i) {
     if ($i > $end) {
@@ -452,18 +459,10 @@ function menu_get_item($path = NULL, $router_item = NULL) {
     }
     $original_map = arg(NULL, $path);
 
-    // Since there is no limit to the length of $path, use a hash to keep it
-    // short yet unique.
-    $cid = 'menu_item:' . hash('sha256', $path);
-    if ($cached = cache_get($cid, 'cache_menu')) {
-      $router_item = $cached->data;
-    }
-    else {
-      $parts = array_slice($original_map, 0, MENU_MAX_PARTS);
-      $ancestors = menu_get_ancestors($parts);
-      $router_item = db_query_range('SELECT * FROM {menu_router} WHERE path IN (:ancestors) ORDER BY fit DESC', 0, 1, array(':ancestors' => $ancestors))->fetchAssoc();
-      cache_set($cid, $router_item, 'cache_menu');
-    }
+    $parts = array_slice($original_map, 0, MENU_MAX_PARTS);
+    $ancestors = menu_get_ancestors($parts);
+    $router_item = db_query_range('SELECT * FROM {menu_router} WHERE path IN (:ancestors) ORDER BY fit DESC', 0, 1, array(':ancestors' => $ancestors))->fetchAssoc();
+
     if ($router_item) {
       // Allow modules to alter the router item before it is translated and
       // checked for access.
@@ -2152,7 +2151,7 @@ function menu_contextual_links($module, $parent_path, $args) {
   $links = array();
   // Performance: In case a previous invocation for the same parent path did not
   // return any links, we immediately return here.
-  if (isset($path_empty[$parent_path])) {
+  if (isset($path_empty[$parent_path]) && strpos($parent_path, '%') !== FALSE) {
     return $links;
   }
   // Construct the item-specific parent path.
@@ -2321,6 +2320,9 @@ function menu_get_active_menu_names() {
  */
 function menu_set_active_item($path) {
   $_GET['q'] = $path;
+  // Since the active item has changed, the active menu trail may also be out
+  // of date.
+  drupal_static_reset('menu_set_active_trail');
 }
 
 /**
@@ -2406,7 +2408,7 @@ function menu_set_active_trail($new_trail = NULL) {
     // appending either the preferred link or the menu router item for the
     // current page. Exclude it if we are on the front page.
     $last = end($trail);
-    if ($last['href'] != $preferred_link['href'] && !drupal_is_front_page()) {
+    if ($preferred_link && $last['href'] != $preferred_link['href'] && !drupal_is_front_page()) {
       $trail[] = $preferred_link;
     }
   }
@@ -3149,10 +3151,10 @@ function menu_link_save(&$item, $existing_item = array(), $parent_candidates = a
   }
   // If every value in $existing_item is the same in the $item, there is no
   // reason to run the update queries or clear the caches. We use
-  // array_intersect_assoc() with the $item as the first parameter because
+  // array_intersect_key() with the $item as the first parameter because
   // $item may have additional keys left over from building a router entry.
   // The intersect removes the extra keys, allowing a meaningful comparison.
-  if (!$existing_item || (array_intersect_assoc($item, $existing_item)) != $existing_item) {
+  if (!$existing_item || (array_intersect_key($item, $existing_item) != $existing_item)) {
     db_update('menu_links')
       ->fields(array(
         'menu_name' => $item['menu_name'],
