@@ -60,166 +60,136 @@ require_once DRUPAL_ROOT . '/modules/field/field.form.inc';
  * Field definitions are represented as an array of key/value pairs.
  *
  * array $field:
- * - id (integer, read-only)
- *     The primary identifier of the field. It is assigned automatically
- *     by field_create_field().
- * - field_name (string)
- *     The name of the field. Each field name is unique within Field API.
- *     When a field is attached to an entity, the field's data is stored
- *     in $entity->$field_name. Maximum length is 32 characters.
- * - type (string)
- *     The type of the field, such as 'text' or 'image'. Field types
- *     are defined by modules that implement hook_field_info().
- * - entity_types (array)
- *     The array of entity types that can hold instances of this field. If
- *     empty or not specified, the field can have instances in any entity type.
- * - cardinality (integer)
- *     The number of values the field can hold. Legal values are any
- *     positive integer or FIELD_CARDINALITY_UNLIMITED.
- * - translatable (integer)
- *     Whether the field is translatable.
- * - locked (integer)
- *     Whether or not the field is available for editing. If TRUE, users can't
- *     change field settings or create new instances of the field in the UI.
- *     Defaults to FALSE.
- * - module (string, read-only)
- *     The name of the module that implements the field type.
- * - active (integer, read-only)
- *     TRUE if the module that implements the field type is currently
- *     enabled, FALSE otherwise.
- * - deleted (integer, read-only)
- *     TRUE if this field has been deleted, FALSE otherwise. Deleted
- *     fields are ignored by the Field Attach API. This property exists
- *     because fields can be marked for deletion but only actually
- *     destroyed by a separate garbage-collection process.
- * - columns (array, read-only).
- *     An array of the Field API columns used to store each value of
- *     this field. The column list may depend on field settings; it is
- *     not constant per field type. Field API column specifications are
- *     exactly like Schema API column specifications but, depending on
- *     the field storage module in use, the name of the column may not
- *     represent an actual column in an SQL database.
- * - indexes (array).
- *     An array of indexes on data columns, using the same definition format
- *     as Schema API index specifications. Only columns that appear in the
- *     'columns' setting are allowed. Note that field types can specify
- *     default indexes, which can be modified or added to when
- *     creating a field.
+ * - id (integer, read-only): The primary identifier of the field. It is
+ *   assigned automatically by field_create_field().
+ * - field_name (string): The name of the field. Each field name is unique
+ *   within Field API. When a field is attached to an entity, the field's data
+ *   is stored in $entity->$field_name. Maximum length is 32 characters.
+ * - type (string): The type of the field, such as 'text' or 'image'. Field
+ *   types are defined by modules that implement hook_field_info().
+ * - entity_types (array): The array of entity types that can hold instances
+ *   of this field. If empty or not specified, the field can have instances
+ *   in any entity type.
+ * - cardinality (integer): The number of values the field can hold. Legal
+ *   values are any positive integer or FIELD_CARDINALITY_UNLIMITED.
+ * - translatable (integer): Whether the field is translatable.
+ * - locked (integer): Whether or not the field is available for editing. If
+ *   TRUE, users can't change field settings or create new instances of the
+ *   field in the UI. Defaults to FALSE.
+ * - module (string, read-only): The name of the module that implements the
+ *   field type.
+ * - active (integer, read-only): TRUE if the module that implements the field
+ *   type is currently enabled, FALSE otherwise.
+ * - deleted (integer, read-only): TRUE if this field has been deleted, FALSE
+ *   otherwise. Deleted fields are ignored by the Field Attach API. This
+ *   property exists because fields can be marked for deletion but only
+ *   actually destroyed by a separate garbage-collection process.
+ * - columns (array, read-only): An array of the Field API columns used to
+ *   store each value of this field. The column list may depend on field
+ *   settings; it is not constant per field type. Field API column
+ *   specifications are exactly like Schema API column specifications but,
+ *   depending on the field storage module in use, the name of the column may
+ *   not represent an actual column in an SQL database.
+ * - indexes (array): An array of indexes on data columns, using the same
+ *   definition format as Schema API index specifications. Only columns that
+ *   appear in the 'columns' setting are allowed. Note that field types can
+ *   specify default indexes, which can be modified or added to when
+ *   creating a field.
  * - foreign keys: (optional) An associative array of relations, using the same
- *   structure as the 'foreign keys' definition of hook_schema(). Note, however,
- *   that the field data is not necessarily stored in SQL. Also, the possible
- *   usage is limited, as you cannot specify another field as related, only
- *   existing SQL tables, such as filter formats.
- * - settings (array)
- *     A sub-array of key/value pairs of field-type-specific settings. Each
- *     field type module defines and documents its own field settings.
- * - storage (array)
- *     A sub-array of key/value pairs identifying the storage backend to use for
- *     the for the field.
- *     - type (string)
- *         The storage backend used by the field. Storage backends are defined
- *         by modules that implement hook_field_storage_info().
- *     - module (string, read-only)
- *         The name of the module that implements the storage backend.
- *     - active (integer, read-only)
- *         TRUE if the module that implements the storage backend is currently
- *         enabled, FALSE otherwise.
- *     - settings (array)
- *         A sub-array of key/value pairs of settings. Each storage backend
- *         defines and documents its own settings.
+ *   structure as the 'foreign keys' definition of hook_schema(). Note,
+ *   however, that the field data is not necessarily stored in SQL. Also, the
+ *   possible usage is limited, as you cannot specify another field as
+ *   related, only existing SQL tables, such as filter formats.
+ * - settings (array): A sub-array of key/value pairs of field-type-specific
+ *   settings. Each field type module defines and documents its own field
+ *   settings.
+ * - storage (array): A sub-array of key/value pairs identifying the storage
+ *   backend to use for the for the field:
+ *   - type (string): The storage backend used by the field. Storage backends
+ *     are defined by modules that implement hook_field_storage_info().
+ *   - module (string, read-only): The name of the module that implements the
+ *     storage backend.
+ *   - active (integer, read-only): TRUE if the module that implements the
+ *     storage backend is currently enabled, FALSE otherwise.
+ *   - settings (array): A sub-array of key/value pairs of settings. Each
+ *     storage backend defines and documents its own settings.
  *
  * Field instance definitions are represented as an array of key/value pairs.
  *
  * array $instance:
- * - id (integer, read-only)
- *     The primary identifier of this field instance. It is assigned
- *     automatically by field_create_instance().
- * - field_id (integer, read-only)
- *     The foreign key of the field attached to the bundle by this instance.
- *     It is populated automatically by field_create_instance().
- * - field_name (string)
- *     The name of the field attached to the bundle by this instance.
- * - entity_type (string)
- *     The name of the entity type the instance is attached to.
- * - bundle (string)
- *     The name of the bundle that the field is attached to.
- * - label (string)
- *     A human-readable label for the field when used with this
- *     bundle. For example, the label will be the title of Form API
- *     elements for this instance.
- * - description (string)
- *     A human-readable description for the field when used with this
- *     bundle. For example, the description will be the help text of
- *     Form API elements for this instance.
- * - required (integer)
- *     TRUE if a value for this field is required when used with this
- *     bundle, FALSE otherwise. Currently, required-ness is only enforced
- *     during Form API operations, not by field_attach_load(),
- *     field_attach_insert(), or field_attach_update().
- * - default_value_function (string)
- *     The name of the function, if any, that will provide a default value.
- * - default_value (array)
- *     If default_value_function is not set, then fixed values can be provided.
- * - deleted (integer, read-only)
- *     TRUE if this instance has been deleted, FALSE otherwise.
- *     Deleted instances are ignored by the Field Attach API.
- *     This property exists because instances can be marked for deletion but
- *     only actually destroyed by a separate garbage-collection process.
- * - settings (array)
- *     A sub-array of key/value pairs of field-type-specific instance
- *     settings. Each field type module defines and documents its own
- *     instance settings.
- * - widget (array)
- *     A sub-array of key/value pairs identifying the Form API input widget
- *     for the field when used by this bundle.
- *     - type (string)
- *         The type of the widget, such as text_textfield. Widget types
- *         are defined by modules that implement hook_field_widget_info().
- *     - settings (array)
- *         A sub-array of key/value pairs of widget-type-specific settings.
- *         Each field widget type module defines and documents its own
- *         widget settings.
- *     - weight (float)
- *         The weight of the widget relative to the other elements in entity
- *         edit forms.
- *     - module (string, read-only)
- *         The name of the module that implements the widget type.
- * - display (array)
- *     A sub-array of key/value pairs identifying the way field values should
- *     be displayed in each of the entity type's view modes, plus the 'default'
- *     mode. For each view mode, Field UI lets site administrators define
- *     whether they want to use a dedicated set of display options or the
- *     'default' options to reduce the number of displays to maintain as they
- *     add new fields. For nodes, on a fresh install, only the 'teaser' view
- *     mode is configured to use custom display options, all other view modes
- *     defined use the 'default' options by default. When programmatically
- *     adding field instances on nodes, it is therefore recommended to at least
- *     specify display options for 'default' and 'teaser'.
- *     - default (array)
- *         A sub-array of key/value pairs describing the display options to be
- *         used when the field is being displayed in view modes that are not
- *         configured to use dedicated display options.
- *         - label (string)
- *             Position of the label. 'inline', 'above' and 'hidden' are the
- *             values recognized by the default 'field' theme implementation.
- *         - type (string)
- *             The type of the display formatter, or 'hidden' for no display.
- *         - settings (array)
- *             A sub-array of key/value pairs of display options specific to
- *             the formatter.
- *        - weight (float)
- *            The weight of the field relative to the other entity components
- *            displayed in this view mode.
- *         - module (string, read-only)
- *             The name of the module which implements the display formatter.
- *     - some_mode
- *         A sub-array of key/value pairs describing the display options to be
- *         used when the field is being displayed in the 'some_mode' view mode.
- *         Those options will only be actually applied at run time if the view
- *         mode is not configured to use default settings for this bundle.
- *         - ...
- *     - other_mode
- *        - ...
+ * - id (integer, read-only): The primary identifier of this field instance.
+ *   It is assigned automatically by field_create_instance().
+ * - field_id (integer, read-only): The foreign key of the field attached to
+ *   the bundle by this instance. It is populated automatically by
+ *   field_create_instance().
+ * - field_name (string): The name of the field attached to the bundle by this
+ *   instance.
+ * - entity_type (string): The name of the entity type the instance is attached
+ *   to.
+ * - bundle (string): The name of the bundle that the field is attached to.
+ * - label (string): A human-readable label for the field when used with this
+ *   bundle. For example, the label will be the title of Form API elements
+ *   for this instance.
+ * - description (string): A human-readable description for the field when
+ *   used with this bundle. For example, the description will be the help
+ *   text of Form API elements for this instance.
+ * - required (integer): TRUE if a value for this field is required when used
+ *   with this bundle, FALSE otherwise. Currently, required-ness is only
+ *   enforced during Form API operations, not by field_attach_load(),
+ *   field_attach_insert(), or field_attach_update().
+ * - default_value_function (string): The name of the function, if any, that
+ *   will provide a default value.
+ * - default_value (array): If default_value_function is not set, then fixed
+ *   values can be provided.
+ * - deleted (integer, read-only): TRUE if this instance has been deleted,
+ *   FALSE otherwise. Deleted instances are ignored by the Field Attach API.
+ *   This property exists because instances can be marked for deletion but
+ *   only actually destroyed by a separate garbage-collection process.
+ * - settings (array): A sub-array of key/value pairs of field-type-specific
+ *   instance settings. Each field type module defines and documents its own
+ *   instance settings.
+ * - widget (array): A sub-array of key/value pairs identifying the Form API
+ *   input widget for the field when used by this bundle:
+ *   - type (string): The type of the widget, such as text_textfield. Widget
+ *     types are defined by modules that implement hook_field_widget_info().
+ *   - settings (array): A sub-array of key/value pairs of
+ *     widget-type-specific settings. Each field widget type module defines
+ *     and documents its own widget settings.
+ *   - weight (float): The weight of the widget relative to the other elements
+ *     in entity edit forms.
+ *   - module (string, read-only): The name of the module that implements the
+ *     widget type.
+ * - display (array): A sub-array of key/value pairs identifying the way field
+ *   values should be displayed in each of the entity type's view modes, plus
+ *   the 'default' mode. For each view mode, Field UI lets site administrators
+ *   define whether they want to use a dedicated set of display options or the
+ *   'default' options to reduce the number of displays to maintain as they
+ *   add new fields. For nodes, on a fresh install, only the 'teaser' view
+ *   mode is configured to use custom display options, all other view modes
+ *   defined use the 'default' options by default. When programmatically
+ *   adding field instances on nodes, it is therefore recommended to at least
+ *   specify display options for 'default' and 'teaser':
+ *   - default (array): A sub-array of key/value pairs describing the display
+ *     options to be used when the field is being displayed in view modes
+ *     that are not configured to use dedicated display options:
+ *     - label (string): Position of the label. 'inline', 'above' and
+ *       'hidden' are the values recognized by the default 'field' theme
+ *       implementation.
+ *     - type (string): The type of the display formatter, or 'hidden' for
+ *       no display.
+ *     - settings (array): A sub-array of key/value pairs of display
+ *       options specific to the formatter.
+ *     - weight (float): The weight of the field relative to the other entity
+ *       components displayed in this view mode.
+ *     - module (string, read-only): The name of the module which implements
+ *       the display formatter.
+ *   - some_mode: A sub-array of key/value pairs describing the display
+ *     options to be used when the field is being displayed in the 'some_mode'
+ *     view mode. Those options will only be actually applied at run time if
+ *     the view mode is not configured to use default settings for this bundle:
+ *     - ...
+ *   - other_mode:
+ *     - ...
  *
  * The (default) render arrays produced for field instances are documented at
  * field_attach_view().
@@ -316,7 +286,7 @@ function field_help($path, $arg) {
     case 'admin/help#field':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Field module allows custom data fields to be defined for <em>entity</em> types (entities include content items, comments, user accounts, and taxonomy terms). The Field module takes care of storing, loading, editing, and rendering field data. Most users will not interact with the Field module directly, but will instead use the <a href="@field-ui-help">Field UI module</a> user interface. Module developers can use the Field API to make new entity types "fieldable" and thus allow fields to be attached to them. For more information, see the online handbook entry for <a href="@field">Field module</a>.', array('@field-ui-help' => url('admin/help/field_ui'), '@field' => 'http://drupal.org/handbook/modules/field')) . '</p>';
+      $output .= '<p>' . t('The Field module allows custom data fields to be defined for <em>entity</em> types (entities include content items, comments, user accounts, and taxonomy terms). The Field module takes care of storing, loading, editing, and rendering field data. Most users will not interact with the Field module directly, but will instead use the <a href="@field-ui-help">Field UI module</a> user interface. Module developers can use the Field API to make new entity types "fieldable" and thus allow fields to be attached to them. For more information, see the online handbook entry for <a href="@field">Field module</a>.', array('@field-ui-help' => url('admin/help/field_ui'), '@field' => 'http://drupal.org/documentation/modules/field')) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Enabling field types') . '</dt>';
@@ -362,11 +332,12 @@ function field_theme() {
 
 /**
  * Implements hook_cron().
- *
- * Purges some deleted Field API data, if any exists.
  */
 function field_cron() {
+  // Refresh the 'active' status of fields.
   field_sync_field_status();
+
+  // Do a pass of purging on deleted Field API data, if any exists.
   $limit = variable_get('field_purge_batch_size', 10);
   field_purge_batch($limit);
 }
@@ -423,8 +394,27 @@ function field_system_info_alter(&$info, $file, $type) {
  * Implements hook_flush_caches().
  */
 function field_flush_caches() {
+  // Refresh the 'active' status of fields.
   field_sync_field_status();
+
+  // Request a flush of our cache table.
   return array('cache_field');
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function field_modules_enabled($modules) {
+  // Refresh the 'active' status of fields.
+  field_sync_field_status();
+}
+
+/**
+ * Implements hook_modules_disabled().
+ */
+function field_modules_disabled($modules) {
+  // Refresh the 'active' status of fields.
+  field_sync_field_status();
 }
 
 /**
@@ -460,18 +450,18 @@ function field_sync_field_status() {
 function field_associate_fields($module) {
   // Associate field types.
   $field_types = (array) module_invoke($module, 'field_info');
-  foreach ($field_types as $name => $field_info) {
+  if ($field_types) {
     db_update('field_config')
       ->fields(array('module' => $module, 'active' => 1))
-      ->condition('type', $name)
+      ->condition('type', array_keys($field_types))
       ->execute();
   }
   // Associate storage backends.
   $storage_types = (array) module_invoke($module, 'field_storage_info');
-  foreach ($storage_types as $name => $storage_info) {
+  if ($storage_types) {
     db_update('field_config')
       ->fields(array('storage_module' => $module, 'storage_active' => 1))
-      ->condition('storage_type', $name)
+      ->condition('storage_type', array_keys($storage_types))
       ->execute();
   }
 }
@@ -613,16 +603,12 @@ function _field_sort_items_value_helper($a, $b) {
  *   If no $settings are passed, the current settings are returned.
  */
 function field_bundle_settings($entity_type, $bundle, $settings = NULL) {
-  $stored_settings = variable_get('field_bundle_settings', array());
-
   if (isset($settings)) {
-    $stored_settings[$entity_type][$bundle] = $settings;
-
-    variable_set('field_bundle_settings', $stored_settings);
+    variable_set('field_bundle_settings_' . $entity_type . '__' . $bundle, $settings);
     field_info_cache_clear();
   }
   else {
-    $settings = isset($stored_settings[$entity_type][$bundle]) ? $stored_settings[$entity_type][$bundle] : array();
+    $settings = variable_get('field_bundle_settings_' . $entity_type . '__' . $bundle, array());
     $settings += array(
       'view_modes' => array(),
       'extra_fields' => array(),
@@ -994,16 +980,18 @@ function field_has_data($field) {
  *
  * @param $op
  *   The operation to be performed. Possible values:
- *   - "edit"
- *   - "view"
+ *   - 'edit'
+ *   - 'view'
  * @param $field
- *   The field on which the operation is to be performed.
+ *   The full field structure array for the field on which the operation is to
+ *   be performed. See field_info_field().
  * @param $entity_type
  *   The type of $entity; e.g., 'node' or 'user'.
  * @param $entity
  *   (optional) The entity for the operation.
  * @param $account
  *   (optional) The account to check, if not given use currently logged in user.
+ *
  * @return
  *   TRUE if the operation is allowed;
  *   FALSE if the operation is denied.

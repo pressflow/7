@@ -242,10 +242,31 @@ class ForumTestCase extends DrupalWebTestCase {
     // Save forum overview.
     $this->drupalPost('admin/structure/forum/', array(), t('Save'));
     $this->assertRaw(t('The configuration options have been saved.'));
-    // Delete this second form.
+    // Delete this second forum.
     $this->deleteForum($this->delete_forum['tid']);
     // Create forum at the top (root) level.
     $this->root_forum = $this->createForum('forum');
+
+    // Test vocabulary form alterations.
+    $this->drupalGet('admin/structure/taxonomy/forums/edit');
+    $this->assertFieldByName('op', t('Save'), 'Save button found.');
+    $this->assertNoFieldByName('op', t('Delete'), 'Delete button not found.');
+
+    // Test term edit form alterations.
+    $this->drupalGet('taxonomy/term/' . $this->container['tid'] . '/edit');
+    // Test parent field been hidden by forum module.
+    $this->assertNoField('parent[]', 'Parent field not found.');
+
+    // Test tags vocabulary form is not affected.
+    $this->drupalGet('admin/structure/taxonomy/tags/edit');
+    $this->assertFieldByName('op', t('Save'), 'Save button found.');
+    $this->assertFieldByName('op', t('Delete'), 'Delete button found.');
+    // Test tags vocabulary term form is not affected.
+    $this->drupalGet('admin/structure/taxonomy/tags/add');
+    $this->assertField('parent[]', 'Parent field found.');
+    // Test relations fieldset exists.
+    $relations_fieldset = $this->xpath("//fieldset[@id='edit-relations']");
+    $this->assertTrue(isset($relations_fieldset[0]), 'Relations fieldset element found.');
   }
 
   /**
@@ -341,6 +362,11 @@ class ForumTestCase extends DrupalWebTestCase {
     // Assert that the forum no longer exists.
     $this->drupalGet('forum/' . $tid);
     $this->assertResponse(404, 'The forum was not found');
+
+    // Assert that the associated term has been removed from the
+    // forum_containers variable.
+    $containers = variable_get('forum_containers', array());
+    $this->assertFalse(in_array($tid, $containers), 'The forum_containers variable has been updated.');
   }
 
   /**

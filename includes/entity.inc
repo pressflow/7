@@ -468,7 +468,7 @@ class EntityFieldQuery {
    * @var array
    *
    * @see EntityFieldQuery::fieldLanguageCondition()
-   * @see EntityFieldQuery::fielDeltaCondition()
+   * @see EntityFieldQuery::fieldDeltaCondition()
    */
   public $fieldMetaConditions = array();
 
@@ -1106,12 +1106,13 @@ class EntityFieldQuery {
    * contains everything necessary for processing.
    *
    * @return
-   *   Either a number if count() was called or an array of associative
-   *   arrays of stub entities. The outer array keys are entity types, and the
-   *   inner array keys are the relevant ID. (In most this cases this will be
-   *   the entity ID. The only exception is when age=FIELD_LOAD_REVISION is used
-   *   and field conditions or sorts are present -- in this case, the key will
-   *   be the revision ID.) The inner array values are always stub entities, as
+   *   Either a number if count() was called or an array of associative arrays
+   *   of stub entities. The outer array keys are entity types, and the inner
+   *   array keys are the relevant ID. (In most cases this will be the entity
+   *   ID. The only exception is when age=FIELD_LOAD_REVISION is used and field
+   *   conditions or sorts are present -- in this case, the key will be the
+   *   revision ID.) The entity type will only exist in the outer array if
+   *   results were found. The inner array values are always stub entities, as
    *   returned by entity_create_stub_entity(). To traverse the returned array:
    *   @code
    *     foreach ($query->execute() as $entity_type => $entities) {
@@ -1121,7 +1122,9 @@ class EntityFieldQuery {
    *   the entities found:
    *   @code
    *     $result = $query->execute();
-   *     $entities = entity_load($my_type, array_keys($result[$my_type]));
+   *     if (!empty($result[$my_type])) {
+   *       $entities = entity_load($my_type, array_keys($result[$my_type]));
+   *     }
    *   @endcode
    */
   public function execute() {
@@ -1260,12 +1263,11 @@ class EntityFieldQuery {
   /**
    * Get the total number of results and initialize a pager for the query.
    *
-   * This query can be detected by checking for ($this->pager && $this->count),
-   * which allows a driver to return 0 from the count query and disable
-   * the pager.
+   * The pager can be disabled by either setting the pager limit to 0, or by
+   * setting this query to be a count query.
    */
   function initializePager() {
-    if ($this->pager && !$this->count) {
+    if ($this->pager && !empty($this->pager['limit']) && !$this->count) {
       $page = pager_find_page($this->pager['element']);
       $count_query = clone $this;
       $this->pager['total'] = $count_query->count()->execute();

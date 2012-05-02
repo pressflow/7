@@ -1271,6 +1271,10 @@ class DrupalWebTestCase extends DrupalTestCase {
       ->condition('test_id', $this->testId)
       ->execute();
 
+    // Reset all statics and variables to perform tests in a clean environment.
+    $conf = array();
+    drupal_static_reset();
+
     // Clone the current connection and replace the current prefix.
     $connection_info = Database::getConnectionInfo('default');
     Database::renameConnection('default', 'simpletest_original_default');
@@ -1318,10 +1322,6 @@ class DrupalWebTestCase extends DrupalTestCase {
     ini_set('log_errors', 1);
     ini_set('error_log', $public_files_directory . '/error.log');
 
-    // Reset all statics and variables to perform tests in a clean environment.
-    $conf = array();
-    drupal_static_reset();
-
     // Set the test information for use in other parts of Drupal.
     $test_info = &$GLOBALS['drupal_test_info'];
     $test_info['test_run_id'] = $this->databasePrefix;
@@ -1343,6 +1343,12 @@ class DrupalWebTestCase extends DrupalTestCase {
     variable_set('file_public_path', $public_files_directory);
     variable_set('file_private_path', $private_files_directory);
     variable_set('file_temporary_path', $temp_files_directory);
+
+    // Set the 'simpletest_parent_profile' variable to add the parent profile's
+    // search path to the child site's search paths.
+    // @see drupal_system_listing()
+    // @todo This may need to be primed like 'install_profile' above.
+    variable_set('simpletest_parent_profile', $this->originalProfile);
 
     // Include the testing profile.
     variable_set('install_profile', $this->profile);
@@ -2049,6 +2055,8 @@ class DrupalWebTestCase extends DrupalTestCase {
       // them.
       $dom = new DOMDocument();
       @$dom->loadHTML($content);
+      // XPath allows for finding wrapper nodes better than DOM does.
+      $xpath = new DOMXPath($dom);
       foreach ($return as $command) {
         switch ($command['command']) {
           case 'settings':
@@ -2056,52 +2064,52 @@ class DrupalWebTestCase extends DrupalTestCase {
             break;
 
           case 'insert':
-            // @todo ajax.js can process commands that include a 'selector', but
-            //   these are hard to emulate with DOMDocument. For now, we only
-            //   implement 'insert' commands that use $ajax_settings['wrapper'].
+            $wrapperNode = NULL;
+            // When a command doesn't specify a selector, use the
+            // #ajax['wrapper'] which is always an HTML ID.
             if (!isset($command['selector'])) {
-              // $dom->getElementById() doesn't work when drupalPostAJAX() is
-              // invoked multiple times for a page, so use XPath instead. This
-              // also sets us up for adding support for $command['selector'] in
-              // the future, once we figure out how to transform a jQuery
-              // selector to XPath.
-              $xpath = new DOMXPath($dom);
               $wrapperNode = $xpath->query('//*[@id="' . $ajax_settings['wrapper'] . '"]')->item(0);
-              if ($wrapperNode) {
-                // ajax.js adds an enclosing DIV to work around a Safari bug.
-                $newDom = new DOMDocument();
-                $newDom->loadHTML('<div>' . $command['data'] . '</div>');
-                $newNode = $dom->importNode($newDom->documentElement->firstChild->firstChild, TRUE);
-                $method = isset($command['method']) ? $command['method'] : $ajax_settings['method'];
-                // The "method" is a jQuery DOM manipulation function. Emulate
-                // each one using PHP's DOMNode API.
-                switch ($method) {
-                  case 'replaceWith':
-                    $wrapperNode->parentNode->replaceChild($newNode, $wrapperNode);
-                    break;
-                  case 'append':
-                    $wrapperNode->appendChild($newNode);
-                    break;
-                  case 'prepend':
-                    // If no firstChild, insertBefore() falls back to
-                    // appendChild().
-                    $wrapperNode->insertBefore($newNode, $wrapperNode->firstChild);
-                    break;
-                  case 'before':
-                    $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode);
-                    break;
-                  case 'after':
-                    // If no nextSibling, insertBefore() falls back to
-                    // appendChild().
-                    $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode->nextSibling);
-                    break;
-                  case 'html':
-                    foreach ($wrapperNode->childNodes as $childNode) {
-                      $wrapperNode->removeChild($childNode);
-                    }
-                    $wrapperNode->appendChild($newNode);
-                    break;
-                }
+            }
+            // @todo Ajax commands can target any jQuery selector, but these are
+            //   hard to fully emulate with XPath. For now, just handle 'head'
+            //   and 'body', since these are used by ajax_render().
+            elseif (in_array($command['selector'], array('head', 'body'))) {
+              $wrapperNode = $xpath->query('//' . $command['selector'])->item(0);
+            }
+            if ($wrapperNode) {
+              // ajax.js adds an enclosing DIV to work around a Safari bug.
+              $newDom = new DOMDocument();
+              $newDom->loadHTML('<div>' . $command['data'] . '</div>');
+              $newNode = $dom->importNode($newDom->documentElement->firstChild->firstChild, TRUE);
+              $method = isset($command['method']) ? $command['method'] : $ajax_settings['method'];
+              // The "method" is a jQuery DOM manipulation function. Emulate
+              // each one using PHP's DOMNode API.
+              switch ($method) {
+                case 'replaceWith':
+                  $wrapperNode->parentNode->replaceChild($newNode, $wrapperNode);
+                  break;
+                case 'append':
+                  $wrapperNode->appendChild($newNode);
+                  break;
+                case 'prepend':
+                  // If no firstChild, insertBefore() falls back to
+                  // appendChild().
+                  $wrapperNode->insertBefore($newNode, $wrapperNode->firstChild);
+                  break;
+                case 'before':
+                  $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode);
+                  break;
+                case 'after':
+                  // If no nextSibling, insertBefore() falls back to
+                  // appendChild().
+                  $wrapperNode->parentNode->insertBefore($newNode, $wrapperNode->nextSibling);
+                  break;
+                case 'html':
+                  foreach ($wrapperNode->childNodes as $childNode) {
+                    $wrapperNode->removeChild($childNode);
+                  }
+                  $wrapperNode->appendChild($newNode);
+                  break;
               }
             }
             break;

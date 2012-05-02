@@ -1200,22 +1200,23 @@ function hook_menu_get_item_alter(&$router_item, $path, $original_map) {
  *       "default" task, which should display the same page as the parent item.
  *     If the "type" element is omitted, MENU_NORMAL_ITEM is assumed.
  *   - "options": An array of options to be passed to l() when generating a link
- *     from this menu item.
+ *     from this menu item. Note that the "options" parameter has no effect on
+ *     MENU_LOCAL_TASK, MENU_DEFAULT_LOCAL_TASK, and MENU_LOCAL_ACTION items.
  *
  * For a detailed usage example, see page_example.module.
  * For comprehensive documentation on the menu system, see
  * http://drupal.org/node/102338.
  */
 function hook_menu() {
-  $items['blog'] = array(
-    'title' => 'blogs',
-    'page callback' => 'blog_page',
+  $items['example'] = array(
+    'title' => 'Example Page',
+    'page callback' => 'example_page',
     'access arguments' => array('access content'),
     'type' => MENU_SUGGESTED_ITEM,
   );
-  $items['blog/feed'] = array(
-    'title' => 'RSS feed',
-    'page callback' => 'blog_feed',
+  $items['example/feed'] = array(
+    'title' => 'Example RSS feed',
+    'page callback' => 'example_feed',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
@@ -2233,6 +2234,10 @@ function hook_theme_registry_alter(&$theme_registry) {
  * theme set via a theme callback function in hook_menu(); the themes on those
  * pages can only be overridden using hook_menu_alter().
  *
+ * Note that returning different themes for the same path may not work with page
+ * caching. This is most likely to be a problem if an anonymous user on a given
+ * path could have different themes returned under different conditions.
+ *
  * Since only one theme can be used at a time, the last (i.e., highest
  * weighted) module which returns a valid theme name from this hook will
  * prevail.
@@ -2328,31 +2333,40 @@ function hook_xmlrpc_alter(&$methods) {
 }
 
 /**
- * Log an event message
+ * Log an event message.
  *
  * This hook allows modules to route log events to custom destinations, such as
  * SMS, Email, pager, syslog, ...etc.
  *
  * @param $log_entry
  *   An associative array containing the following keys:
- *   - type: The type of message for this entry. For contributed modules, this is
- *     normally the module name. Do not use 'debug', use severity WATCHDOG_DEBUG instead.
- *   - user: The user object for the user who was logged in when the event happened.
- *   - request_uri: The Request URI for the page the event happened in.
- *   - referer: The page that referred the use to the page where the event occurred.
+ *   - type: The type of message for this entry.
+ *   - user: The user object for the user who was logged in when the event
+ *     happened.
+ *   - request_uri: The request URI for the page the event happened in.
+ *   - referer: The page that referred the user to the page where the event
+ *     occurred.
  *   - ip: The IP address where the request for the page came from.
- *   - timestamp: The UNIX timestamp of the date/time the event occurred
- *   - severity: One of the following values as defined in RFC 3164 http://www.faqs.org/rfcs/rfc3164.html
- *     WATCHDOG_EMERGENCY Emergency: system is unusable
- *     WATCHDOG_ALERT     Alert: action must be taken immediately
- *     WATCHDOG_CRITICAL  Critical: critical conditions
- *     WATCHDOG_ERROR     Error: error conditions
- *     WATCHDOG_WARNING   Warning: warning conditions
- *     WATCHDOG_NOTICE    Notice: normal but significant condition
- *     WATCHDOG_INFO      Informational: informational messages
- *     WATCHDOG_DEBUG     Debug: debug-level messages
- *   - link: an optional link provided by the module that called the watchdog() function.
- *   - message: The text of the message to be logged.
+ *   - timestamp: The UNIX timestamp of the date/time the event occurred.
+ *   - severity: The severity of the message; one of the following values as
+ *     defined in @link http://www.faqs.org/rfcs/rfc3164.html RFC 3164: @endlink
+ *     - WATCHDOG_EMERGENCY: Emergency, system is unusable.
+ *     - WATCHDOG_ALERT: Alert, action must be taken immediately.
+ *     - WATCHDOG_CRITICAL: Critical conditions.
+ *     - WATCHDOG_ERROR: Error conditions.
+ *     - WATCHDOG_WARNING: Warning conditions.
+ *     - WATCHDOG_NOTICE: Normal but significant conditions.
+ *     - WATCHDOG_INFO: Informational messages.
+ *     - WATCHDOG_DEBUG: Debug-level messages.
+ *   - link: An optional link provided by the module that called the watchdog()
+ *     function.
+ *   - message: The text of the message to be logged. Variables in the message
+ *     are indicated by using placeholder strings alongside the variables
+ *     argument to declare the value of the placeholders. See t() for
+ *     documentation on how the message and variable parameters interact.
+ *   - variables: An array of variables to be inserted into the message on
+ *     display. Will be NULL or missing if a message is already translated or if
+ *     the message is not possible to translate.
  */
 function hook_watchdog(array $log_entry) {
   global $base_url, $language;

@@ -252,7 +252,20 @@ function _drupal_theme_initialize($theme, $base_theme = array(), $registry_callb
  *   class.
  */
 function theme_get_registry($complete = TRUE) {
-  static $theme_registry = array();
+  // Use the advanced drupal_static() pattern, since this is called very often.
+  static $drupal_static_fast;
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast['registry'] = &drupal_static('theme_get_registry');
+  }
+  $theme_registry = &$drupal_static_fast['registry'];
+
+  // Initialize the theme, if this is called early in the bootstrap, or after
+  // static variables have been reset.
+  if (!is_array($theme_registry)) {
+    drupal_theme_initialize();
+    $theme_registry = array();
+  }
+
   $key = (int) $complete;
 
   if (!isset($theme_registry[$key])) {
@@ -335,6 +348,7 @@ function _theme_save_registry($theme, $registry) {
  * to add more theme hooks.
  */
 function drupal_theme_rebuild() {
+  drupal_static_reset('theme_get_registry');
   cache_clear_all('theme_registry', 'cache', TRUE);
 }
 
@@ -899,8 +913,6 @@ function list_themes($refresh = FALSE) {
  * @see themeable
  */
 function theme($hook, $variables = array()) {
-  static $hooks = NULL;
-
   // If called before all modules are loaded, we do not necessarily have a full
   // theme registry to work with, and therefore cannot process the theme
   // request properly. See also _theme_load_registry().
@@ -908,10 +920,7 @@ function theme($hook, $variables = array()) {
     throw new Exception(t('theme() may not be called until all modules are loaded.'));
   }
 
-  if (!isset($hooks)) {
-    drupal_theme_initialize();
-    $hooks = theme_get_registry(FALSE);
-  }
+  $hooks = theme_get_registry(FALSE);
 
   // If an array of hook candidates were passed, use the first one that has an
   // implementation.
@@ -991,6 +1000,13 @@ function theme($hook, $variables = array()) {
   if (isset($info['base hook'])) {
     $base_hook = $info['base hook'];
     $base_hook_info = $hooks[$base_hook];
+    // Include files required by the base hook, since its variable processors
+    // might reside there.
+    if (!empty($base_hook_info['includes'])) {
+      foreach ($base_hook_info['includes'] as $include_file) {
+        include_once DRUPAL_ROOT . '/' . $include_file;
+      }
+    }
     if (isset($base_hook_info['preprocess functions']) || isset($base_hook_info['process functions'])) {
       $variables['theme_hook_suggestion'] = $hook;
       $hook = $base_hook;
@@ -1960,8 +1976,11 @@ function theme_item_list($variables) {
   $type = $variables['type'];
   $attributes = $variables['attributes'];
 
+  // Only output the list container and title, if there are any list items.
+  // Check to see whether the block title exists before adding a header.
+  // Empty headers are not semantic and present accessibility challenges.
   $output = '<div class="item-list">';
-  if (isset($title)) {
+  if (isset($title) && $title !== '') {
     $output .= '<h3>' . $title . '</h3>';
   }
 

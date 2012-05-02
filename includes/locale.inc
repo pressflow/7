@@ -141,7 +141,7 @@ function locale_language_from_browser($languages) {
   //   language-range  = ( ( 1*8ALPHA *( "-" 1*8ALPHA ) ) | "*" )
   // Samples: "hu, en-us;q=0.66, en;q=0.33", "hu,en-us;q=0.5"
   $browser_langcodes = array();
-  if (preg_match_all('@([a-zA-Z-]+|\*)(?:;q=([0-9.]+))?(?:$|\s*,\s*)@', trim($_SERVER['HTTP_ACCEPT_LANGUAGE']), $matches, PREG_SET_ORDER)) {
+  if (preg_match_all('@(?<=[, ]|^)([a-zA-Z-]+|\*)(?:;q=([0-9.]+))?(?:$|\s*,\s*)@', trim($_SERVER['HTTP_ACCEPT_LANGUAGE']), $matches, PREG_SET_ORDER)) {
     foreach ($matches as $match) {
       // We can safely use strtolower() here, tags are ASCII.
       // RFC2616 mandates that the decimal part is no more than three digits,
@@ -430,8 +430,27 @@ function locale_language_url_rewrite_url(&$path, &$options) {
       case LOCALE_LANGUAGE_NEGOTIATION_URL_DOMAIN:
         if ($options['language']->domain) {
           // Ask for an absolute URL with our modified base_url.
+          global $is_https;
+          $url_scheme = ($is_https) ? 'https://' : 'http://';
           $options['absolute'] = TRUE;
-          $options['base_url'] = $options['language']->domain;
+
+          // Take the domain without ports or protocols so we can apply the
+          // protocol needed. The setting might include a protocol.
+          // This is changed in Drupal 8 but we need to keep backwards
+          // compatibility for Drupal 7.
+          $host = 'http://' . str_replace(array('http://', 'https://'), '', $options['language']->domain);
+          $host = parse_url($host, PHP_URL_HOST);
+
+          // Apply the appropriate protocol to the URL.
+          $options['base_url'] = $url_scheme . $host;
+          if (isset($options['https']) && variable_get('https', FALSE)) {
+            if ($options['https'] === TRUE) {
+              $options['base_url'] = str_replace('http://', 'https://', $options['base_url']);
+            }
+            elseif ($options['https'] === FALSE) {
+              $options['base_url'] = str_replace('https://', 'http://', $options['base_url']);
+            }
+          }
         }
         break;
 
@@ -978,22 +997,13 @@ function _locale_import_one_string($op, $value = NULL, $mode = NULL, $lang = NUL
           // data untouched or if we don't have an existing plural formula.
           $header = _locale_import_parse_header($value['msgstr']);
 
-          // Get the plural formula and update in database.
+          // Get and store the plural formula if available.
           if (isset($header["Plural-Forms"]) && $p = _locale_import_parse_plural_forms($header["Plural-Forms"], $file->uri)) {
             list($nplurals, $plural) = $p;
             db_update('languages')
               ->fields(array(
                 'plurals' => $nplurals,
                 'formula' => $plural,
-              ))
-              ->condition('language', $lang)
-              ->execute();
-          }
-          else {
-            db_update('languages')
-              ->fields(array(
-                'plurals' => 0,
-                'formula' => '',
               ))
               ->condition('language', $lang)
               ->execute();

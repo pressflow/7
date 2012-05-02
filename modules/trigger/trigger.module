@@ -2,8 +2,7 @@
 
 /**
  * @file
- * Enables functions to be stored and executed at a later time when
- * triggered by other modules or by one of Drupal's core API hooks.
+ * Enables functions to be stored and executed at a later time.
  */
 
 /**
@@ -27,7 +26,7 @@ function trigger_help($path, $arg) {
   if ($path == 'admin/help#trigger') {
     $output = '';
     $output .= '<h3>' . t('About') . '</h3>';
-    $output .= '<p>' . t('The Trigger module provides the ability to cause <em>actions</em> to run when certain <em>triggers</em> take place on your site. Triggers are events, such as new content being added to your site or a user logging in, and actions are tasks, such as unpublishing content or e-mailing an administrator. For more information, see the online handbook entry for <a href="@trigger">Trigger module</a>.', array('@trigger' => 'http://drupal.org/handbook/modules/trigger/')) . '</p>';
+    $output .= '<p>' . t('The Trigger module provides the ability to cause <em>actions</em> to run when certain <em>triggers</em> take place on your site. Triggers are events, such as new content being added to your site or a user logging in, and actions are tasks, such as unpublishing content or e-mailing an administrator. For more information, see the online handbook entry for <a href="@trigger">Trigger module</a>.', array('@trigger' => 'http://drupal.org/documentation/modules/trigger/')) . '</p>';
     $output .= '<h3>' . t('Uses') . '</h3>';
     $output .= '<dl>';
     $output .= '<dt>' . t('Configuring triggers and actions') . '</dt>';
@@ -158,15 +157,20 @@ function trigger_trigger_info() {
  *
  * @param $hook
  *   The name of the hook being fired.
+ *
  * @return
  *   An array whose keys are action IDs that the user has associated with
  *   this trigger, and whose values are arrays containing the action type and
  *   label.
  */
 function trigger_get_assigned_actions($hook) {
-  return db_query("SELECT ta.aid, a.type, a.label FROM {trigger_assignments} ta LEFT JOIN {actions} a ON ta.aid = a.aid WHERE ta.hook = :hook ORDER BY ta.weight", array(
-    ':hook' => $hook,
-  ))->fetchAllAssoc( 'aid', PDO::FETCH_ASSOC);
+  $actions = &drupal_static(__FUNCTION__, array());
+  if (!isset($actions[$hook])) {
+    $actions[$hook] = db_query("SELECT ta.aid, a.type, a.label FROM {trigger_assignments} ta LEFT JOIN {actions} a ON ta.aid = a.aid WHERE ta.hook = :hook ORDER BY ta.weight", array(
+      ':hook' => $hook,
+    ))->fetchAllAssoc('aid', PDO::FETCH_ASSOC);
+  }
+  return $actions[$hook];
 }
 
 /**
@@ -231,8 +235,8 @@ function _trigger_normalize_node_context($type, $node) {
  *
  * @param $node
  *   Node object.
- * @param $op
- *   Operation to trigger.
+ * @param $hook
+ *   Hook to trigger.
  * @param $a3
  *   Additional argument to action function.
  * @param $a4
@@ -384,8 +388,8 @@ function trigger_comment_view($comment) {
  *
  * @param $a1
  *   Comment object or array of form values.
- * @param $op
- *   Operation to trigger.
+ * @param $hook
+ *   Hook to trigger.
  */
 function _trigger_comment($a1, $hook) {
   // Keep objects for reuse so that changes actions make to objects can persist.
@@ -442,6 +446,7 @@ function trigger_cron() {
  *   The type of action that is about to be called.
  * @param $account
  *   The account object that was passed via the user hook.
+ *
  * @return
  *   The object expected by the action that is about to be called.
  */
@@ -518,6 +523,15 @@ function trigger_user_view($account) {
 
 /**
  * Calls action functions for user triggers.
+ *
+ * @param $hook
+ *   The hook that called this function.
+ * @param $edit
+ *   Edit variable passed in to the hook or empty array if not needed.
+ * @param $account
+ *   Account variable passed in to the hook.
+ * @param $method
+ *   Method variable passed in to the hook or NULL if not needed.
  */
 function _trigger_user($hook, &$edit, $account, $category = NULL) {
   // Keep objects for reuse so that changes actions make to objects can persist.
@@ -592,10 +606,14 @@ function trigger_actions_delete($aid) {
   db_delete('trigger_assignments')
     ->condition('aid', $aid)
     ->execute();
+  drupal_static_reset('trigger_get_assigned_actions');
 }
 
 /**
  * Retrieves and caches information from hook_trigger_info() implementations.
+ *
+ * @return
+ *   Array of all triggers.
  */
 function _trigger_get_all_info() {
   $triggers = &drupal_static(__FUNCTION__);

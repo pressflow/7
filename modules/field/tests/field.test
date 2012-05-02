@@ -1079,11 +1079,14 @@ class FieldInfoTestCase extends FieldTestCase {
     }
 
     // Verify that no unexpected instances exist.
-    $core_fields = field_info_fields();
+    $instances = field_info_instances('test_entity');
+    $expected = array('test_bundle' => array());
+    $this->assertIdentical($instances, $expected, "field_info_instances('test_entity') returns " . var_export($expected, TRUE) . '.');
     $instances = field_info_instances('test_entity', 'test_bundle');
-    $this->assertTrue(empty($instances), t('With no instances, info bundles is empty.'));
+    $this->assertIdentical($instances, array(), "field_info_instances('test_entity', 'test_bundle') returns an empty array.");
 
     // Create a field, verify it shows up.
+    $core_fields = field_info_fields();
     $field = array(
       'field_name' => drupal_strtolower($this->randomName()),
       'type' => 'test_field',
@@ -1119,6 +1122,25 @@ class FieldInfoTestCase extends FieldTestCase {
     $instances = field_info_instances('test_entity', $instance['bundle']);
     $this->assertEqual(count($instances), 1, t('One instance shows up in info when attached to a bundle.'));
     $this->assertTrue($instance < $instances[$instance['field_name']], t('Instance appears in info correctly'));
+
+    // Test a valid entity type but an invalid bundle.
+    $instances = field_info_instances('test_entity', 'invalid_bundle');
+    $this->assertIdentical($instances, array(), "field_info_instances('test_entity', 'invalid_bundle') returns an empty array.");
+
+    // Test invalid entity type and bundle.
+    $instances = field_info_instances('invalid_entity', $instance['bundle']);
+    $this->assertIdentical($instances, array(), "field_info_instances('invalid_entity', 'test_bundle') returns an empty array.");
+
+    // Test invalid entity type, no bundle provided.
+    $instances = field_info_instances('invalid_entity');
+    $this->assertIdentical($instances, array(), "field_info_instances('invalid_entity') returns an empty array.");
+
+    // Test with an entity type that has no bundles.
+    $instances = field_info_instances('user');
+    $expected = array('user' => array());
+    $this->assertIdentical($instances, $expected, "field_info_instances('user') returns " . var_export($expected, TRUE) . '.');
+    $instances = field_info_instances('user', 'user');
+    $this->assertIdentical($instances, array(), "field_info_instances('user', 'user') returns an empty array.");
   }
 
   /**
@@ -1458,6 +1480,51 @@ class FieldFormTestCase extends FieldTestCase {
     // Re-submit: check that the field can be emptied.
 
     // Test with several multiple fields in a form
+  }
+
+  /**
+   * Tests widget handling of multiple required radios.
+   */
+  function testFieldFormMultivalueWithRequiredRadio() {
+    // Create a multivalue test field.
+    $this->field = $this->field_unlimited;
+    $this->field_name = $this->field['field_name'];
+    $this->instance['field_name'] = $this->field_name;
+    field_create_field($this->field);
+    field_create_instance($this->instance);
+    $langcode = LANGUAGE_NONE;
+
+    // Add a required radio field.
+    field_create_field(array(
+      'field_name' => 'required_radio_test',
+      'type' => 'list_text',
+      'settings' => array(
+        'allowed_values' => array('yes' => 'yes', 'no' => 'no'),
+      ),
+    ));
+    field_create_instance(array(
+      'field_name' => 'required_radio_test',
+      'entity_type' => 'test_entity',
+      'bundle' => 'test_bundle',
+      'required' => TRUE,
+      'widget' => array(
+        'type' => 'options_buttons',
+      ),
+    ));
+
+    // Display creation form.
+    $this->drupalGet('test-entity/add/test-bundle');
+
+    // Press the 'Add more' button.
+    $this->drupalPost(NULL, array(), t('Add another item'));
+
+    // Verify that no error is thrown by the radio element.
+    $this->assertNoFieldByXpath('//div[contains(@class, "error")]', FALSE, 'No error message is displayed.');
+
+    // Verify that the widget is added.
+    $this->assertFieldByName("{$this->field_name}[$langcode][0][value]", '', 'Widget 1 is displayed');
+    $this->assertFieldByName("{$this->field_name}[$langcode][1][value]", '', 'New widget is displayed');
+    $this->assertNoField("{$this->field_name}[$langcode][2][value]", 'No extraneous widget is displayed');
   }
 
   function testFieldFormJSAddMore() {
@@ -2357,7 +2424,6 @@ class FieldCrudTestCase extends FieldTestCase {
     $this->assertTrue($field_definition <= $field, t('The field was properly read.'));
 
     module_disable($modules, FALSE);
-    drupal_flush_all_caches();
 
     $fields = field_read_fields(array('field_name' => $field_name), array('include_inactive' => TRUE));
     $this->assertTrue(isset($fields[$field_name]) && $field_definition < $field, t('The field is properly read when explicitly fetching inactive fields.'));
@@ -2370,7 +2436,6 @@ class FieldCrudTestCase extends FieldTestCase {
 
       $module = array_shift($modules);
       module_enable(array($module), FALSE);
-      drupal_flush_all_caches();
     }
 
     // Check that the field is active again after all modules have been
