@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.12');
+define('VERSION', '7.14');
 
 /**
  * Core API compatibility.
@@ -68,32 +68,32 @@ define('WATCHDOG_EMERGENCY', 0);
 define('WATCHDOG_ALERT', 1);
 
 /**
- * Log message severity -- Critical: critical conditions.
+ * Log message severity -- Critical conditions.
  */
 define('WATCHDOG_CRITICAL', 2);
 
 /**
- * Log message severity -- Error: error conditions.
+ * Log message severity -- Error conditions.
  */
 define('WATCHDOG_ERROR', 3);
 
 /**
- * Log message severity -- Warning: warning conditions.
+ * Log message severity -- Warning conditions.
  */
 define('WATCHDOG_WARNING', 4);
 
 /**
- * Log message severity -- Notice: normal but significant condition.
+ * Log message severity -- Normal but significant conditions.
  */
 define('WATCHDOG_NOTICE', 5);
 
 /**
- * Log message severity -- Informational: informational messages.
+ * Log message severity -- Informational messages.
  */
 define('WATCHDOG_INFO', 6);
 
 /**
- * Log message severity -- Debug: debug-level messages.
+ * Log message severity -- Debug-level messages.
  */
 define('WATCHDOG_DEBUG', 7);
 
@@ -279,7 +279,7 @@ define('DRUPAL_PHP_FUNCTION_PATTERN', '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*'
  * means that assigning an offset via arrayAccess will only apply while the
  * object is in scope and will not be written back to the persistent cache.
  * This follows a similar pattern to static vs. persistent caching in
- * procedural code. Extending classes may wish to alter this behaviour, for
+ * procedural code. Extending classes may wish to alter this behavior, for
  * example by overriding offsetSet() and adding an automatic call to persist().
  *
  * @see SchemaCache
@@ -982,7 +982,7 @@ function variable_initialize($conf = array()) {
  *   The default value to use if this variable has never been set.
  *
  * @return
- *   The value of the variable.
+ *   The value of the variable. Unserialization is taken care of as necessary.
  *
  * @see variable_del()
  * @see variable_set()
@@ -1707,8 +1707,16 @@ function watchdog_exception($type, Exception $exception, $message = NULL, $varia
  *   NULL if message is already translated or not possible to
  *   translate.
  * @param $severity
- *   The severity of the message, as per RFC 3164. Possible values are
- *   WATCHDOG_ERROR, WATCHDOG_WARNING, etc.
+ *   The severity of the message; one of the following values as defined in
+ *   @link http://www.faqs.org/rfcs/rfc3164.html RFC 3164: @endlink
+ *   - WATCHDOG_EMERGENCY: Emergency, system is unusable.
+ *   - WATCHDOG_ALERT: Alert, action must be taken immediately.
+ *   - WATCHDOG_CRITICAL: Critical conditions.
+ *   - WATCHDOG_ERROR: Error conditions.
+ *   - WATCHDOG_WARNING: Warning conditions.
+ *   - WATCHDOG_NOTICE: (default) Normal but significant conditions.
+ *   - WATCHDOG_INFO: Informational messages.
+ *   - WATCHDOG_DEBUG: Debug-level messages.
  * @param $link
  *   A link to associate with the message.
  *
@@ -1725,6 +1733,9 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
   if (!$in_error_state && function_exists('module_implements')) {
     $in_error_state = TRUE;
 
+    // The user object may not exist in all conditions, so 0 is substituted if needed.
+    $user_uid = isset($user->uid) ? $user->uid : 0;
+
     // Prepare the fields to be logged
     $log_entry = array(
       'type'        => $type,
@@ -1733,6 +1744,7 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
       'severity'    => $severity,
       'link'        => $link,
       'user'        => $user,
+      'uid'         => $user_uid,
       'request_uri' => $base_root . request_uri(),
       'referer'     => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '',
       'ip'          => ip_address(),
@@ -1929,7 +1941,7 @@ function drupal_block_denied($ip) {
  */
 function drupal_random_bytes($count)  {
   // $random_state does not use drupal_static as it stores random bytes.
-  static $random_state, $bytes;
+  static $random_state, $bytes, $php_compatible;
   // Initialize on the first call. The contents of $_SERVER includes a mix of
   // user-specific and system information that varies a little with each page.
   if (!isset($random_state)) {
@@ -1941,6 +1953,11 @@ function drupal_random_bytes($count)  {
     $bytes = '';
   }
   if (strlen($bytes) < $count) {
+    // PHP versions prior 5.3.4 experienced openssl_random_pseudo_bytes()
+    // locking on Windows and rendered it unusable.
+    if (!isset($php_compatible)) {
+      $php_compatible = version_compare(PHP_VERSION, '5.3.4', '>=');
+    }
     // /dev/urandom is available on many *nix systems and is considered the
     // best commonly available pseudo-random source.
     if ($fh = @fopen('/dev/urandom', 'rb')) {
@@ -1949,6 +1966,11 @@ function drupal_random_bytes($count)  {
       // that much so as to speed any additional invocations.
       $bytes .= fread($fh, max(4096, $count));
       fclose($fh);
+    }
+    // openssl_random_pseudo_bytes() will find entropy in a system-dependent
+    // way.
+    elseif ($php_compatible && function_exists('openssl_random_pseudo_bytes')) {
+      $bytes .= openssl_random_pseudo_bytes($count - strlen($bytes));
     }
     // If /dev/urandom is not available or returns no bytes, this loop will
     // generate a good set of pseudo-random bytes on any system.
@@ -2455,7 +2477,8 @@ function drupal_valid_test_ua() {
     }
   }
 
-  return FALSE;
+  $test_prefix = FALSE;
+  return $test_prefix;
 }
 
 /**
@@ -3096,11 +3119,30 @@ function registry_rebuild() {
  * to be called, because it is already known that the list of files in the
  * {system} table matches those in the file system.
  *
+ * @return
+ *   TRUE if the registry was rebuilt, FALSE if another thread was rebuilding
+ *   in parallel and the current thread just waited for completion.
+ *
  * @see registry_rebuild()
  */
 function registry_update() {
+  // install_system_module() calls module_enable() which calls into this
+  // function during initial system installation, so the lock system is neither
+  // loaded nor does its storage exist yet.
+  $in_installer = drupal_installation_attempted();
+  if (!$in_installer && !lock_acquire(__FUNCTION__)) {
+    // Another request got the lock, wait for it to finish.
+    lock_wait(__FUNCTION__);
+    return FALSE;
+  }
+
   require_once DRUPAL_ROOT . '/includes/registry.inc';
   _registry_update();
+
+  if (!$in_installer) {
+    lock_release(__FUNCTION__);
+  }
+  return TRUE;
 }
 
 /**

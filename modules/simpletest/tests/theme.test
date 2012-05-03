@@ -8,7 +8,7 @@
 /**
  * Unit tests for the Theme API.
  */
-class ThemeUnitTest extends DrupalWebTestCase {
+class ThemeTestCase extends DrupalWebTestCase {
   protected $profile = 'testing';
 
   public static function getInfo() {
@@ -52,11 +52,19 @@ class ThemeUnitTest extends DrupalWebTestCase {
   }
 
   /**
-  * Preprocess functions for the base hook should run even for suggestion implementations.
-  */
+   * Ensures preprocess functions run even for suggestion implementations.
+   *
+   * The theme hook used by this test has its base preprocess function in a
+   * separate file, so this test also ensures that that file is correctly loaded
+   * when needed.
+   */
   function testPreprocessForSuggestions() {
-    $this->drupalGet('theme-test/suggestion');
-    $this->assertText('test_theme_breadcrumb__suggestion: 1', t('Theme hook suggestion ran with data available from a preprocess function for the base hook.'));
+    // Test with both an unprimed and primed theme registry.
+    drupal_theme_rebuild();
+    for ($i = 0; $i < 2; $i++) {
+      $this->drupalGet('theme-test/suggestion');
+      $this->assertText('Theme hook implementor=test_theme_theme_test__suggestion(). Foo=template_preprocess_theme_test', 'Theme hook suggestion ran with data available from a preprocess function for the base hook.');
+    }
   }
 
   /**
@@ -103,12 +111,25 @@ class ThemeUnitTest extends DrupalWebTestCase {
     $this->drupalGet('theme-test/suggestion');
     variable_set('preprocess_css', 0);
   }
+
+  /**
+   * Ensures the theme registry is rebuilt when modules are disabled/enabled.
+   */
+  function testRegistryRebuild() {
+    $this->assertIdentical(theme('theme_test_foo', array('foo' => 'a')), 'a', 'The theme registry contains theme_test_foo.');
+
+    module_disable(array('theme_test'), FALSE);
+    $this->assertIdentical(theme('theme_test_foo', array('foo' => 'b')), '', 'The theme registry does not contain theme_test_foo, because the module is disabled.');
+
+    module_enable(array('theme_test'), FALSE);
+    $this->assertIdentical(theme('theme_test_foo', array('foo' => 'c')), 'c', 'The theme registry contains theme_test_foo again after re-enabling the module.');
+  }
 }
 
 /**
  * Unit tests for theme_table().
  */
-class ThemeTableUnitTest extends DrupalWebTestCase {
+class ThemeTableTestCase extends DrupalWebTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Theme Table',
@@ -307,7 +328,7 @@ class ThemeLinksTest extends DrupalWebTestCase {
 /**
  * Functional test for initialization of the theme system in hook_init().
  */
-class ThemeHookInitUnitTest extends DrupalWebTestCase {
+class ThemeHookInitTestCase extends DrupalWebTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Theme initialization in hook_init()',

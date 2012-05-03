@@ -59,8 +59,10 @@ Database system
 
 Database update system
 - Károly Négyesi 'chx' <http://drupal.org/user/9446>
+- Ashok Modi 'btmash' <http://drupal.org/user/60422>
 
 Entity system
+- Wolfgang Ziegler 'fago' <http://drupal.org/user/16747>
 - Nathaniel Catchpole 'catch' <http://drupal.org/user/35733>
 - Franz Heinzmann 'Frando' <http://drupal.org/user/21850>
 
@@ -83,7 +85,7 @@ Install system
 - David Rothstein 'David_Rothstein' <http://drupal.org/user/124982>
 
 JavaScript
-- ?
+- Théodore Biadala 'nod_' <http://drupal.org/user/598310>
 
 Language system
 - Francesco Placella 'plach' <http://drupal.org/user/183211>
@@ -130,7 +132,7 @@ Topic coordinators
 
 Accessibility
 - Everett Zufelt 'Everett Zufelt' <http://drupal.org/user/406552>
-- Brandon Bowersox 'brandonojc' <http://drupal.org/user/186415> 
+- Brandon Bowersox-Johnson 'bowersox' <http://drupal.org/user/186415>
 
 Documentation
 - Jennifer Hodgdon 'jhodgdon' <http://drupal.org/user/155601>
@@ -227,7 +229,7 @@ PHP module
 - ?
 
 Poll module
-- ?
+- Andrei Mateescu 'amateescu' <http://drupal.org/user/729614>
 
 Profile module
 - ?
@@ -247,7 +249,7 @@ Simpletest module
 - Károly Négyesi 'chx' <http://drupal.org/user/9446>
 
 Statistics module
-- Dave Reid 'davereid' <http://drupal.org/user/53892>
+- Tim Millwood 'timmillwood' <http://drupal.org/user/227849>
 
 Syslog module
 - Khalid Baheyeldin 'kbahey' <http://drupal.org/user/4063>

@@ -1080,6 +1080,50 @@ class UserPictureTestCase extends DrupalWebTestCase {
     $this->assertEqual($pic_path, (string) $elements[0]['src'], t("User picture source is correct."));
   }
 
+  /**
+   * Tests deletion of user pictures.
+   */
+  function testDeletePicture() {
+    $this->drupalLogin($this->user);
+
+    $image = current($this->drupalGetTestFiles('image'));
+    $info = image_get_info($image->uri);
+
+    // Set new variables: valid dimensions, valid filesize (0 = no limit).
+    $test_dim = ($info['width'] + 10) . 'x' . ($info['height'] + 10);
+    variable_set('user_picture_dimensions', $test_dim);
+    variable_set('user_picture_file_size', 0);
+
+    // Save a new picture.
+    $edit = array('files[picture_upload]' => drupal_realpath($image->uri));
+    $this->drupalPost('user/' . $this->user->uid . '/edit', $edit, t('Save'));
+
+    // Load actual user data from database.
+    $account = user_load($this->user->uid, TRUE);
+    $pic_path = isset($account->picture) ? $account->picture->uri : NULL;
+
+    // Check if image is displayed in user's profile page.
+    $this->drupalGet('user');
+    $this->assertRaw(file_uri_target($pic_path), "Image is displayed in user's profile page");
+
+    // Check if file is located in proper directory.
+    $this->assertTrue(is_file($pic_path), 'File is located in proper directory');
+
+    $edit = array('picture_delete' => 1);
+    $this->drupalPost('user/' . $this->user->uid . '/edit', $edit, t('Save'));
+
+    // Load actual user data from database.
+    $account1 = user_load($this->user->uid, TRUE);
+    $this->assertNull($account1->picture, 'User object has no picture');
+
+    $file = file_load($account->picture->fid);
+    $this->assertFalse($file, 'File is removed from database');
+
+    // Clear out PHP's file stat cache so we see the current value.
+    clearstatcache();
+    $this->assertFalse(is_file($pic_path), 'File is removed from file system');
+  }
+
   function saveUserPicture($image) {
     $edit = array('files[picture_upload]' => drupal_realpath($image->uri));
     $this->drupalPost('user/' . $this->user->uid . '/edit', $edit, t('Save'));
@@ -1087,6 +1131,24 @@ class UserPictureTestCase extends DrupalWebTestCase {
     // Load actual user data from database.
     $account = user_load($this->user->uid, TRUE);
     return isset($account->picture) ? $account->picture->uri : NULL;
+  }
+
+  /**
+   * Tests the admin form validates user picture settings.
+   */
+  function testUserPictureAdminFormValidation() {
+    $this->drupalLogin($this->drupalCreateUser(array('administer users')));
+
+    // The default values are valid.
+    $this->drupalPost('admin/config/people/accounts', array(), t('Save configuration'));
+    $this->assertText(t('The configuration options have been saved.'), 'The default values are valid.');
+
+    // The form does not save with an invalid file size.
+    $edit = array(
+      'user_picture_file_size' => $this->randomName(),
+    );
+    $this->drupalPost('admin/config/people/accounts', $edit, t('Save configuration'));
+    $this->assertNoText(t('The configuration options have been saved.'), 'The form does not save with an invalid file size.');
   }
 }
 
@@ -1385,7 +1447,7 @@ class UserAccountLinksUnitTests extends DrupalWebTestCase {
   }
 
   /**
-   * Test the user login block.
+   * Tests the secondary menu.
    */
   function testSecondaryMenu() {
     // Create a regular user.
@@ -1455,6 +1517,13 @@ class UserBlocksUnitTests extends DrupalWebTestCase {
     $this->drupalPost('filter/tips', $edit, t('Log in'));
     $this->assertNoText(t('User login'), t('Logged in.'));
     $this->assertPattern('!<title.*?' . t('Compose tips') . '.*?</title>!', t('Still on the same page after login for allowed page'));
+
+    // Check that the user login block is not vulnerable to information
+    // disclosure to third party sites.
+    $this->drupalLogout();
+    $this->drupalPost('http://example.com/', $edit, t('Log in'), array('external' => FALSE));
+    // Check that we remain on the site after login.
+    $this->assertEqual(url('user/' . $user->uid, array('absolute' => TRUE)), $this->getUrl(), t('Redirected to user profile page after login from the frontpage'));
   }
 
   /**
@@ -1510,7 +1579,7 @@ class UserBlocksUnitTests extends DrupalWebTestCase {
 }
 
 /**
- * Test case to test user_save() behaviour.
+ * Tests saving a user account.
  */
 class UserSaveTestCase extends DrupalWebTestCase {
 
@@ -1599,7 +1668,7 @@ class UserCreateTestCase extends DrupalWebTestCase {
 }
 
 /**
- * Test case to test user_save() behaviour.
+ * Tests editing a user account.
  */
 class UserEditTestCase extends DrupalWebTestCase {
 

@@ -99,14 +99,13 @@ function field_schema() {
     'primary key' => array('id'),
     'indexes' => array(
       'field_name' => array('field_name'),
-      // Used by field_read_fields().
+      // Used by field_sync_field_status().
       'active' => array('active'),
       'storage_active' => array('storage_active'),
       'deleted' => array('deleted'),
       // Used by field_modules_disabled().
       'module' => array('module'),
       'storage_module' => array('storage_module'),
-      // Used by field_associate_fields().
       'type' => array('type'),
       'storage_type' => array('storage_type'),
     ),
@@ -436,4 +435,28 @@ function field_update_7001() {
 
 /**
  * @} End of "addtogroup updates-6.x-to-7.x"
+ */
+
+/**
+ * @addtogroup updates-7.x-extra
+ * @{
+ */
+
+/**
+ * Split the all-inclusive field_bundle_settings variable per bundle.
+ */
+function field_update_7002() {
+  $settings = variable_get('field_bundle_settings', array());
+  if ($settings) {
+    foreach ($settings as $entity_type => $entity_type_settings) {
+      foreach ($entity_type_settings as $bundle => $bundle_settings) {
+        variable_set('field_bundle_settings_' . $entity_type . '__' . $bundle, $bundle_settings);
+      }
+    }
+    variable_del('field_bundle_settings');
+  }
+}
+
+/**
+ * @} End of "addtogroup updates-7.x-extra"
  */
