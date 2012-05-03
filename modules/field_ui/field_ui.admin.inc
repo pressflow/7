@@ -280,8 +280,8 @@ function theme_field_ui_table($variables) {
  *
  * Allows fields and pseudo-fields to be re-ordered.
  *
- * @see field_ui_overview_form_validate().
- * @see field_ui_overview_form_submit().
+ * @see field_ui_field_overview_form_validate()
+ * @see field_ui_field_overview_form_submit()
  * @ingroup forms
  */
 function field_ui_field_overview_form($form, &$form_state, $entity_type, $bundle) {
@@ -316,7 +316,7 @@ function field_ui_field_overview_form($form, &$form_state, $entity_type, $bundle
       t('Label'),
       t('Weight'),
       t('Parent'),
-      t('Name'),
+      t('Machine name'),
       t('Field'),
       t('Widget'),
       array('data' => t('Operations'), 'colspan' => 2),
@@ -498,16 +498,24 @@ function field_ui_field_overview_form($form, &$form_state, $entity_type, $bundle
         ),
       ),
       'field_name' => array(
-        '#type' => 'textfield',
+        '#type' => 'machine_name',
         '#title' => t('New field name'),
         '#title_display' => 'invisible',
         // This field should stay LTR even for RTL languages.
         '#field_prefix' => '<span dir="ltr">field_',
         '#field_suffix' => '</span>&lrm;',
-        '#attributes' => array('dir'=>'ltr'),
-        '#size' => 10,
-        '#description' => t('Field name (a-z, 0-9, _)'),
+        '#size' => 15,
+        '#description' => t('A unique machine-readable name containing letters, numbers, and underscores.'),
+        // 32 characters minus the 'field_' prefix.
+        '#maxlength' => 26,
         '#prefix' => '<div class="add-new-placeholder">&nbsp;</div>',
+        '#machine_name' => array(
+          'source' => array('fields', $name, 'label'),
+          'exists' => '_field_ui_field_name_exists',
+          'standalone' => TRUE,
+          'label' => '',
+        ),
+        '#required' => FALSE,
       ),
       'type' => array(
         '#type' => 'select',
@@ -540,8 +548,19 @@ function field_ui_field_overview_form($form, &$form_state, $entity_type, $bundle
   }
 
   // Additional row: add existing field.
-  $existing_field_options = field_ui_existing_field_options($entity_type, $bundle);
-  if ($existing_field_options && $widget_type_options) {
+  $existing_fields = field_ui_existing_field_options($entity_type, $bundle);
+  if ($existing_fields && $widget_type_options) {
+    // Build list of options.
+    $existing_field_options = array();
+    foreach ($existing_fields as $field_name => $info) {
+      $text = t('@type: @field (@label)', array(
+        '@type' => $info['type_label'],
+        '@label' => $info['label'],
+        '@field' => $info['field'],
+      ));
+      $existing_field_options[$field_name] = truncate_utf8($text, 80, FALSE, TRUE);
+    }
+    asort($existing_field_options);
     $name = '_add_existing_field';
     $table[$name] = array(
       '#attributes' => array('class' => array('draggable', 'tabledrag-leaf', 'add-new')),
@@ -617,10 +636,8 @@ function field_ui_field_overview_form($form, &$form_state, $entity_type, $bundle
 
   // Add settings for the update selects behavior.
   $js_fields = array();
-  foreach ($existing_field_options as $field_name => $fields) {
-    $field = field_info_field($field_name);
-    $instance = field_info_instance($form['#entity_type'], $field_name, $form['#bundle']);
-    $js_fields[$field_name] = array('label' => $instance['label'], 'type' => $field['type'], 'widget' => $instance['widget']['type']);
+  foreach ($existing_fields as $field_name => $info) {
+    $js_fields[$field_name] = array('label' => $info['label'], 'type' => $info['type'], 'widget' => $info['widget_type']);
   }
 
   $form['#attached']['js'][] = array(
@@ -669,25 +686,8 @@ function _field_ui_field_overview_form_validate_add_new($form, &$form_state) {
       $field_name = $field['field_name'];
 
       // Add the 'field_' prefix.
-      if (substr($field_name, 0, 6) != 'field_') {
-        $field_name = 'field_' . $field_name;
-        form_set_value($form['fields']['_add_new_field']['field_name'], $field_name, $form_state);
-      }
-
-      // Invalid field name.
-      if (!preg_match('!^field_[a-z0-9_]+$!', $field_name)) {
-        form_set_error('fields][_add_new_field][field_name', t('Add new field: the field name %field_name is invalid. The name must include only lowercase unaccentuated letters, numbers, and underscores.', array('%field_name' => $field_name)));
-      }
-      if (strlen($field_name) > 32) {
-        form_set_error('fields][_add_new_field][field_name', t("Add new field: the field name %field_name is too long. The name is limited to 32 characters, including the 'field_' prefix.", array('%field_name' => $field_name)));
-      }
-
-      // Field name already exists. We need to check inactive fields as well, so
-      // we can't use field_info_fields().
-      $fields = field_read_fields(array('field_name' => $field_name), array('include_inactive' => TRUE));
-      if ($fields) {
-        form_set_error('fields][_add_new_field][field_name', t('Add new field: the field name %field_name already exists.', array('%field_name' => $field_name)));
-      }
+      $field_name = 'field_' . $field_name;
+      form_set_value($form['fields']['_add_new_field']['field_name'], $field_name, $form_state);
     }
 
     // Missing field type.
@@ -707,6 +707,24 @@ function _field_ui_field_overview_form_validate_add_new($form, &$form_state) {
       }
     }
   }
+}
+
+/**
+ * Render API callback: Checks if a field machine name is taken.
+ *
+ * @param $value
+ *   The machine name, not prefixed with 'field_'.
+ *
+ * @return
+ *   Whether or not the field machine name is taken.
+ */
+function _field_ui_field_name_exists($value) {
+  // Prefix with 'field_'.
+  $field_name = 'field_' . $value;
+
+  // We need to check inactive fields as well, so we can't use
+  // field_info_fields().
+  return (bool) field_read_fields(array('field_name' => $field_name), array('include_inactive' => TRUE));
 }
 
 /**
@@ -1502,7 +1520,7 @@ function field_ui_formatter_options($field_type = NULL) {
  * Returns an array of existing fields to be added to a bundle.
  */
 function field_ui_existing_field_options($entity_type, $bundle) {
-  $options = array();
+  $info = array();
   $field_types = field_info_field_types();
 
   foreach (field_info_instances() as $existing_entity_type => $bundles) {
@@ -1521,19 +1539,19 @@ function field_ui_existing_field_options($entity_type, $bundle) {
             && !field_info_instance($entity_type, $field['field_name'], $bundle)
             && (empty($field['entity_types']) || in_array($entity_type, $field['entity_types']))
             && empty($field_types[$field['type']]['no_ui'])) {
-            $text = t('@type: @field (@label)', array(
-              '@type' => $field_types[$field['type']]['label'],
-              '@label' => t($instance['label']), '@field' => $instance['field_name'],
-            ));
-            $options[$instance['field_name']] = (drupal_strlen($text) > 80 ? truncate_utf8($text, 77) . '...' : $text);
+            $info[$instance['field_name']] = array(
+              'type' => $field['type'],
+              'type_label' => $field_types[$field['type']]['label'],
+              'field' => $field['field_name'],
+              'label' => t($instance['label']),
+              'widget_type' => $instance['widget']['type'],
+            );
           }
         }
       }
     }
   }
-  // Sort the list by field name.
-  asort($options);
-  return $options;
+  return $info;
 }
 
 /**
@@ -1705,7 +1723,7 @@ function field_ui_widget_type_form_submit($form, &$form_state) {
 /**
  * Form constructor for removing a field instance from a bundle.
  *
- * @see field_ui_delete_form_submit()
+ * @see field_ui_field_delete_form_submit()
  * @ingroup forms
  */
 function field_ui_field_delete_form($form, &$form_state, $instance) {

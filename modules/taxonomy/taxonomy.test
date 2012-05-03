@@ -180,7 +180,7 @@ class TaxonomyVocabularyFunctionalTest extends TaxonomyWebTestCase {
 /**
  * Tests for taxonomy vocabulary functions.
  */
-class TaxonomyVocabularyUnitTest extends TaxonomyWebTestCase {
+class TaxonomyVocabularyTestCase extends TaxonomyWebTestCase {
 
   public static function getInfo() {
     return array(
@@ -215,7 +215,7 @@ class TaxonomyVocabularyUnitTest extends TaxonomyWebTestCase {
     // This should return a vocabulary object since it now matches a real vid.
     $vocabulary = taxonomy_vocabulary_load($vid);
     $this->assertTrue(!empty($vocabulary) && is_object($vocabulary), t('Vocabulary is an object'));
-    $this->assertTrue($vocabulary->vid == $vid, t('Valid vocabulary vid is the same as our previously invalid one.'));
+    $this->assertEqual($vocabulary->vid, $vid, 'Valid vocabulary vid is the same as our previously invalid one.');
   }
 
   /**
@@ -319,10 +319,10 @@ class TaxonomyVocabularyUnitTest extends TaxonomyWebTestCase {
 
     // Fetch vocabulary 1 by name.
     $vocabulary = current(taxonomy_vocabulary_load_multiple(array(), array('name' => $vocabulary1->name)));
-    $this->assertTrue($vocabulary->vid == $vocabulary1->vid, t('Vocabulary loaded successfully by name.'));
+    $this->assertEqual($vocabulary->vid, $vocabulary1->vid, 'Vocabulary loaded successfully by name.');
 
     // Fetch vocabulary 1 by name and ID.
-    $this->assertTrue(current(taxonomy_vocabulary_load_multiple(array($vocabulary1->vid), array('name' => $vocabulary1->name)))->vid == $vocabulary1->vid, t('Vocabulary loaded successfully by name and ID.'));
+    $this->assertEqual(current(taxonomy_vocabulary_load_multiple(array($vocabulary1->vid), array('name' => $vocabulary1->name)))->vid, $vocabulary1->vid, 'Vocabulary loaded successfully by name and ID.');
   }
 
   /**
@@ -369,7 +369,6 @@ class TaxonomyVocabularyUnitTest extends TaxonomyWebTestCase {
     field_create_instance($this->instance);
 
     module_disable(array('taxonomy'));
-    drupal_flush_all_caches();
     require_once DRUPAL_ROOT . '/includes/install.inc';
     drupal_uninstall_modules(array('taxonomy'));
     module_enable(array('taxonomy'));
@@ -389,7 +388,7 @@ class TaxonomyVocabularyUnitTest extends TaxonomyWebTestCase {
 /**
  * Unit tests for taxonomy term functions.
  */
-class TaxonomyTermUnitTest extends TaxonomyWebTestCase {
+class TaxonomyTermFunctionTestCase extends TaxonomyWebTestCase {
 
   public static function getInfo() {
     return array(
@@ -561,6 +560,10 @@ class TaxonomyTermTestCase extends TaxonomyWebTestCase {
     $term1 = $this->createTerm($this->vocabulary);
     $term2 = $this->createTerm($this->vocabulary);
 
+    // Check that hierarchy is flat.
+    $vocabulary = taxonomy_vocabulary_load($this->vocabulary->vid);
+    $this->assertEqual(0, $vocabulary->hierarchy, 'Vocabulary is flat.');
+
     // Edit $term2, setting $term1 as parent.
     $edit = array();
     $edit['parent[]'] = array($term1->tid);
@@ -696,6 +699,66 @@ class TaxonomyTermTestCase extends TaxonomyWebTestCase {
     $input = substr($term_objects['term3']->name, 0, 3);
     $this->drupalGet('taxonomy/autocomplete/taxonomy_' . $this->vocabulary->machine_name . '/' . $input);
     $this->assertRaw('{"' . $term_objects['term3']->name . '":"' . $term_objects['term3']->name . '"}', t('Autocomplete returns term %term_name after typing the first 3 letters.', array('%term_name' => $term_objects['term3']->name)));
+
+    // Test taxonomy autocomplete with a nonexistent field.
+    $field_name = $this->randomName();
+    $tag = $this->randomName();
+    $message = t("Taxonomy field @field_name not found.", array('@field_name' => $field_name));
+    $this->assertFalse(field_info_field($field_name), t('Field %field_name does not exist.', array('%field_name' => $field_name)));
+    $this->drupalGet('taxonomy/autocomplete/' . $field_name . '/' . $tag);
+    $this->assertRaw($message, t('Autocomplete returns correct error message when the taxonomy field does not exist.'));
+  }
+
+  /**
+   * Tests term autocompletion edge cases with slashes in the names.
+   */
+  function testTermAutocompletion() {
+    // Add a term with a slash in the name.
+    $first_term = $this->createTerm($this->vocabulary);
+    $first_term->name = '10/16/2011';
+    taxonomy_term_save($first_term);
+    // Add another term that differs after the slash character.
+    $second_term = $this->createTerm($this->vocabulary);
+    $second_term->name = '10/17/2011';
+    taxonomy_term_save($second_term);
+    // Add another term that has both a comma and a slash character.
+    $third_term = $this->createTerm($this->vocabulary);
+    $third_term->name = 'term with, a comma and / a slash';
+    taxonomy_term_save($third_term);
+
+    // Try to autocomplete a term name that matches both terms.
+    // We should get both term in a json encoded string.
+    $input = '10/';
+    $path = 'taxonomy/autocomplete/taxonomy_';
+    $path .= $this->vocabulary->machine_name . '/' . $input;
+    // The result order is not guaranteed, so check each term separately.
+    $url = url($path, array('absolute' => TRUE));
+    $result = drupal_http_request($url);
+    $data = drupal_json_decode($result->data);
+    $this->assertEqual($data[$first_term->name], check_plain($first_term->name), 'Autocomplete returned the first matching term');
+    $this->assertEqual($data[$second_term->name], check_plain($second_term->name), 'Autocomplete returned the second matching term');
+
+    // Try to autocomplete a term name that matches first term.
+    // We should only get the first term in a json encoded string.
+    $input = '10/16';
+    $url = 'taxonomy/autocomplete/taxonomy_';
+    $url .= $this->vocabulary->machine_name . '/' . $input;
+    $this->drupalGet($url);
+    $target = array($first_term->name => check_plain($first_term->name));
+    $this->assertRaw(drupal_json_encode($target), 'Autocomplete returns only the expected matching term.');
+
+    // Try to autocomplete a term name with both a comma and a slash.
+    $input = '"term with, comma and / a';
+    $url = 'taxonomy/autocomplete/taxonomy_';
+    $url .= $this->vocabulary->machine_name . '/' . $input;
+    $this->drupalGet($url);
+    $n = $third_term->name;
+    // Term names containing commas or quotes must be wrapped in quotes.
+    if (strpos($third_term->name, ',') !== FALSE || strpos($third_term->name, '"') !== FALSE) {
+      $n = '"' . str_replace('"', '""', $third_term->name) . '"';
+    }
+    $target = array($n => check_plain($third_term->name));
+    $this->assertRaw(drupal_json_encode($target), 'Autocomplete returns a term containing a comma and a slash.');
   }
 
   /**
@@ -887,6 +950,127 @@ class TaxonomyTermTestCase extends TaxonomyWebTestCase {
     // Try to load the term using a substring of the name.
     $terms = taxonomy_get_term_by_name(drupal_substr($term->name, 2));
     $this->assertFalse($terms);
+
+    // Create a new term in a different vocabulary with the same name.
+    $new_vocabulary = $this->createVocabulary();
+    $new_term = new stdClass();
+    $new_term->name = $term->name;
+    $new_term->vid = $new_vocabulary->vid;
+    taxonomy_term_save($new_term);
+
+    // Load multiple terms with the same name.
+    $terms = taxonomy_get_term_by_name($term->name);
+    $this->assertEqual(count($terms), 2, t('Two terms loaded with the same name.'));
+
+    // Load single term when restricted to one vocabulary.
+    $terms = taxonomy_get_term_by_name($term->name, $this->vocabulary->machine_name);
+    $this->assertEqual(count($terms), 1, t('One term loaded when restricted by vocabulary.'));
+    $this->assertTrue(isset($terms[$term->tid]), t('Term loaded using exact name and vocabulary machine name.'));
+
+    // Create a new term with another name.
+    $term2 = $this->createTerm($this->vocabulary);
+
+    // Try to load a term by name that doesn't exist in this vocabulary but
+    // exists in another vocabulary.
+    $terms = taxonomy_get_term_by_name($term2->name, $new_vocabulary->machine_name);
+    $this->assertFalse($terms, t('Invalid term name restricted by vocabulary machine name not loaded.'));
+
+    // Try to load terms filtering by a non-existing vocabulary.
+    $terms = taxonomy_get_term_by_name($term2->name, 'non_existing_vocabulary');
+    $this->assertEqual(count($terms), 0, t('No terms loaded when restricted by a non-existing vocabulary.'));
+  }
+}
+
+/**
+ * Tests the rendering of term reference fields in RSS feeds.
+ */
+class TaxonomyRSSTestCase extends TaxonomyWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Taxonomy RSS Content.',
+      'description' => 'Ensure that data added as terms appears in RSS feeds if "RSS Category" format is selected.',
+      'group' => 'Taxonomy',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('taxonomy');
+    $this->admin_user = $this->drupalCreateUser(array('administer taxonomy', 'bypass node access', 'administer content types'));
+    $this->drupalLogin($this->admin_user);
+    $this->vocabulary = $this->createVocabulary();
+
+    $field = array(
+      'field_name' => 'taxonomy_' . $this->vocabulary->machine_name,
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => $this->vocabulary->machine_name,
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    field_create_field($field);
+
+    $this->instance = array(
+      'field_name' => 'taxonomy_' . $this->vocabulary->machine_name,
+      'bundle' => 'article',
+      'entity_type' => 'node',
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'taxonomy_term_reference_link',
+        ),
+      ),
+    );
+    field_create_instance($this->instance);
+  }
+
+  /**
+   * Tests that terms added to nodes are displayed in core RSS feed.
+   *
+   * Create a node and assert that taxonomy terms appear in rss.xml.
+   */
+  function testTaxonomyRSS() {
+    // Create two taxonomy terms.
+    $term1 = $this->createTerm($this->vocabulary);
+
+    // RSS display must be added manually.
+    $this->drupalGet("admin/structure/types/manage/article/display");
+    $edit = array(
+      "view_modes_custom[rss]" => '1',
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Change the format to 'RSS category'.
+    $this->drupalGet("admin/structure/types/manage/article/display/rss");
+    $edit = array(
+      "fields[taxonomy_" . $this->vocabulary->machine_name . "][type]" => 'taxonomy_term_reference_rss_category',
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Post an article.
+    $edit = array();
+    $langcode = LANGUAGE_NONE;
+    $edit["title"] = $this->randomName();
+    $edit[$this->instance['field_name'] . '[' . $langcode .'][]'] = $term1->tid;
+    $this->drupalPost('node/add/article', $edit, t('Save'));
+
+    // Check that the term is displayed when the RSS feed is viewed.
+    $this->drupalGet('rss.xml');
+    $test_element = array(
+      'key' => 'category',
+      'value' => $term1->name,
+      'attributes' => array(
+        'domain' => url('taxonomy/term/' . $term1->tid, array('absolute' => TRUE)),
+      ),
+    );
+    $this->assertRaw(format_xml_elements(array($test_element)), 'Term is displayed when viewing the rss feed.');
   }
 }
 
@@ -1110,7 +1294,7 @@ class TaxonomyTermIndexTestCase extends TaxonomyWebTestCase {
 /**
  * Test the taxonomy_term_load_multiple() function.
  */
-class TaxonomyLoadMultipleUnitTest extends TaxonomyWebTestCase {
+class TaxonomyLoadMultipleTestCase extends TaxonomyWebTestCase {
 
   public static function getInfo() {
     return array(
@@ -1143,11 +1327,11 @@ class TaxonomyLoadMultipleUnitTest extends TaxonomyWebTestCase {
     // Load the terms from the vocabulary.
     $terms = taxonomy_term_load_multiple(NULL, array('vid' => $vocabulary->vid));
     $count = count($terms);
-    $this->assertTrue($count == 5, t('Correct number of terms were loaded. !count terms.', array('!count' => $count)));
+    $this->assertEqual($count, 5, format_string('Correct number of terms were loaded. !count terms.', array('!count' => $count)));
 
     // Load the same terms again by tid.
     $terms2 = taxonomy_term_load_multiple(array_keys($terms));
-    $this->assertTrue($count == count($terms2), t('Five terms were loaded by tid'));
+    $this->assertEqual($count, count($terms2), 'Five terms were loaded by tid');
     $this->assertEqual($terms, $terms2, t('Both arrays contain the same terms'));
 
     // Load the terms by tid, with a condition on vid.
@@ -1162,7 +1346,7 @@ class TaxonomyLoadMultipleUnitTest extends TaxonomyWebTestCase {
 
     // Load terms from the vocabulary by vid.
     $terms4 = taxonomy_term_load_multiple(NULL, array('vid' => $vocabulary->vid));
-    $this->assertTrue(count($terms4 == 4), t('Correct number of terms were loaded.'));
+    $this->assertEqual(count($terms4), 4, 'Correct number of terms were loaded.');
     $this->assertFalse(isset($terms4[$deleted->tid]));
 
     // Create a single term and load it by name.
@@ -1335,6 +1519,11 @@ class TaxonomyTermFieldTestCase extends TaxonomyWebTestCase {
     $entity->content = field_attach_view('test_entity', $entity, 'full');
     $this->content = drupal_render($entity->content);
     $this->assertText($term->name, t('Term name is displayed'));
+
+    // Delete the vocabulary and verify that the widget is gone.
+    taxonomy_vocabulary_delete($this->vocabulary->vid);
+    $this->drupalGet('test-entity/add/test-bundle');
+    $this->assertNoFieldByName("{$this->field_name}[$langcode]", '', 'Widget is not displayed');
   }
 
   /**
@@ -1377,6 +1566,127 @@ class TaxonomyTermFieldTestCase extends TaxonomyWebTestCase {
     $this->assertEqual($allowed_values[2]['vocabulary'], 'foo', t('Index 2: Machine name was left untouched.'));
   }
 }
+
+/**
+ * Tests a taxonomy term reference field that allows multiple vocabularies.
+ */
+class TaxonomyTermFieldMultipleVocabularyTestCase extends TaxonomyWebTestCase {
+  protected $instance;
+  protected $vocabulary1;
+  protected $vocabulary2;
+
+  public static function getInfo() {
+    return array(
+      'name'  => 'Multiple vocabulary term reference field',
+      'description'  => 'Tests term reference fields that allow multiple vocabularies.',
+      'group' => 'Taxonomy',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('field_test');
+
+    $web_user = $this->drupalCreateUser(array('access field_test content', 'administer field_test content', 'administer taxonomy'));
+    $this->drupalLogin($web_user);
+    $this->vocabulary1 = $this->createVocabulary();
+    $this->vocabulary2 = $this->createVocabulary();
+
+    // Set up a field and instance.
+    $this->field_name = drupal_strtolower($this->randomName());
+    $this->field = array(
+      'field_name' => $this->field_name,
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => $this->vocabulary1->machine_name,
+            'parent' => '0',
+          ),
+          array(
+            'vocabulary' => $this->vocabulary2->machine_name,
+            'parent' => '0',
+          ),
+        ),
+      )
+    );
+    field_create_field($this->field);
+    $this->instance = array(
+      'field_name' => $this->field_name,
+      'entity_type' => 'test_entity',
+      'bundle' => 'test_bundle',
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'display' => array(
+        'full' => array(
+          'type' => 'taxonomy_term_reference_link',
+        ),
+      ),
+    );
+    field_create_instance($this->instance);
+  }
+
+  /**
+   * Tests term reference field and widget with multiple vocabularies.
+   */
+  function testTaxonomyTermFieldMultipleVocabularies() {
+    // Create a term in each vocabulary.
+    $term1 = $this->createTerm($this->vocabulary1);
+    $term2 = $this->createTerm($this->vocabulary2);
+
+    // Submit an entity with both terms.
+    $langcode = LANGUAGE_NONE;
+    $this->drupalGet('test-entity/add/test-bundle');
+    $this->assertFieldByName("{$this->field_name}[$langcode][]", '', 'Widget is displayed');
+    $edit = array(
+      "{$this->field_name}[$langcode][]" => array($term1->tid, $term2->tid),
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+    preg_match('|test-entity/manage/(\d+)/edit|', $this->url, $match);
+    $id = $match[1];
+    $this->assertRaw(t('test_entity @id has been created.', array('@id' => $id)), 'Entity was created.');
+
+    // Render the entity.
+    $entity = field_test_entity_test_load($id);
+    $entities = array($id => $entity);
+    field_attach_prepare_view('test_entity', $entities, 'full');
+    $entity->content = field_attach_view('test_entity', $entity, 'full');
+    $this->content = drupal_render($entity->content);
+    $this->assertText($term1->name, 'Term 1 name is displayed.');
+    $this->assertText($term2->name, 'Term 2 name is displayed.');
+
+    // Delete vocabulary 2.
+    taxonomy_vocabulary_delete($this->vocabulary2->vid);
+
+    // Re-render the content.
+    $entity = field_test_entity_test_load($id);
+    $entities = array($id => $entity);
+    field_attach_prepare_view('test_entity', $entities, 'full');
+    $entity->content = field_attach_view('test_entity', $entity, 'full');
+    $this->plainTextContent = FALSE;
+    $this->content = drupal_render($entity->content);
+
+    // Term 1 should still be displayed; term 2 should not be.
+    $this->assertText($term1->name, 'Term 1 name is displayed.');
+    $this->assertNoText($term2->name, 'Term 2 name is not displayed.');
+
+    // Verify that field and instance settings are correct.
+    $field_info = field_info_field($this->field_name);
+    $this->assertEqual(sizeof($field_info['settings']['allowed_values']), 1, 'Only one vocabulary is allowed for the field.');
+
+    // The widget should still be displayed.
+    $this->drupalGet('test-entity/add/test-bundle');
+    $this->assertFieldByName("{$this->field_name}[$langcode][]", '', 'Widget is still displayed');
+
+    // Term 1 should still pass validation.
+    $edit = array(
+      "{$this->field_name}[$langcode][]" => array($term1->tid),
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+  }
+}
+
 
 /**
  * Test taxonomy token replacement in strings.

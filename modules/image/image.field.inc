@@ -25,6 +25,7 @@ function image_field_info() {
         'title_field' => 0,
         'max_resolution' => '',
         'min_resolution' => '',
+        'default_image' => 0,
       ),
       'default_widget' => 'image_image',
       'default_formatter' => 'image',
@@ -152,6 +153,15 @@ function image_field_instance_settings_form($field, $instance) {
     '#weight' => 11,
   );
 
+  // Add the default image to the instance.
+  $form['default_image'] = array(
+    '#title' => t('Default image'),
+    '#type' => 'managed_file',
+    '#description' => t("If no image is uploaded, this image will be shown on display and will override the field's default image."),
+    '#default_value' => $settings['default_image'],
+    '#upload_location' => $field['settings']['uri_scheme'] . '://default_images/',
+  );
+
   return $form;
 }
 
@@ -191,8 +201,19 @@ function image_field_load($entity_type, $entities, $field, $instances, $langcode
 function image_field_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items) {
   // If there are no files specified at all, use the default.
   foreach ($entities as $id => $entity) {
-    if (empty($items[$id]) && $field['settings']['default_image']) {
-      if ($file = file_load($field['settings']['default_image'])) {
+    if (empty($items[$id])) {
+      $fid = 0;
+      // Use the default for the instance if one is available.
+      if ($instances[$id]['settings']['default_image']) {
+        $fid = $instances[$id]['settings']['default_image'];
+      }
+      // Otherwise, use the default for the field.
+      elseif ($field['settings']['default_image']) {
+        $fid = $field['settings']['default_image'];
+      }
+
+      // Add the default image if one is found.
+      if ($fid && ($file = file_load($fid))) {
         $items[$id][0] = (array) $file + array(
           'is_default' => TRUE,
           'alt' => '',
@@ -568,7 +589,8 @@ function image_field_formatter_view($entity_type, $entity, $field, $instance, $l
  *
  * @param $variables
  *   An associative array containing:
- *   - item: An array of image data.
+ *   - item: Associative array of image data, which may include "uri", "alt",
+ *     "width", "height", "title" and "attributes".
  *   - image_style: An optional image style.
  *   - path: An array containing the link 'path' and link 'options'.
  *
@@ -580,6 +602,10 @@ function theme_image_formatter($variables) {
     'path' => $item['uri'],
     'alt' => $item['alt'],
   );
+
+  if (isset($item['attributes'])) {
+    $image['attributes'] = $item['attributes'];
+  }
 
   if (isset($item['width']) && isset($item['height'])) {
     $image['width'] = $item['width'];

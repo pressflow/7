@@ -81,7 +81,7 @@ function node_help($path, $arg) {
     case 'admin/help#node':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Node module manages the creation, editing, deletion, settings, and display of the main site content. Content items managed by the Node module are typically displayed as pages on your site, and include a title, some meta-data (author, creation time, content type, etc.), and optional fields containing text or other data (fields are managed by the <a href="@field">Field module</a>). For more information, see the online handbook entry for <a href="@node">Node module</a>.', array('@node' => 'http://drupal.org/handbook/modules/node', '@field' => url('admin/help/field'))) . '</p>';
+      $output .= '<p>' . t('The Node module manages the creation, editing, deletion, settings, and display of the main site content. Content items managed by the Node module are typically displayed as pages on your site, and include a title, some meta-data (author, creation time, content type, etc.), and optional fields containing text or other data (fields are managed by the <a href="@field">Field module</a>). For more information, see the online handbook entry for <a href="@node">Node module</a>.', array('@node' => 'http://drupal.org/documentation/modules/node', '@field' => url('admin/help/field'))) . '</p>';
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Creating content') . '</dt>';
@@ -1814,38 +1814,72 @@ function theme_node_search_admin($variables) {
   return $output;
 }
 
-function _node_revision_access($node, $op = 'view') {
+/**
+ * Access callback: Checks node revision access.
+ *
+ * @param $node
+ *   The node to check.
+ * @param $op
+ *   (optional) The specific operation being checked. Defaults to 'view.'
+ * @param object $account
+ *   (optional) A user object representing the user for whom the operation is
+ *   to be performed. Determines access for a user other than the current user.
+ *
+ * @return
+ *   TRUE if the operation may be performed, FALSE otherwise.
+ *
+ * @see node_menu()
+ */
+function _node_revision_access($node, $op = 'view', $account = NULL) {
   $access = &drupal_static(__FUNCTION__, array());
-  if (!isset($access[$node->vid])) {
-    // To save additional calls to the database, return early if the user
-    // doesn't have the required permissions.
-    $map = array('view' => 'view revisions', 'update' => 'revert revisions', 'delete' => 'delete revisions');
-    if (isset($map[$op]) && (!user_access($map[$op]) && !user_access('administer nodes'))) {
-      $access[$node->vid] = FALSE;
-      return FALSE;
+
+  $map = array(
+    'view' => 'view revisions',
+    'update' => 'revert revisions',
+    'delete' => 'delete revisions',
+  );
+
+  if (!$node || !isset($map[$op])) {
+    // If there was no node to check against, or the $op was not one of the
+    // supported ones, we return access denied.
+    return FALSE;
+  }
+
+  if (!isset($account)) {
+    $account = $GLOBALS['user'];
+  }
+
+  // Statically cache access by revision ID, user account ID, and operation.
+  $cid = $node->vid . ':' . $account->uid . ':' . $op;
+
+  if (!isset($access[$cid])) {
+    // Perform basic permission checks first.
+    if (!user_access($map[$op], $account) && !user_access('administer nodes', $account)) {
+      return $access[$cid] = FALSE;
     }
 
     $node_current_revision = node_load($node->nid);
     $is_current_revision = $node_current_revision->vid == $node->vid;
 
     // There should be at least two revisions. If the vid of the given node
-    // and the vid of the current revision differs, then we already have two
+    // and the vid of the current revision differ, then we already have two
     // different revisions so there is no need for a separate database check.
     // Also, if you try to revert to or delete the current revision, that's
     // not good.
     if ($is_current_revision && (db_query('SELECT COUNT(vid) FROM {node_revision} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField() == 1 || $op == 'update' || $op == 'delete')) {
-      $access[$node->vid] = FALSE;
+      $access[$cid] = FALSE;
     }
-    elseif (user_access('administer nodes')) {
-      $access[$node->vid] = TRUE;
+    elseif (user_access('administer nodes', $account)) {
+      $access[$cid] = TRUE;
     }
     else {
       // First check the access to the current revision and finally, if the
       // node passed in is not the current revision then access to that, too.
-      $access[$node->vid] = node_access($op, $node_current_revision) && ($is_current_revision || node_access($op, $node));
+      $access[$cid] = node_access($op, $node_current_revision, $account) && ($is_current_revision || node_access($op, $node, $account));
     }
   }
-  return $access[$node->vid];
+
+  return $access[$cid];
 }
 
 function _node_add_access() {
@@ -2915,7 +2949,7 @@ function node_access($op, $node, $account = NULL) {
       return $result;
     }
     elseif (is_object($node) && $op == 'view' && $node->status) {
-      // If no modules implement hook_node_grants(), the default behaviour is to
+      // If no modules implement hook_node_grants(), the default behavior is to
       // allow all users to view published nodes, so reflect that here.
       $rights[$account->uid][$cid][$op] = TRUE;
       return TRUE;
@@ -3218,9 +3252,6 @@ function _node_query_node_access_alter($query, $type) {
     }
   }
 
-  // Prevent duplicate records.
-  $query->distinct();
-
   // Find all instances of the base table being joined -- could appear
   // more than once in the query, and could be aliased. Join each one to
   // the node_access table.
@@ -3249,17 +3280,9 @@ function _node_query_node_access_alter($query, $type) {
   foreach ($tables as $nalias => $tableinfo) {
     $table = $tableinfo['table'];
     if (!($table instanceof SelectQueryInterface) && $table == $base_table) {
-
-      // The node_access table has the access grants for any given node so JOIN
-      // it to the table containing the nid which can be either the node
-      // table or a field value table.
-      if ($type == 'node') {
-        $access_alias = $query->join('node_access', 'na', '%alias.nid = ' . $nalias . '.nid');
-      }
-      else {
-        $access_alias = $query->leftJoin('node_access', 'na', '%alias.nid = ' . $nalias . '.entity_id');
-        $base_alias = $nalias;
-      }
+      // Set the subquery.
+      $subquery = db_select('node_access', 'na')
+       ->fields('na', array('nid'));
 
       $grant_conditions = db_or();
       // If any grant exists for the specified user, then user has access
@@ -3267,29 +3290,30 @@ function _node_query_node_access_alter($query, $type) {
       foreach ($grants as $realm => $gids) {
         foreach ($gids as $gid) {
           $grant_conditions->condition(db_and()
-            ->condition($access_alias . '.gid', $gid)
-            ->condition($access_alias . '.realm', $realm)
+            ->condition('na.gid', $gid)
+            ->condition('na.realm', $realm)
           );
         }
       }
 
-      $count = count($grant_conditions->conditions());
-      if ($type == 'node') {
-        if ($count) {
-          $query->condition($grant_conditions);
-        }
-        $query->condition($access_alias . '.grant_' . $op, 1, '>=');
+      // Attach conditions to the subquery for nodes.
+      if (count($grant_conditions->conditions())) {
+        $subquery->condition($grant_conditions);
       }
-      else {
-        if ($count) {
-          $entity_conditions->condition($grant_conditions);
-        }
-        $entity_conditions->condition($access_alias . '.grant_' . $op, 1, '>=');
+      $subquery->condition('na.grant_' . $op, 1, '>=');
+      $field = 'nid';
+      // Now handle entities.
+      if ($type == 'entity') {
+        // Set a common alias for entities.
+        $base_alias = $nalias;
+        $field = 'entity_id';
       }
+      $subquery->where("$nalias.$field = na.nid");
+      $query->exists($subquery);
     }
   }
 
-  if ($type == 'entity' && count($entity_conditions->conditions())) {
+  if ($type == 'entity' && count($subquery->conditions())) {
     // All the node access conditions are only for field values belonging to
     // nodes.
     $entity_conditions->condition("$base_alias.entity_type", 'node');
@@ -3301,6 +3325,7 @@ function _node_query_node_access_alter($query, $type) {
     // Add the compiled set of rules to the query.
     $query->condition($or);
   }
+
 }
 
 /**

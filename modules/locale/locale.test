@@ -694,6 +694,136 @@ class LocaleTranslationFunctionalTest extends DrupalWebTestCase {
 }
 
 /**
+ * Tests plural index computation functionality.
+ */
+class LocalePluralFormatTest extends DrupalWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Plural formula evaluation',
+      'description' => 'Tests plural formula evaluation for various languages.',
+      'group' => 'Locale',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('locale', 'locale_test');
+
+    $admin_user = $this->drupalCreateUser(array('administer languages', 'translate interface', 'access administration pages'));
+    $this->drupalLogin($admin_user);
+
+    // Import some .po files with formulas to set up the environment.
+    // These will also add the languages to the system and enable them.
+    $this->importPoFile($this->getPoFileWithSimplePlural(), array(
+      'langcode' => 'fr',
+    ));
+    $this->importPoFile($this->getPoFileWithComplexPlural(), array(
+      'langcode' => 'hr',
+    ));
+  }
+
+  /**
+   * Tests locale_get_plural() functionality.
+   */
+  function testGetPluralFormat() {
+    $this->drupalGet('locale_test_plural_format_page');
+    $tests = _locale_test_plural_format_tests();
+    $result = array();
+    foreach ($tests as $test) {
+      $this->assertPluralFormat($test['count'], $test['language'], $test['expected-result']);
+    }
+  }
+
+  /**
+   * Helper assert to test locale_get_plural page.
+   *
+   * @param $count
+   *  Number for testing.
+   * @param $lang
+   *  Language for testing
+   * @param $expected_result
+   *   Expected result.
+   * @param $message
+   */
+  function assertPluralFormat($count, $lang, $expected_result) {
+    $message_param =  array(
+      '@lang' => $lang,
+      '@count' => $count,
+      '@expected_result' => $expected_result,
+    );
+    $message = t("Computed plural index for '@lang' with count @count is @expected_result.", $message_param);
+
+    $message_param = array(
+      '@lang' => $lang,
+      '@expected_result' => $expected_result,
+    );
+    $this->assertText(format_string('Language: @lang, locale_get_plural: @expected_result.', $message_param, $message));
+  }
+
+  /**
+   * Imports a standalone .po file in a given language.
+   *
+   * @param $contents
+   *   Contents of the .po file to import.
+   * @param $options
+   *   Additional options to pass to the translation import form.
+   */
+  function importPoFile($contents, array $options = array()) {
+    $name = tempnam('temporary://', "po_") . '.po';
+    file_put_contents($name, $contents);
+    $options['files[file]'] = $name;
+    $this->drupalPost('admin/config/regional/translate/import', $options, t('Import'));
+    drupal_unlink($name);
+  }
+
+  /**
+   * Returns a .po file with a simple plural formula.
+   */
+  function getPoFileWithSimplePlural() {
+    return <<< EOF
+msgid ""
+msgstr ""
+"Project-Id-Version: Drupal 7\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\\n"
+
+msgid "One sheep"
+msgid_plural "@count sheep"
+msgstr[0] "un mouton"
+msgstr[1] "@count moutons"
+
+msgid "Monday"
+msgstr "lundi"
+EOF;
+  }
+
+  /**
+   * Returns a .po file with a complex plural formula.
+   */
+  function getPoFileWithComplexPlural() {
+    return <<< EOF
+msgid ""
+msgstr ""
+"Project-Id-Version: Drupal 7\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\\n"
+
+msgid "1 hour"
+msgid_plural "@count hours"
+msgstr[0] "@count sat"
+msgstr[1] "@count sata"
+msgstr[2] "@count sati"
+
+msgid "Monday"
+msgstr "Ponedjeljak"
+EOF;
+  }
+}
+
+/**
  * Functional tests for the import of translation files.
  */
 class LocaleImportFunctionalTest extends DrupalWebTestCase {
@@ -792,6 +922,25 @@ class LocaleImportFunctionalTest extends DrupalWebTestCase {
 
     // This import should not have changed number of plural forms.
     $this->assert(db_query("SELECT plurals FROM {languages} WHERE language = 'fr'")->fetchField() == 2, t('Plural numbers untouched.'));
+
+    $this->importPoFile($this->getPoFileWithBrokenPlural(), array(
+      'langcode' => 'fr',
+      'mode' => 1, // Existing strings are kept, only new strings are added.
+    ));
+
+    // Attempt to import broken .po file as well to prove that this
+    // will not overwrite the proper plural formula imported above.
+    $this->assert(db_query("SELECT plurals FROM {languages} WHERE language = 'fr'")->fetchField() == 2, t('Broken plurals: plural numbers untouched.'));
+
+    $this->importPoFile($this->getPoFileWithMissingPlural(), array(
+      'langcode' => 'fr',
+      'mode' => 1, // Existing strings are kept, only new strings are added.
+    ));
+
+    // Attempt to import .po file which has no plurals and prove that this
+    // will not overwrite the proper plural formula imported above.
+    $this->assert(db_query("SELECT plurals FROM {languages} WHERE language = 'fr'")->fetchField() == 2, t('No plurals: plural numbers untouched.'));
+
 
     // Try importing a .po file with overriding strings, and ensure existing
     // strings are overwritten.
@@ -1069,6 +1218,42 @@ msgstr "Műveletek"
 msgid "Will not appear in Drupal core, so we can ensure the test passes"
 msgstr ""
 
+EOF;
+  }
+
+
+  /**
+   * Returns a .po file with a missing plural formula.
+   */
+  function getPoFileWithMissingPlural() {
+    return <<< EOF
+msgid ""
+msgstr ""
+"Project-Id-Version: Drupal 7\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+msgid "Monday"
+msgstr "Ponedjeljak"
+EOF;
+  }
+
+  /**
+   * Returns a .po file with a broken plural formula.
+   */
+  function getPoFileWithBrokenPlural() {
+    return <<< EOF
+msgid ""
+msgstr ""
+"Project-Id-Version: Drupal 7\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+"Plural-Forms: broken, will not parse\\n"
+
+msgid "Monday"
+msgstr "lundi"
 EOF;
   }
 
@@ -1483,6 +1668,7 @@ class LocaleBrowserDetectionTest extends DrupalUnitTestCase {
       'EN' => 'en',
       ' en' => 'en',
       'en ' => 'en',
+      'en, fr' => 'en',
 
       // A less specific language from the browser matches a more specific one
       // from the website, and the other way around for compatibility with
@@ -1517,6 +1703,7 @@ class LocaleBrowserDetectionTest extends DrupalUnitTestCase {
       // Unresolvable cases.
       '' => FALSE,
       'de,pl' => FALSE,
+      'iecRswK4eh' => FALSE,
       $this->randomName(10) => FALSE,
     );
 
@@ -2118,6 +2305,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
         'language_negotiation' => array(LOCALE_LANGUAGE_NEGOTIATION_URL, LANGUAGE_NEGOTIATION_DEFAULT),
         'path' => 'admin/config',
         'expect' => $default_string,
+        'expected_provider' => LANGUAGE_NEGOTIATION_DEFAULT,
         'http_header' => $http_header_browser_fallback,
         'message' => 'URL (PATH) > DEFAULT: no language prefix, UI language is default and the browser language preference setting is not used.',
       ),
@@ -2126,6 +2314,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
         'language_negotiation' => array(LOCALE_LANGUAGE_NEGOTIATION_URL, LANGUAGE_NEGOTIATION_DEFAULT),
         'path' => "$language/admin/config",
         'expect' => $language_string,
+        'expected_provider' => LOCALE_LANGUAGE_NEGOTIATION_URL,
         'http_header' => $http_header_browser_fallback,
         'message' => 'URL (PATH) > DEFAULT: with language prefix, UI language is switched based on path prefix',
       ),
@@ -2134,6 +2323,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
         'language_negotiation' => array(LOCALE_LANGUAGE_NEGOTIATION_URL, LOCALE_LANGUAGE_NEGOTIATION_BROWSER),
         'path' => 'admin/config',
         'expect' => $language_browser_fallback_string,
+        'expected_provider' => LOCALE_LANGUAGE_NEGOTIATION_BROWSER,
         'http_header' => $http_header_browser_fallback,
         'message' => 'URL (PATH) > BROWSER: no language prefix, UI language is determined by browser language preference',
       ),
@@ -2142,6 +2332,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
         'language_negotiation' => array(LOCALE_LANGUAGE_NEGOTIATION_URL, LOCALE_LANGUAGE_NEGOTIATION_BROWSER),
         'path' => "$language/admin/config",
         'expect' => $language_string,
+        'expected_provider' => LOCALE_LANGUAGE_NEGOTIATION_URL,
         'http_header' => $http_header_browser_fallback,
         'message' => 'URL (PATH) > BROWSER: with langage prefix, UI language is based on path prefix',
       ),
@@ -2150,6 +2341,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
         'language_negotiation' => array(LOCALE_LANGUAGE_NEGOTIATION_URL, LOCALE_LANGUAGE_NEGOTIATION_BROWSER, LANGUAGE_NEGOTIATION_DEFAULT),
         'path' => 'admin/config',
         'expect' => $default_string,
+        'expected_provider' => LANGUAGE_NEGOTIATION_DEFAULT,
         'http_header' => $http_header_blah,
         'message' => 'URL (PATH) > BROWSER > DEFAULT: no language prefix and browser language preference set to unknown language should use default language',
       ),
@@ -2177,6 +2369,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
         'locale_language_negotiation_url_part' => LOCALE_LANGUAGE_NEGOTIATION_URL_DOMAIN,
         'path' => 'admin/config',
         'expect' => $default_string,
+        'expected_provider' => LANGUAGE_NEGOTIATION_DEFAULT,
         'http_header' => $http_header_browser_fallback,
         'message' => 'URL (DOMAIN) > DEFAULT: default domain should get default language',
       ),
@@ -2188,6 +2381,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
         'locale_test_domain' => $language_domain,
         'path' => 'admin/config',
         'expect' => $language_string,
+        'expected_provider' => LOCALE_LANGUAGE_NEGOTIATION_URL,
         'http_header' => $http_header_browser_fallback,
         'message' => 'URL (DOMAIN) > DEFAULT: domain example.cn should switch to Chinese',
       ),
@@ -2211,6 +2405,7 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
     }
     $this->drupalGet($test['path'], array(), $test['http_header']);
     $this->assertText($test['expect'], $test['message']);
+    $this->assertText(t('Language negotiation provider: @name', array('@name' => $test['expected_provider'])));
   }
 
   /**
@@ -2255,6 +2450,56 @@ class LocaleUILanguageNegotiationTest extends DrupalWebTestCase {
     // Check that URLs are rewritten using the given browser language.
     $fields = $this->xpath('//div[@id="site-name"]//a[@rel="home" and @href=:url]//span', $args);
     $this->assertTrue($fields[0] == 'Drupal', t('URLs are rewritten using the browser language.'));
+  }
+
+  /**
+   * Tests url() when separate domains are used for multiple languages.
+   */
+  function testLanguageDomain() {
+    // Add the Italian language, without protocol.
+    $langcode = 'it';
+    locale_add_language($langcode, 'Italian', 'Italian', LANGUAGE_LTR, 'it.example.com', '', TRUE, FALSE);
+
+    // Add the French language, with protocol.
+    $langcode = 'fr';
+    locale_add_language($langcode, 'French', 'French', LANGUAGE_LTR, 'http://fr.example.com', '', TRUE, FALSE);
+
+    // Enable language URL detection.
+    $negotiation = array_flip(array(LOCALE_LANGUAGE_NEGOTIATION_URL, LANGUAGE_NEGOTIATION_DEFAULT));
+    language_negotiation_set(LANGUAGE_TYPE_INTERFACE, $negotiation);
+
+    variable_set('locale_language_negotiation_url_part', 1);
+
+    global $is_https;
+    $languages = language_list();
+
+    foreach (array('it', 'fr') as $langcode) {
+      // Build the link we're going to test based on the clean url setting.
+      $link = (!empty($GLOBALS['conf']['clean_url'])) ? $langcode . '.example.com/admin' : $langcode . '.example.com/?q=admin';
+
+      // Test URL in another language.
+      // Base path gives problems on the testbot, so $correct_link is hard-coded.
+      // @see UrlAlterFunctionalTest::assertUrlOutboundAlter (path.test).
+      $url = url('admin', array('language' => $languages[$langcode]));
+      $url_scheme = ($is_https) ? 'https://' : 'http://';
+      $correct_link = $url_scheme . $link;
+      $this->assertTrue($url == $correct_link, t('The url() function returns the right url (@url) in accordance with the chosen language', array('@url' => $url . " == " . $correct_link)));
+
+      // Test https via options.
+      variable_set('https', TRUE);
+      $url = url('admin', array('https' => TRUE, 'language' => $languages[$langcode]));
+      $correct_link = 'https://' . $link;
+      $this->assertTrue($url == $correct_link, t('The url() function returns the right https url (via options) (@url) in accordance with the chosen language', array('@url' => $url . " == " . $correct_link)));
+      variable_set('https', FALSE);
+
+      // Test https via current url scheme.
+      $temp_https = $is_https;
+      $is_https = TRUE;
+      $url = url('admin', array('language' => $languages[$langcode]));
+      $correct_link = 'https://' . $link;
+      $this->assertTrue($url == $correct_link, t('The url() function returns the right url (via current url scheme) (@url) in accordance with the chosen language', array('@url' => $url . " == " . $correct_link)));
+      $is_https = $temp_https;
+    }
   }
 }
 
@@ -2772,3 +3017,4 @@ class LocaleLanguageNegotiationInfoFunctionalTest extends DrupalWebTestCase {
     }
   }
 }
+
