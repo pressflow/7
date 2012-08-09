@@ -279,6 +279,12 @@ function locale_language_from_url($languages) {
       break;
 
     case LOCALE_LANGUAGE_NEGOTIATION_URL_DOMAIN:
+      // Get only the host, not the port.
+      $http_host= $_SERVER['HTTP_HOST'];
+      if (strpos($http_host, ':') !== FALSE) {
+        $http_host_tmp = explode(':', $http_host);
+        $http_host = current($http_host_tmp);
+      }
       foreach ($languages as $language) {
         // Skip check if the language doesn't have a domain.
         if ($language->domain) {
@@ -286,7 +292,7 @@ function locale_language_from_url($languages) {
           // Remove protocol and add http:// so parse_url works
           $host = 'http://' . str_replace(array('http://', 'https://'), '', $language->domain);
           $host = parse_url($host, PHP_URL_HOST);
-          if ($_SERVER['HTTP_HOST'] == $host) {
+          if ($http_host == $host) {
             $language_url = $language->language;
             break;
           }
@@ -1854,7 +1860,16 @@ function _locale_translate_seek() {
   }
 
   $sql_query = db_select('locales_source', 's');
-  $sql_query->leftJoin('locales_target', 't', 't.lid = s.lid');
+
+  $limit_language = NULL;
+  if ($query['language'] != 'en' && $query['language'] != 'all') {
+    $sql_query->leftJoin('locales_target', 't', "t.lid = s.lid AND t.language = :langcode", array(':langcode' => $query['language']));
+    $limit_language = $query['language'];
+  }
+  else {
+    $sql_query->leftJoin('locales_target', 't', 't.lid = s.lid');
+  }
+
   $sql_query->fields('s', array('source', 'location', 'context', 'lid', 'textgroup'));
   $sql_query->fields('t', array('translation', 'language'));
 
@@ -1881,12 +1896,6 @@ function _locale_translate_seek() {
       }
       $sql_query->condition($condition);
       break;
-  }
-
-  $limit_language = NULL;
-  if ($query['language'] != 'en' && $query['language'] != 'all') {
-    $sql_query->condition('language', $query['language']);
-    $limit_language = $query['language'];
   }
 
   // Add a condition on the text group.

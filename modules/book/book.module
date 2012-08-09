@@ -213,7 +213,17 @@ function _book_outline_access($node) {
  * @see book_menu()
  */
 function _book_outline_remove_access($node) {
-  return isset($node->book) && ($node->book['bid'] != $node->nid) && _book_outline_access($node);
+  return _book_node_is_removable($node) && _book_outline_access($node);
+}
+
+/**
+ * Determines if a node can be removed from the book.
+ *
+ * A node can be removed from a book if it is actually in a book and it either
+ * is not a top-level page or is a top-level page with no children.
+ */
+function _book_node_is_removable($node) {
+  return (!empty($node->book['bid']) && (($node->book['bid'] != $node->nid) || !$node->book['has_children']));
 }
 
 /**
@@ -518,13 +528,12 @@ function _book_add_form_elements(&$form, &$form_state, $node) {
     '#collapsed' => TRUE,
     '#group' => 'additional_settings',
     '#attributes' => array(
-      'class' => array('book-form'),
+      'class' => array('book-outline-form'),
     ),
     '#attached' => array(
       'js' => array(drupal_get_path('module', 'book') . '/book.js'),
     ),
     '#tree' => TRUE,
-    '#attributes' => array('class' => array('book-outline-form')),
   );
   foreach (array('menu_name', 'mlid', 'nid', 'router_path', 'has_children', 'options', 'module', 'original_bid', 'parent_depth_limit') as $key) {
     $form['book'][$key] = array(

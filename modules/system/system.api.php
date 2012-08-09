@@ -97,6 +97,18 @@ function hook_hook_info_alter(&$hooks) {
  *     instead specify a callback function here, which will be called to
  *     determine the entity label. See also the entity_label() function, which
  *     implements this logic.
+ *   - language callback: (optional) A function taking an entity and an entity
+ *     type as arguments and returning a language code. In most situations, when
+ *     needing to determine this value, inspecting a property named after the
+ *     'language' element of the 'entity keys' should be enough. The language
+ *     callback is meant to be used primarily for temporary alterations of the
+ *     property value: entity-defining modules are encouraged to always define a
+ *     language property, instead of using the callback as main entity language
+ *     source. In fact not having a language property defined is likely to
+ *     prevent an entity from being queried by language. Moreover, given that
+ *     entity_language() is not necessarily used everywhere it would be
+ *     appropriate, modules implementing the language callback should be aware
+ *     that this might not be always called.
  *   - fieldable: Set to TRUE if you want your entity type to accept fields
  *     being attached to it.
  *   - translation: An associative array of modules registered as field
@@ -123,6 +135,13 @@ function hook_hook_info_alter(&$hooks) {
  *       'subject' should be specified here. If complex logic is required to
  *       build the label, a 'label callback' should be defined instead (see
  *       the 'label callback' section above for details).
+ *     - language: The name of the property, typically 'language', that contains
+ *       the language code representing the language the entity has been created
+ *       in. This value may be changed when editing the entity and represents
+ *       the language its textual components are supposed to have. If no
+ *       language property is available, the 'language callback' may be used
+ *       instead. This entry can be omitted if the entities of this type are not
+ *       language-aware.
  *   - bundle keys: An array describing how the Field API can extract the
  *     information it needs from the bundle objects for this type. This entry
  *     is required if the 'path' provided in the 'bundles'/'admin' section
@@ -195,6 +214,7 @@ function hook_entity_info() {
         'id' => 'nid',
         'revision' => 'vid',
         'bundle' => 'type',
+        'language' => 'language',
       ),
       'bundle keys' => array(
         'bundle' => 'type',
@@ -1030,7 +1050,7 @@ function hook_menu_get_item_alter(&$router_item, $path, $original_map) {
  * is invoked to retrieve a value that is used in the path in place of the
  * wildcard. A good example is user.module, which defines
  * user_uid_optional_to_arg() (corresponding to the menu entry
- * 'user/%user_uid_optional'). This function returns the user ID of the
+ * 'tracker/%user_uid_optional'). This function returns the user ID of the
  * current user.
  *
  * The _to_arg() function will get called with three arguments:
@@ -1797,8 +1817,8 @@ function hook_forms($form_id, $args) {
  * used to set up global parameters that are needed later in the request.
  *
  * Only use this hook if your code must run even for cached page views. This
- * hook is called before modules or most include files are loaded into memory.
- * It happens while Drupal is still in bootstrap mode.
+ * hook is called before the theme, modules, or most include files are loaded
+ * into memory. It happens while Drupal is still in bootstrap mode.
  *
  * @see hook_init()
  */
@@ -1813,7 +1833,8 @@ function hook_boot() {
  *
  * This hook is run at the beginning of the page request. It is typically
  * used to set up global parameters that are needed later in the request.
- * When this hook is called, all modules are already loaded in memory.
+ * When this hook is called, the theme and all modules are already loaded in
+ * memory.
  *
  * This hook is not run on cached pages.
  *
@@ -2343,6 +2364,7 @@ function hook_xmlrpc_alter(&$methods) {
  *   - type: The type of message for this entry.
  *   - user: The user object for the user who was logged in when the event
  *     happened.
+ *   - uid: The user ID for the user who was logged in when the event happened.
  *   - request_uri: The request URI for the page the event happened in.
  *   - referer: The page that referred the user to the page where the event
  *     occurred.
@@ -2409,7 +2431,7 @@ function hook_watchdog(array $log_entry) {
     '@ip'            => $log_entry['ip'],
     '@request_uri'   => $log_entry['request_uri'],
     '@referer_uri'   => $log_entry['referer'],
-    '@uid'           => $log_entry['user']->uid,
+    '@uid'           => $log_entry['uid'],
     '@name'          => $log_entry['user']->name,
     '@link'          => strip_tags($log_entry['link']),
     '@message'       => strip_tags($log_entry['message']),
@@ -3226,33 +3248,30 @@ function hook_install() {
 /**
  * Perform a single update.
  *
- * For each patch which requires a database change add a new hook_update_N()
- * which will be called by update.php. The database updates are numbered
- * sequentially according to the version of Drupal you are compatible with.
+ * For each change that requires one or more actions to be performed when
+ * updating a site, add a new hook_update_N(), which will be called by
+ * update.php. The documentation block preceding this function is stripped of
+ * newlines and used as the description for the update on the pending updates
+ * task list. Schema updates should adhere to the
+ * @link http://drupal.org/node/150215 Schema API. @endlink
  *
- * Schema updates should adhere to the Schema API:
- * @link http://drupal.org/node/150215 http://drupal.org/node/150215 @endlink
- *
- * Database updates consist of 3 parts:
- * - 1 digit for Drupal core compatibility
- * - 1 digit for your module's major release version (e.g. is this the 5.x-1.* (1) or 5.x-2.* (2) series of your module?)
- * - 2 digits for sequential counting starting with 00
- *
- * The 2nd digit should be 0 for initial porting of your module to a new Drupal
- * core API.
+ * Implementations of hook_update_N() are named (module name)_update_(number).
+ * The numbers are composed of three parts:
+ * - 1 digit for Drupal core compatibility.
+ * - 1 digit for your module's major release version (e.g., is this the 7.x-1.*
+ *   (1) or 7.x-2.* (2) series of your module?). This digit should be 0 for
+ *   initial porting of your module to a new Drupal core API.
+ * - 2 digits for sequential counting, starting with 00.
  *
  * Examples:
- * - mymodule_update_5200()
- *   - This is the first update to get the database ready to run mymodule 5.x-2.*.
- * - mymodule_update_6000()
- *   - This is the required update for mymodule to run with Drupal core API 6.x.
- * - mymodule_update_6100()
- *   - This is the first update to get the database ready to run mymodule 6.x-1.*.
- * - mymodule_update_6200()
- *   - This is the first update to get the database ready to run mymodule 6.x-2.*.
- *     Users can directly update from 5.x-2.* to 6.x-2.* and they get all 60XX
- *     and 62XX updates, but not 61XX updates, because those reside in the
- *     6.x-1.x branch only.
+ * - mymodule_update_7000(): This is the required update for mymodule to run
+ *   with Drupal core API 7.x when upgrading from Drupal core API 6.x.
+ * - mymodule_update_7100(): This is the first update to get the database ready
+ *   to run mymodule 7.x-1.*.
+ * - mymodule_update_7200(): This is the first update to get the database ready
+ *   to run mymodule 7.x-2.*. Users can directly update from 6.x-2.* to 7.x-2.*
+ *   and they get all 70xx and 72xx updates, but not 71xx updates, because
+ *   those reside in the 7.x-1.x branch only.
  *
  * A good rule of thumb is to remove updates older than two major releases of
  * Drupal. See hook_update_last_removed() to notify Drupal about the removals.
@@ -3271,8 +3290,8 @@ function hook_install() {
  * information between successive calls, and the $sandbox['#finished'] value
  * to provide feedback regarding completion level.
  *
- * See the batch operations page for more information on how to use the batch API:
- * @link http://drupal.org/node/180528 http://drupal.org/node/180528 @endlink
+ * See the batch operations page for more information on how to use the
+ * @link http://drupal.org/node/180528 Batch API. @endlink
  *
  * @param $sandbox
  *   Stores information for multipass updates. See above for more information.
@@ -3283,9 +3302,14 @@ function hook_install() {
  *   reason, it will throw a PDOException.
  *
  * @return
- *   Optionally update hooks may return a translated string that will be displayed
- *   to the user. If no message is returned, no message will be presented to the
- *   user.
+ *   Optionally, update hooks may return a translated string that will be
+ *   displayed to the user after the update has completed. If no message is
+ *   returned, no message will be presented to the user.
+ *
+ * @see batch
+ * @see schemaapi
+ * @see hook_update_last_removed()
+ * @see update_get_update_list()
  */
 function hook_update_N(&$sandbox) {
   // For non-multipass updates, the signature can simply be;

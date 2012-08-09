@@ -164,6 +164,8 @@ function drupal_get_form($form_id) {
  *       automatically loaded by form_get_cache(). By default the current menu
  *       router item's 'file' definition is added, if any. Use
  *       form_load_include() to add include files from a form constructor.
+ *     - form_id: Identification of the primary form being constructed and
+ *       processed.
  *     - base_form_id: Identification for a base form, as declared in a
  *       hook_forms() implementation.
  *   - rebuild_info: Internal. Similar to 'build_info', but pertaining to
@@ -572,7 +574,7 @@ function form_state_keys_no_cache() {
 }
 
 /**
- * Ensures an include file is loaded loaded whenever the form is processed.
+ * Ensures an include file is loaded whenever the form is processed.
  *
  * Example:
  * @code
@@ -720,6 +722,9 @@ function drupal_form_submit($form_id, &$form_state) {
  */
 function drupal_retrieve_form($form_id, &$form_state) {
   $forms = &drupal_static(__FUNCTION__);
+
+  // Record the $form_id.
+  $form_state['build_info']['form_id'] = $form_id;
 
   // Record the filepath of the include file containing the original form, so
   // the form builder callbacks can be loaded when the form is being rebuilt
@@ -977,6 +982,10 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
     '#value' => $form['#build_id'],
     '#id' => $form['#build_id'],
     '#name' => 'form_build_id',
+    // Form processing and validation requires this value, so ensure the
+    // submitted form value appears literally, regardless of custom #tree
+    // and #parents being set elsewhere.
+    '#parents' => array('form_build_id'),
   );
 
   // Add a token, based on either #token or form_id, to any form displayed to
@@ -1000,6 +1009,10 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
         '#id' => drupal_html_id('edit-' . $form_id . '-form-token'),
         '#type' => 'token',
         '#default_value' => drupal_get_token($form['#token']),
+        // Form processing and validation requires this value, so ensure the
+        // submitted form value appears literally, regardless of custom #tree
+        // and #parents being set elsewhere.
+        '#parents' => array('form_token'),
       );
     }
   }
@@ -1009,6 +1022,10 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
       '#type' => 'hidden',
       '#value' => $form_id,
       '#id' => drupal_html_id("edit-$form_id"),
+      // Form processing and validation requires this value, so ensure the
+      // submitted form value appears literally, regardless of custom #tree
+      // and #parents being set elsewhere.
+      '#parents' => array('form_id'),
     );
   }
   if (!isset($form['#id'])) {
@@ -1086,7 +1103,7 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
  *   A keyed array containing the current state of the form. The current
  *   user-submitted data is stored in $form_state['values'], though
  *   form validation functions are passed an explicit copy of the
- *   values for the sake of simplicity. Validation handlers can also
+ *   values for the sake of simplicity. Validation handlers can also use
  *   $form_state to pass information on to submit handlers. For example:
  *     $form_state['data_for_submission'] = $data;
  *   This technique is useful when validation requires file parsing,
@@ -2149,12 +2166,12 @@ function form_state_values_clean(&$form_state) {
     // $form_state['values']['foo']['bar'], which is the level where we can
     // unset 'baz' (that is stored in $last_parent).
     $parents = $button['#parents'];
-    $values = &$form_state['values'];
     $last_parent = array_pop($parents);
-    foreach ($parents as $parent) {
-      $values = &$values[$parent];
+    $key_exists = NULL;
+    $values = &drupal_array_get_nested_value($form_state['values'], $parents, $key_exists);
+    if ($key_exists && is_array($values)) {
+      unset($values[$last_parent]);
     }
-    unset($values[$last_parent]);
   }
 }
 
@@ -2339,30 +2356,27 @@ function form_type_tableselect_value($element, $input = FALSE) {
  */
 function form_type_radios_value(&$element, $input = FALSE) {
   if ($input !== FALSE) {
-    // There may not be a submitted value for multiple radio buttons, if none of
-    // the options was checked by default. If there is no submitted input value
-    // for this element (NULL), _form_builder_handle_input_element()
-    // automatically attempts to use the #default_value (if set) or an empty
-    // string (''). However, an empty string would fail validation in
-    // _form_validate(), in case it is not contained in the list of allowed
-    // values in #options.
-    if (!isset($input)) {
-      // Signify a garbage value to disable the #default_value handling and take
-      // over NULL as #value.
-      $element['#has_garbage_value'] = TRUE;
-      // There was a user submission so validation is a must. If this element is
-      // #required, then an appropriate error message will be output. While an
-      // optional #type 'radios' does not necessarily make sense from a user
-      // interaction perspective, there may be use-cases for that and it is not
-      // the job of Form API to artificially limit possibilities.
+    // When there's user input (including NULL), return it as the value.
+    // However, if NULL is submitted, _form_builder_handle_input_element() will
+    // apply the default value, and we want that validated against #options
+    // unless it's empty. (An empty #default_value, such as NULL or FALSE, can
+    // be used to indicate that no radio button is selected by default.)
+    if (!isset($input) && !empty($element['#default_value'])) {
       $element['#needs_validation'] = TRUE;
     }
-    // The value stays the same, but the flags above will ensure it is
-    // processed properly.
     return $input;
   }
-  elseif (isset($element['#default_value'])) {
-    return $element['#default_value'];
+  else {
+    // For default value handling, simply return #default_value. Additionally,
+    // for a NULL default value, set #has_garbage_value to prevent
+    // _form_builder_handle_input_element() converting the NULL to an empty
+    // string, so that code can distinguish between nothing selected and the
+    // selection of a radio button whose value is an empty string.
+    $value = isset($element['#default_value']) ? $element['#default_value'] : NULL;
+    if (!isset($value)) {
+      $element['#has_garbage_value'] = TRUE;
+    }
+    return $value;
   }
 }
 

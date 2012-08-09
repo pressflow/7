@@ -177,6 +177,7 @@ function node_entity_info() {
         'revision' => 'vid',
         'bundle' => 'type',
         'label' => 'title',
+        'language' => 'language',
       ),
       'bundle keys' => array(
         'bundle' => 'type',
@@ -655,7 +656,7 @@ function node_type_update_nodes($old_type, $type) {
  * @param $rebuild
  *  TRUE to rebuild node types. Equivalent to calling node_types_rebuild().
  * @return
- *   Associative array with two components:
+ *   An object with two properties:
  *   - names: Associative array of the names of node types, keyed by the type.
  *   - types: Associative array of node type objects, keyed by the type.
  *   Both of these arrays will include new types that have been defined by
@@ -1002,8 +1003,6 @@ function node_validate($node, $form, &$form_state) {
  * Prepare node for saving by populating author and creation date.
  */
 function node_submit($node) {
-  global $user;
-
   // A user might assign the node author by entering a user name in the node
   // form, which we then need to translate to a user ID.
   if (isset($node->name)) {
@@ -1684,7 +1683,7 @@ function node_search_execute($keys = NULL, $conditions = NULL) {
       'extra' => $extra,
       'score' => $item->calculated_score,
       'snippet' => search_excerpt($keys, $node->rendered),
-      'language' => $node->language,
+      'language' => entity_language('node', $node),
     );
   }
   return $results;
@@ -3274,8 +3273,9 @@ function _node_query_node_access_alter($query, $type) {
     // @endcode
     //
     // So instead of directly adding to the query object, we need to collect
-    // in a separate db_and() object and then at the end add it to the query.
-    $entity_conditions = db_and();
+    // all of the node access conditions in a separate db_and() object and
+    // then add it to the query at the end.
+    $node_conditions = db_and();
   }
   foreach ($tables as $nalias => $tableinfo) {
     $table = $tableinfo['table'];
@@ -3309,16 +3309,24 @@ function _node_query_node_access_alter($query, $type) {
         $field = 'entity_id';
       }
       $subquery->where("$nalias.$field = na.nid");
-      $query->exists($subquery);
+
+      // For an entity query, attach the subquery to entity conditions.
+      if ($type == 'entity') {
+        $node_conditions->exists($subquery);
+      }
+      // Otherwise attach it to the node query itself.
+      else {
+        $query->exists($subquery);
+      }
     }
   }
 
   if ($type == 'entity' && count($subquery->conditions())) {
     // All the node access conditions are only for field values belonging to
     // nodes.
-    $entity_conditions->condition("$base_alias.entity_type", 'node');
+    $node_conditions->condition("$base_alias.entity_type", 'node');
     $or = db_or();
-    $or->condition($entity_conditions);
+    $or->condition($node_conditions);
     // If the field value belongs to a non-node entity type then this function
     // does not do anything with it.
     $or->condition("$base_alias.entity_type", 'node', '<>');
