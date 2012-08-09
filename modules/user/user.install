@@ -831,6 +831,15 @@ function user_update_7015() {
 }
 
 /**
+ * @} End of "addtogroup updates-6.x-to-7.x".
+ */
+
+/**
+ * @addtogroup updates-7.x-extra
+ * @{
+ */
+
+/**
  * Update the database to match the schema.
  */
 function user_update_7016() {
@@ -891,15 +900,6 @@ function user_update_7017() {
 }
 
 /**
- * @} End of "addtogroup updates-6.x-to-7.x"
- */
-
-/**
- * @addtogroup updates-7.x-extra
- * @{
- */
-
-/**
  * Ensure there is an index on {users}.picture.
  */
 function user_update_7018() {
@@ -909,5 +909,5 @@ function user_update_7018() {
 }
 
 /**
- * @} End of "addtogroup updates-7.x-extra"
+ * @} End of "addtogroup updates-7.x-extra".
  */

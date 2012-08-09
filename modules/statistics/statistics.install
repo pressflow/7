@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Install, update and uninstall functions for the statistics module.
+ * Install, update, and uninstall functions for the Statistics module.
  */
 
 /**
@@ -154,5 +154,5 @@ function statistics_update_7000() {
 }
 
 /**
- * @} End of "addtogroup updates-6.x-to-7.x"
+ * @} End of "addtogroup updates-6.x-to-7.x".
  */

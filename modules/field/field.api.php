@@ -676,7 +676,7 @@ function hook_field_is_empty($item, $field) {
 }
 
 /**
- * @} End of "defgroup field_types"
+ * @} End of "defgroup field_types".
  */
 
 /**
@@ -935,6 +935,38 @@ function hook_field_widget_WIDGET_TYPE_form_alter(&$element, &$form_state, $cont
 }
 
 /**
+ * Alters the widget properties of a field instance before it gets displayed.
+ *
+ * Note that instead of hook_field_widget_properties_alter(), which is called
+ * for all fields on all entity types,
+ * hook_field_widget_properties_ENTITY_TYPE_alter() may be used to alter widget
+ * properties for fields on a specific entity type only.
+ *
+ * This hook is called once per field per added or edit entity. If the result
+ * of the hook involves reading from the database, it is highly recommended to
+ * statically cache the information.
+ *
+ * @param $widget
+ *   The instance's widget properties.
+ * @param $context
+ *   An associative array containing:
+ *   - entity_type: The entity type; e.g., 'node' or 'user'.
+ *   - entity: The entity object.
+ *   - field: The field that the widget belongs to.
+ *   - instance: The instance of the field.
+ *
+ * @see hook_field_widget_properties_ENTITY_TYPE_alter()
+ */
+function hook_field_widget_properties_alter(&$widget, $context) {
+  // Change a widget's type according to the time of day.
+  $field = $context['field'];
+  if ($context['entity_type'] == 'node' && $field['field_name'] == 'field_foo') {
+    $time = date('H');
+    $widget['type'] = $time < 12 ? 'widget_am' : 'widget_pm';
+  }
+}
+
+/**
  * Flag a field-level validation error.
  *
  * @param $element
@@ -954,12 +986,12 @@ function hook_field_widget_WIDGET_TYPE_form_alter(&$element, &$form_state, $cont
  *   An associative array containing the current state of the form.
  */
 function hook_field_widget_error($element, $error, $form, &$form_state) {
-  form_error($element['value'], $error['message']);
+  form_error($element, $error['message']);
 }
 
 
 /**
- * @} End of "defgroup field_widget"
+ * @} End of "defgroup field_widget".
  */
 
 
@@ -1198,7 +1230,7 @@ function hook_field_formatter_view($entity_type, $entity, $field, $instance, $la
 }
 
 /**
- * @} End of "defgroup field_formatter"
+ * @} End of "defgroup field_formatter".
  */
 
 /**
@@ -1554,11 +1586,11 @@ function hook_field_attach_delete_bundle($entity_type, $bundle, $instances) {
 }
 
 /**
- * @} End of "defgroup field_attach"
+ * @} End of "defgroup field_attach".
  */
 
 /**
- * @ingroup field_storage
+ * @addtogroup field_storage
  * @{
  */
 
@@ -2327,38 +2359,6 @@ function hook_field_extra_fields_display_alter(&$displays, $context) {
 }
 
 /**
- * Alters the widget properties of a field instance before it gets displayed.
- *
- * Note that instead of hook_field_widget_properties_alter(), which is called
- * for all fields on all entity types,
- * hook_field_widget_properties_ENTITY_TYPE_alter() may be used to alter widget
- * properties for fields on a specific entity type only.
- *
- * This hook is called once per field per added or edit entity. If the result
- * of the hook involves reading from the database, it is highly recommended to
- * statically cache the information.
- *
- * @param $widget
- *   The instance's widget properties.
- * @param $context
- *   An associative array containing:
- *   - entity_type: The entity type; e.g., 'node' or 'user'.
- *   - entity: The entity object.
- *   - field: The field that the widget belongs to.
- *   - instance: The instance of the field.
- *
- * @see hook_field_widget_properties_ENTITY_TYPE_alter()
- */
-function hook_field_widget_properties_alter(&$widget, $context) {
-  // Change a widget's type according to the time of day.
-  $field = $context['field'];
-  if ($context['entity_type'] == 'node' && $field['field_name'] == 'field_foo') {
-    $time = date('H');
-    $widget['type'] = $time < 12 ? 'widget_am' : 'widget_pm';
-  }
-}
-
-/**
  * Alters the widget properties of a field instance on a given entity type
  * before it gets displayed.
  *
@@ -2391,11 +2391,11 @@ function hook_field_widget_properties_ENTITY_TYPE_alter(&$widget, $context) {
 }
 
 /**
- * @} End of "ingroup field_storage"
+ * @} End of "addtogroup field_storage".
  */
 
 /**
- * @ingroup field_crud
+ * @addtogroup field_crud
  * @{
  */
 
@@ -2644,7 +2644,7 @@ function hook_field_storage_purge($entity_type, $entity, $field, $instance) {
 }
 
 /**
- * @} End of "ingroup field_crud"
+ * @} End of "addtogroup field_crud".
  */
 
 /**
@@ -2675,5 +2675,5 @@ function hook_field_access($op, $field, $entity_type, $entity, $account) {
 }
 
 /**
- * @} End of "addtogroup hooks"
+ * @} End of "addtogroup hooks".
  */

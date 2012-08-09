@@ -423,13 +423,9 @@ function field_modules_disabled($modules) {
 function field_sync_field_status() {
   // Refresh the 'active' and 'storage_active' columns according to the current
   // set of enabled modules.
-  $all_modules = system_rebuild_module_data();
-  $modules = array();
-  foreach ($all_modules as $module_name => $module) {
-    if ($module->status) {
-      $modules[] = $module_name;
-      field_associate_fields($module_name);
-    }
+  $modules = module_list();
+  foreach ($modules as $module_name) {
+    field_associate_fields($module_name);
   }
   db_update('field_config')
     ->fields(array('active' => 0))
@@ -555,51 +551,33 @@ function _field_sort_items_value_helper($a, $b) {
 /**
  * Gets or sets administratively defined bundle settings.
  *
- * For each bundle, settings are provided as a nested array with the following
- * structure:
- * @code
- * array(
- *   'view_modes' => array(
- *     // One sub-array per view mode for the entity type:
- *     'full' => array(
- *       'custom_display' => Whether the view mode uses custom display
- *         settings or settings of the 'default' mode,
- *     ),
- *     'teaser' => ...
- *   ),
- *   'extra_fields' => array(
- *     'form' => array(
- *       // One sub-array per pseudo-field in displayed entities:
- *       'extra_field_1' => array(
- *         'weight' => The weight of the pseudo-field,
- *       ),
- *       'extra_field_2' => ...
- *     ),
- *     'display' => array(
- *       // One sub-array per pseudo-field in displayed entities:
- *       'extra_field_1' => array(
- *         // One sub-array per view mode for the entity type, including
- *         // the 'default' mode:
- *         'default' => array(
- *           'weight' => The weight of the pseudo-field,
- *           'visible' => TRUE if the pseudo-field is visible, FALSE if hidden,
- *         ),
- *         'full' => ...
- *       ),
- *       'extra_field_2' => ...
- *     ),
- *   ),
- * );
- * @endcode
- *
- * @param $entity_type
+ * @param string $entity_type
  *   The type of $entity; e.g., 'node' or 'user'.
- * @param $bundle
+ * @param string $bundle
  *   The bundle name.
- * @param $settings
- *   (optional) The settings to store.
+ * @param array|null $settings
+ *   (optional) The settings to store, an associative array with the following
+ *   elements:
+ *   - view_modes: An associative array keyed by view mode, with the following
+ *     key/value pairs:
+ *     - custom_settings: Boolean specifying whether the view mode uses a
+ *       dedicated set of display options (TRUE), or the 'default' options
+ *       (FALSE). Defaults to FALSE.
+ *   - extra_fields: An associative array containing the form and display
+ *     settings for extra fields (also known as pseudo-fields):
+ *     - form: An associative array whose keys are the names of extra fields,
+ *       and whose values are associative arrays with the following elements:
+ *       - weight: The weight of the extra field, determining its position on an
+ *         entity form.
+ *     - display: An associative array whose keys are the names of extra fields,
+ *       and whose values are associative arrays keyed by the name of view
+ *       modes. This array must include an item for the 'default' view mode.
+ *       Each view mode sub-array contains the following elements:
+ *       - weight: The weight of the extra field, determining its position when
+ *         an entity is viewed.
+ *       - visible: TRUE if the extra field is visible, FALSE otherwise.
  *
- * @return
+ * @return array|null
  *   If no $settings are passed, the current settings are returned.
  */
 function field_bundle_settings($entity_type, $bundle, $settings = NULL) {
@@ -972,6 +950,10 @@ function field_has_data($field) {
     ->fieldCondition($field)
     ->range(0, 1)
     ->count()
+    // Neutralize the 'entity_field_access' query tag added by
+    // field_sql_storage_field_storage_query(). The result cannot depend on the
+    // access grants of the current user.
+    ->addTag('DANGEROUS_ACCESS_CHECK_OPT_OUT')
     ->execute();
 }
 
@@ -1112,7 +1094,7 @@ function template_process_field(&$variables, $hook) {
   }
 }
 /**
- * @} End of "defgroup field"
+ * @} End of "defgroup field".
  */
 
 /**

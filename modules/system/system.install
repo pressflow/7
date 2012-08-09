@@ -2953,6 +2953,16 @@ function system_update_7069() {
 }
 
 /**
+ * @} End of "defgroup updates-6.x-to-7.x".
+ * The next series of updates should start at 8000.
+ */
+
+/**
+ * @defgroup updates-7.x-extra Extra system updates for 7.x
+ * @{
+ */
+
+/**
  * Remove the obsolete 'drupal_badge_color' and 'drupal_badge_size' variables.
  */
 function system_update_7070() {
@@ -2983,16 +2993,6 @@ function system_update_7072() {
 }
 
 /**
- * @} End of "defgroup updates-6.x-to-7.x"
- * The next series of updates should start at 8000.
- */
-
-/**
- * @defgroup updates-7.x-extra Extra system updates for 7.x
- * @{
- */
-
-/**
  * Add binary to {file_managed}, in case system_update_7034() was run without
  * it.
  */
@@ -3016,6 +3016,15 @@ function system_update_7073() {
 }
 
 /**
- * @} End of "defgroup updates-7.x-extra"
+ * This update has been removed and will not run.
+ */
+function system_update_7074() {
+  // This update function previously converted menu_links query strings to
+  // arrays. It has been removed for now due to incompatibility with
+  // PostgreSQL.
+}
+
+/**
+ * @} End of "defgroup updates-7.x-extra".
  * The next series of updates should start at 8000.
  */
