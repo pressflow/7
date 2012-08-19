@@ -2469,7 +2469,6 @@ function _drupal_bootstrap_page_header() {
   if (!drupal_is_cli()) {
     ob_start();
     drupal_page_header();
-    $header = drupal_get_http_header();
   }
 }
 
