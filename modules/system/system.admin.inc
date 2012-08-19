@@ -1678,12 +1678,35 @@ function system_performance_settings() {
     '#title' => t('Caching'),
   );
 
-  $cache = variable_get('cache', 0);
+  $cache = variable_get('cache', CACHE_DISABLED);
+  $description = '<p>' . t('The normal cache mode is suitable for most sites and does not cause any side effects. The external cache  mode allows Pressflow to set appropriate cache headers for use with an external caching system. Pages served from an external cache will skip the loading (boot) and unloading (exit) of enabled modules and may cause unwanted side effects.') . '</p>';
+
+  $problem_modules = array_unique(array_merge(module_implements('boot'), module_implements('exit')));
+  sort($problem_modules);
+
+  if (count($problem_modules) > 0) {
+    $description .= '<p>' . t('<strong class="error">The following enabled modules are potentially incompatible with and external-mode caching and may not function properly: %modules</strong>', array('%modules' => implode(', ', $problem_modules))) . '.</p>';
+  }
+  else {
+    $description .= '<p>' . t('<strong class="ok">Currently, all enabled modules are compatible with an external caching policy.</strong> Please note, if you use external caching and enable new modules, you will need to check this page again to ensure compatibility.') . '</p>';
+  }
+
+  $form['page_cache'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Page cache'),
+    '#description' => t('Enabling the page cache will offer a significant performance boost. Pressflow can store and send compressed   cached pages requested by <em>anonymous</em> users. By caching a web page, Pressflow does not have to construct the page each time it  is viewed.'),
+  );
   $form['caching']['cache'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Cache pages for anonymous users'),
+    '#type' => 'radios',
+    '#title' => t('Caching mode'),
     '#default_value' => $cache,
+    '#options' => array(
+      CACHE_DISABLED => t('Disabled'),
+      CACHE_NORMAL => t('Normal (reccomended for production sites, no side effects)'),
+      CACHE_EXTERNAL => t('External (experts only, possible side effects)'),
+    ),
     '#weight' => -2,
+    '#description' => $description,
   );
   $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 86400), 'format_interval');
   $period[0] = '<' . t('none') . '>';

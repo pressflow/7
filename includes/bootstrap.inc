@@ -38,11 +38,21 @@ define('CACHE_PERMANENT', 0);
 define('CACHE_TEMPORARY', -1);
 
 /**
+ * Indicates that page caching is disabled.
+ */
+define('CACHE_MODE_DISABLED', 0);
+
+/**
+ * Indicates that page caching is enabled.
+ */
+define('CACHE_MODE_NORMAL', 1);
+
+/**
  * Indicates that page caching is using "external" mode. This disables the
  * internal page cache but returns headers allowing downstream caches (such
  * as Squid, Varnish, and other reverse proxies) to cache full pages.
  */
-define('CACHE_EXTERNAL', 3);
+define('CACHE_MODE_EXTERNAL', 3);
 
 /**
  * @defgroup logging_severity_levels Logging severity levels
@@ -2340,12 +2350,12 @@ function _drupal_bootstrap_page_cache() {
   }
   else {
     drupal_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES, FALSE);
-    $cache_enabled = variable_get('cache');
+    $cache_enabled = variable_get('cache', CACHE_MODE_DISABLED);
   }
   drupal_block_denied(ip_address());
   // If there is no session cookie and cache is enabled (or forced), try
   // to serve a cached page.
-  if (!isset($_COOKIE[session_name()]) && $cache_enabled && $cache_enabled != CACHE_EXTERNAL) {
+  if (!isset($_COOKIE[session_name()]) && $cache_enabled && $cache_enabled != CACHE_MODE_EXTERNAL) {
     // Make sure there is a user object because its timestamp will be
     // checked, hook_boot might check for anonymous user etc.
     $user = drupal_anonymous_user();
@@ -2372,7 +2382,7 @@ function _drupal_bootstrap_page_cache() {
       // We are done.
       exit;
     }
-    elseif (!isset($_COOKIE[session_name()]) && $cache_enabled == CACHE_EXTERNAL) {
+    elseif (!isset($_COOKIE[session_name()]) && $cache_enabled == CACHE_MODE_EXTERNAL) {
       drupal_page_cache_headers();
     }
     else {
