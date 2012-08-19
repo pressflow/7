@@ -1678,7 +1678,7 @@ function system_performance_settings() {
     '#title' => t('Caching'),
   );
 
-  $cache = variable_get('cache', CACHE_DISABLED);
+  $cache = variable_get('cache', CACHE_MODE_DISABLED);
   $description = '<p>' . t('The normal cache mode is suitable for most sites and does not cause any side effects. The external cache  mode allows Pressflow to set appropriate cache headers for use with an external caching system. Pages served from an external cache will skip the loading (boot) and unloading (exit) of enabled modules and may cause unwanted side effects.') . '</p>';
 
   $problem_modules = array_unique(array_merge(module_implements('boot'), module_implements('exit')));
@@ -1701,9 +1701,9 @@ function system_performance_settings() {
     '#title' => t('Caching mode'),
     '#default_value' => $cache,
     '#options' => array(
-      CACHE_DISABLED => t('Disabled'),
-      CACHE_NORMAL => t('Normal (reccomended for production sites, no side effects)'),
-      CACHE_EXTERNAL => t('External (experts only, possible side effects)'),
+      CACHE_MODE_DISABLED => t('Disabled'),
+      CACHE_MODE_NORMAL => t('Normal (reccomended for production sites, no side effects)'),
+      CACHE_MODE_EXTERNAL => t('External (experts only, possible side effects)'),
     ),
     '#weight' => -2,
     '#description' => $description,
