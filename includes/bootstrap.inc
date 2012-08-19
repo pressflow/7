@@ -1312,10 +1312,17 @@ function drupal_page_header() {
   }
   $headers_sent = TRUE;
 
+  // If an external cache is being used and there isn't a session cookie allow
+  // the page to be cached.
+  $cache_control = 'no-cache, must-revalidate, post-check=0, pre-check=0';
+  if (!isset($_COOKIE[session_name()]) && variable_get('cache') == CACHE_MODE_EXTERNAL) {
+    $cache_control = 'public, max-age=' . variable_get('page_cache_maximum_age', 0);
+  }
+
   $default_headers = array(
     'Expires' => 'Sun, 19 Nov 1978 05:00:00 GMT',
     'Last-Modified' => gmdate(DATE_RFC1123, REQUEST_TIME),
-    'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
+    'Cache-Control' => $cache_control,
     'ETag' => '"' . REQUEST_TIME . '"',
   );
   drupal_send_headers($default_headers);
@@ -1332,7 +1339,7 @@ function drupal_page_header() {
  * and the conditions match those currently in the cache, a 304 Not Modified
  * response is sent.
  */
-function drupal_page_cache_headers(stdClass $cache = NULL) {
+function drupal_serve_page_from_cache(stdClass $cache) {
   // Negotiate whether to use compression.
   $page_compression = variable_get('page_compression', TRUE) && extension_loaded('zlib');
   $return_compressed = $page_compression && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
@@ -1344,16 +1351,14 @@ function drupal_page_cache_headers(stdClass $cache = NULL) {
   // drupal_add_http_headers(). Keys are mixed-case.
   $default_headers = array();
 
-  if ($cache) {
-    foreach ($cache->data['headers'] as $name => $value) {
-      // In the case of a 304 response, certain headers must be sent, and the
-      // remaining may not (see RFC 2616, section 10.3.5). Do not override
-      // headers set in hook_boot().
-      $name_lower = strtolower($name);
-      if (in_array($name_lower, array('content-location', 'expires', 'cache-control', 'vary')) && !isset($hook_boot_headers[$name_lower])) {
-        drupal_add_http_header($name, $value);
-        unset($cache->data['headers'][$name]);
-      }
+  foreach ($cache->data['headers'] as $name => $value) {
+    // In the case of a 304 response, certain headers must be sent, and the
+    // remaining may not (see RFC 2616, section 10.3.5). Do not override
+    // headers set in hook_boot().
+    $name_lower = strtolower($name);
+    if (in_array($name_lower, array('content-location', 'expires', 'cache-control', 'vary')) && !isset($hook_boot_headers[$name_lower])) {
+      drupal_add_http_header($name, $value);
+      unset($cache->data['headers'][$name]);
     }
   }
 
@@ -1365,12 +1370,9 @@ function drupal_page_cache_headers(stdClass $cache = NULL) {
   $max_age = !isset($_COOKIE[session_name()]) || isset($hook_boot_headers['vary']) ? variable_get('page_cache_maximum_age', 0) : 0;
   $default_headers['Cache-Control'] = 'public, max-age=' . $max_age;
 
-  $etag = FALSE;
-  if ($cache) {
-    // Entity tag should change if the output changes.
-    $etag = '"' . $cache->created . '-' . intval($return_compressed) . '"';
-    header('Etag: ' . $etag);
-  }
+  // Entity tag should change if the output changes.
+  $etag = '"' . $cache->created . '-' . intval($return_compressed) . '"';
+  header('Etag: ' . $etag);
 
   // See if the client has provided the required HTTP headers.
   $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) : FALSE;
@@ -1389,8 +1391,7 @@ function drupal_page_cache_headers(stdClass $cache = NULL) {
     drupal_add_http_header($name, $value);
   }
 
-  $last_modified_date = isset($cache->created) ? $cache->created : REQUEST_TIME;
-  $default_headers['Last-Modified'] = gmdate(DATE_RFC1123, $last_modified_date);
+  $default_headers['Last-Modified'] = gmdate(DATE_RFC1123, $cache->created);
 
   // HTTP/1.0 proxies does not support the Vary header, so prevent any caching
   // by sending an Expires date in the past. HTTP/1.1 clients ignores the
@@ -1425,15 +1426,6 @@ function drupal_page_cache_headers(stdClass $cache = NULL) {
       $cache->data['body'] = gzinflate(substr(substr($cache->data['body'], 10), 0, -8));
     }
   }
-
-}
-
-/**
- * Sets HTTP headers in preparation for a cached page response and prints the
- * cached page data.
- */
-function drupal_serve_page_from_cache(stdClass $cache) {
-  drupal_page_cache_headers($cache);
 
   // Print the page.
   print $cache->data['body'];
@@ -2382,10 +2374,7 @@ function _drupal_bootstrap_page_cache() {
       // We are done.
       exit;
     }
-    elseif (!isset($_COOKIE[session_name()]) && $cache_enabled == CACHE_MODE_EXTERNAL) {
-      drupal_page_cache_headers();
-    }
-    else {
+    elseif ($cache_enabled != CACHE_MODE_EXTERNAL) {
       header('X-Drupal-Cache: MISS');
     }
   }
@@ -2480,6 +2469,7 @@ function _drupal_bootstrap_page_header() {
   if (!drupal_is_cli()) {
     ob_start();
     drupal_page_header();
+    $header = drupal_get_http_header();
   }
 }
 
