@@ -1,4 +1,9 @@
 
+Drupal 7.16, 2012-10-17
+-----------------------
+- Fixed security issues (Arbitrary PHP code execution and information
+  disclosure). See SA-CORE-2012-003.
+
 Drupal 7.15, 2012-08-01
 -----------------------
 - Introduced a 'user_password_reset_timeout' variable to allow the 24-hour
