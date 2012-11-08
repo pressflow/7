@@ -398,8 +398,8 @@ function file_create_url($uri) {
     }
   }
   elseif ($scheme == 'http' || $scheme == 'https') {
-    // Check for http so that we don't have to implement getExternalUrl() for
-    // the http wrapper.
+    // Check for HTTP so that we don't have to implement getExternalUrl() for
+    // the HTTP wrapper.
     return $uri;
   }
   else {
@@ -2236,7 +2236,7 @@ function drupal_realpath($uri) {
   if ($wrapper = file_stream_wrapper_get_instance_by_uri($uri)) {
     return $wrapper->realpath();
   }
-  // Check that the uri has a value. There is a bug in PHP 5.2 on *BSD systems
+  // Check that the URI has a value. There is a bug in PHP 5.2 on *BSD systems
   // that makes realpath not return FALSE as expected when passing an empty
   // variable.
   // @todo Remove when Drupal drops support for PHP 5.2.
@@ -2489,7 +2489,7 @@ function file_get_content_headers($file) {
   }
 
   return array(
-    'Content-Type' => $type . '; name="' . $name . '"',
+    'Content-Type' => $type,
     'Content-Length' => $file->filesize,
     'Content-Disposition' => $disposition . '; filename="' . $name . '"',
     'Cache-Control' => 'private',
