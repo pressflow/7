@@ -152,7 +152,7 @@ function comment_node_type_load($name) {
 }
 
 /**
- * Entity uri callback.
+ * Entity URI callback.
  */
 function comment_uri($comment) {
   return array(
@@ -992,6 +992,14 @@ function comment_build_content($comment, $node, $view_mode = 'full', $langcode =
   // Remove previously built content, if exists.
   $comment->content = array();
 
+  // Allow modules to change the view mode.
+  $context = array(
+    'entity_type' => 'comment',
+    'entity' => $comment,
+    'langcode' => $langcode,
+  );
+  drupal_alter('entity_view_mode', $view_mode, $context);
+
   // Build fields content.
   field_attach_prepare_view('comment', array($comment->cid => $comment), $view_mode, $langcode);
   entity_prepare_view('comment', array($comment->cid => $comment), $langcode);
@@ -1013,6 +1021,10 @@ function comment_build_content($comment, $node, $view_mode = 'full', $langcode =
   // Allow modules to make their own additions to the comment.
   module_invoke_all('comment_view', $comment, $view_mode, $langcode);
   module_invoke_all('entity_view', $comment, 'comment', $view_mode, $langcode);
+
+  // Make sure the current view mode is stored if no module has already
+  // populated the related key.
+  $comment->content += array('#view_mode' => $view_mode);
 }
 
 /**
@@ -2375,7 +2387,6 @@ function theme_comment_post_forbidden($variables) {
  * Process variables for comment-wrapper.tpl.php.
  *
  * @see comment-wrapper.tpl.php
- * @see theme_comment_wrapper()
  */
 function template_preprocess_comment_wrapper(&$variables) {
   // Provide contextual information.

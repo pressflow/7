@@ -2803,14 +2803,17 @@ class DatabaseLoggingTestCase extends DatabaseTestCase {
    * Test that we can log the existence of a query.
    */
   function testEnableLogging() {
-    Database::startLog('testing');
+    $log = Database::startLog('testing');
 
     db_query('SELECT name FROM {test} WHERE age > :age', array(':age' => 25))->fetchCol();
     db_query('SELECT age FROM {test} WHERE name = :name', array(':name' => 'Ringo'))->fetchCol();
 
+    // Trigger a call that does not have file in the backtrace.
+    call_user_func_array('db_query', array('SELECT age FROM {test} WHERE name = :name', array(':name' => 'Ringo')))->fetchCol();
+
     $queries = Database::getLog('testing', 'default');
 
-    $this->assertEqual(count($queries), 2, t('Correct number of queries recorded.'));
+    $this->assertEqual(count($queries), 3, t('Correct number of queries recorded.'));
 
     foreach ($queries as $query) {
       $this->assertEqual($query['caller']['function'], __FUNCTION__, t('Correct function in query log.'));
@@ -3746,9 +3749,9 @@ class DatabaseTransactionTestCase extends DatabaseTestCase {
 class DatabaseNextIdCase extends DrupalWebTestCase {
   public static function getInfo() {
     return array(
-      'name' => t('Sequences API'),
-      'description' => t('Test the secondary sequences API.'),
-      'group' => t('Database'),
+      'name' => 'Sequences API',
+      'description' => 'Test the secondary sequences API.',
+      'group' => 'Database',
     );
   }
 
@@ -3773,9 +3776,9 @@ class DatabaseNextIdCase extends DrupalWebTestCase {
 class DatabaseEmptyStatementTestCase extends DrupalWebTestCase {
   public static function getInfo() {
     return array(
-      'name' => t('Empty statement'),
-      'description' => t('Test the empty pseudo-statement class.'),
-      'group' => t('Database'),
+      'name' => 'Empty statement',
+      'description' => 'Test the empty pseudo-statement class.',
+      'group' => 'Database',
     );
   }
 
