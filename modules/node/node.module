@@ -243,7 +243,7 @@ function node_field_display_node_alter(&$display, $context) {
 }
 
 /**
- * Entity uri callback.
+ * Entity URI callback.
  */
 function node_uri($node) {
   return array(
@@ -1345,6 +1345,14 @@ function node_build_content($node, $view_mode = 'full', $langcode = NULL) {
   // Remove previously built content, if exists.
   $node->content = array();
 
+  // Allow modules to change the view mode.
+  $context = array(
+    'entity_type' => 'node',
+    'entity' => $node,
+    'langcode' => $langcode,
+  );
+  drupal_alter('entity_view_mode', $view_mode, $context);
+
   // The 'view' hook can be implemented to overwrite the default function
   // to display nodes.
   if (node_hook($node, 'view')) {
@@ -1385,6 +1393,10 @@ function node_build_content($node, $view_mode = 'full', $langcode = NULL) {
   // Allow modules to make their own additions to the node.
   module_invoke_all('node_view', $node, $view_mode, $langcode);
   module_invoke_all('entity_view', $node, 'node', $view_mode, $langcode);
+
+  // Make sure the current view mode is stored if no module has already
+  // populated the related key.
+  $node->content += array('#view_mode' => $view_mode);
 }
 
 /**
@@ -1984,6 +1996,9 @@ function node_menu() {
     'page callback' => 'node_feed',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
+    // Pass a FALSE and array argument to ensure that additional path components
+    // are not passed to node_feed().
+    'page arguments' => array(FALSE, array()),
   );
   // @todo Remove this loop when we have a 'description callback' property.
   // Reset internal static cache of _node_types_build(), forces to rebuild the
@@ -2578,10 +2593,10 @@ function node_view_multiple($nodes, $view_mode = 'teaser', $weight = 0, $langcod
 function node_page_default() {
   $select = db_select('node', 'n')
     ->fields('n', array('nid', 'sticky', 'created'))
-    ->condition('promote', 1)
-    ->condition('status', 1)
-    ->orderBy('sticky', 'DESC')
-    ->orderBy('created', 'DESC')
+    ->condition('n.promote', 1)
+    ->condition('n.status', 1)
+    ->orderBy('n.sticky', 'DESC')
+    ->orderBy('n.created', 'DESC')
     ->extend('PagerDefault')
     ->limit(variable_get('default_nodes_main', 10))
     ->addTag('node_access');
@@ -2764,7 +2779,7 @@ function node_search_validate($form, &$form_state) {
 
   // Insert extra restrictions into the search keywords string.
   if (isset($form_state['values']['type']) && is_array($form_state['values']['type'])) {
-    // Retrieve selected types - Forms API sets the value of unselected
+    // Retrieve selected types - Form API sets the value of unselected
     // checkboxes to 0.
     $form_state['values']['type'] = array_filter($form_state['values']['type']);
     if (count($form_state['values']['type'])) {
@@ -3891,24 +3906,25 @@ function node_unpublish_by_keyword_action($node, $context) {
  */
 function node_requirements($phase) {
   $requirements = array();
-  // Ensure translations don't break at install time
-  $t = get_t();
-  // Only show rebuild button if there are either 0, or 2 or more, rows
-  // in the {node_access} table, or if there are modules that
-  // implement hook_node_grants().
-  $grant_count = db_query('SELECT COUNT(*) FROM {node_access}')->fetchField();
-  if ($grant_count != 1 || count(module_implements('node_grants')) > 0) {
-    $value = format_plural($grant_count, 'One permission in use', '@count permissions in use', array('@count' => $grant_count));
-  } else {
-    $value = $t('Disabled');
-  }
-  $description = $t('If the site is experiencing problems with permissions to content, you may have to rebuild the permissions cache. Rebuilding will remove all privileges to content and replace them with permissions based on the current modules and settings. Rebuilding may take some time if there is a lot of content or complex permission settings. After rebuilding has completed, content will automatically use the new permissions.');
+  if ($phase === 'runtime') {
+    // Only show rebuild button if there are either 0, or 2 or more, rows
+    // in the {node_access} table, or if there are modules that
+    // implement hook_node_grants().
+    $grant_count = db_query('SELECT COUNT(*) FROM {node_access}')->fetchField();
+    if ($grant_count != 1 || count(module_implements('node_grants')) > 0) {
+      $value = format_plural($grant_count, 'One permission in use', '@count permissions in use', array('@count' => $grant_count));
+    }
+    else {
+      $value = t('Disabled');
+    }
+    $description = t('If the site is experiencing problems with permissions to content, you may have to rebuild the permissions cache. Rebuilding will remove all privileges to content and replace them with permissions based on the current modules and settings. Rebuilding may take some time if there is a lot of content or complex permission settings. After rebuilding has completed, content will automatically use the new permissions.');
 
-  $requirements['node_access'] = array(
-    'title' => $t('Node Access Permissions'),
-    'value' => $value,
-    'description' => $description . ' ' . l(t('Rebuild permissions'), 'admin/reports/status/rebuild'),
-  );
+    $requirements['node_access'] = array(
+      'title' => t('Node Access Permissions'),
+      'value' => $value,
+      'description' => $description . ' ' . l(t('Rebuild permissions'), 'admin/reports/status/rebuild'),
+    );
+  }
   return $requirements;
 }
 

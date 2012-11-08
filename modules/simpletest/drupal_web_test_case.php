@@ -632,7 +632,7 @@ abstract class DrupalTestCase {
    *   'one' => array(0, 1),
    *   'two' => array(2, 3),
    * );
-   * $permutations = $this->permute($parameters);
+   * $permutations = DrupalTestCase::generatePermutations($parameters)
    * // Result:
    * $permutations == array(
    *   array('one' => 0, 'two' => 2),
@@ -1685,13 +1685,20 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     if (!isset($this->curlHandle)) {
       $this->curlHandle = curl_init();
+
+      // Some versions/configurations of cURL break on a NULL cookie jar, so
+      // supply a real file.
+      if (empty($this->cookieFile)) {
+        $this->cookieFile = $this->public_files_directory . '/cookie.jar';
+      }
+
       $curl_options = array(
         CURLOPT_COOKIEJAR => $this->cookieFile,
         CURLOPT_URL => $base_url,
         CURLOPT_FOLLOWLOCATION => FALSE,
         CURLOPT_RETURNTRANSFER => TRUE,
-        CURLOPT_SSL_VERIFYPEER => FALSE, // Required to make the tests run on https.
-        CURLOPT_SSL_VERIFYHOST => FALSE, // Required to make the tests run on https.
+        CURLOPT_SSL_VERIFYPEER => FALSE, // Required to make the tests run on HTTPS.
+        CURLOPT_SSL_VERIFYHOST => FALSE, // Required to make the tests run on HTTPS.
         CURLOPT_HEADERFUNCTION => array(&$this, 'curlHeaderCallback'),
         CURLOPT_USERAGENT => $this->databasePrefix,
       );
@@ -1699,7 +1706,12 @@ class DrupalWebTestCase extends DrupalTestCase {
         $curl_options[CURLOPT_HTTPAUTH] = $this->httpauth_method;
         $curl_options[CURLOPT_USERPWD] = $this->httpauth_credentials;
       }
-      curl_setopt_array($this->curlHandle, $this->additionalCurlOptions + $curl_options);
+      // curl_setopt_array() returns FALSE if any of the specified options
+      // cannot be set, and stops processing any further options.
+      $result = curl_setopt_array($this->curlHandle, $this->additionalCurlOptions + $curl_options);
+      if (!$result) {
+        throw new Exception('One or more cURL options could not be set.');
+      }
 
       // By default, the child session name should be the same as the parent.
       $this->session_name = session_name();
@@ -2337,9 +2349,16 @@ class DrupalWebTestCase extends DrupalTestCase {
       if (isset($edit[$name])) {
         switch ($type) {
           case 'text':
+          case 'tel':
           case 'textarea':
+          case 'url':
+          case 'number':
+          case 'range':
+          case 'color':
           case 'hidden':
           case 'password':
+          case 'email':
+          case 'search':
             $post[$name] = $edit[$name];
             unset($edit[$name]);
             break;
@@ -2686,10 +2705,10 @@ class DrupalWebTestCase extends DrupalTestCase {
   }
 
   /**
-   * Get the current url from the cURL handler.
+   * Get the current URL from the cURL handler.
    *
    * @return
-   *   The current url.
+   *   The current URL.
    */
   protected function getUrl() {
     return $this->url;
