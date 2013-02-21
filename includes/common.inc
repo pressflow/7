@@ -4930,7 +4930,7 @@ function drupal_build_js_cache($files) {
       }
     }
 
-    // Allow modules to act on the js_cche before writing to disk.
+    // Allow modules to act on the js_cache before writing to disk.
     drupal_alter('js_cache', $contents);
 
     // Prefix filename to prevent blocking by firewalls which reject files
