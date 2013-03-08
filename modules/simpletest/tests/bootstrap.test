@@ -161,7 +161,7 @@ class BootstrapPageCacheTestCase extends DrupalWebTestCase {
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'MISS', t('Page was not cached.'));
     $this->assertEqual($this->drupalGetHeader('Vary'), 'Cookie,Accept-Encoding', t('Vary header was sent.'));
     $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'public, max-age=0', t('Cache-Control header was sent.'));
-    $this->assertEqual($this->drupalGetHeader('Expires'), 'Sun, 19 Nov 1978 05:00:00 GMT', t('Expires header was sent.'));
+    $this->assertEqual($this->drupalGetHeader('Expires'), 'Sun, 11 Mar 1984 12:00:00 GMT', t('Expires header was sent.'));
     $this->assertEqual($this->drupalGetHeader('Foo'), 'bar', t('Custom header was sent.'));
 
     // Check cache.
@@ -169,7 +169,7 @@ class BootstrapPageCacheTestCase extends DrupalWebTestCase {
     $this->assertEqual($this->drupalGetHeader('X-Drupal-Cache'), 'HIT', t('Page was cached.'));
     $this->assertEqual($this->drupalGetHeader('Vary'), 'Cookie,Accept-Encoding', t('Vary: Cookie header was sent.'));
     $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'public, max-age=0', t('Cache-Control header was sent.'));
-    $this->assertEqual($this->drupalGetHeader('Expires'), 'Sun, 19 Nov 1978 05:00:00 GMT', t('Expires header was sent.'));
+    $this->assertEqual($this->drupalGetHeader('Expires'), 'Sun, 11 Mar 1984 12:00:00 GMT', t('Expires header was sent.'));
     $this->assertEqual($this->drupalGetHeader('Foo'), 'bar', t('Custom header was sent.'));
 
     // Check replacing default headers.
@@ -185,7 +185,7 @@ class BootstrapPageCacheTestCase extends DrupalWebTestCase {
     $this->assertFalse($this->drupalGetHeader('X-Drupal-Cache'), t('Caching was bypassed.'));
     $this->assertTrue(strpos($this->drupalGetHeader('Vary'), 'Cookie') === FALSE, t('Vary: Cookie header was not sent.'));
     $this->assertEqual($this->drupalGetHeader('Cache-Control'), 'no-cache, must-revalidate, post-check=0, pre-check=0', t('Cache-Control header was sent.'));
-    $this->assertEqual($this->drupalGetHeader('Expires'), 'Sun, 19 Nov 1978 05:00:00 GMT', t('Expires header was sent.'));
+    $this->assertEqual($this->drupalGetHeader('Expires'), 'Sun, 11 Mar 1984 12:00:00 GMT', t('Expires header was sent.'));
     $this->assertEqual($this->drupalGetHeader('Foo'), 'bar', t('Custom header was sent.'));
 
   }

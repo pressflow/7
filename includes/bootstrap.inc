@@ -53,6 +53,23 @@ define('CACHE_PERMANENT', 0);
 define('CACHE_TEMPORARY', -1);
 
 /**
+ * Indicates that page caching is disabled.
+ */
+define('CACHE_MODE_DISABLED', 0);
+
+/**
+ * Indicates that page caching is enabled.
+ */
+define('CACHE_MODE_NORMAL', 1);
+
+/**
+ * Indicates that page caching is using "external" mode. This disables the
+ * internal page cache but returns headers allowing downstream caches (such
+ * as Squid, Varnish, and other reverse proxies) to cache full pages.
+ */
+define('CACHE_MODE_EXTERNAL', 3);
+
+/**
  * @defgroup logging_severity_levels Logging severity levels
  * @{
  * Logging severity levels as defined in RFC 3164.
@@ -1268,10 +1285,17 @@ function drupal_page_header() {
   }
   $headers_sent = TRUE;
 
+  // If an external cache is being used and there isn't a session cookie allow
+  // the page to be cached.
+  $cache_control = 'no-cache, must-revalidate, post-check=0, pre-check=0';
+  if (!isset($_COOKIE[session_name()]) && variable_get('cache') == CACHE_MODE_EXTERNAL) {
+    $cache_control = 'public, max-age=' . variable_get('page_cache_maximum_age', 0);
+  }
+
   $default_headers = array(
-    'Expires' => 'Sun, 19 Nov 1978 05:00:00 GMT',
+    'Expires' => 'Sun, 11 Mar 1984 12:00:00 GMT',
     'Last-Modified' => gmdate(DATE_RFC1123, REQUEST_TIME),
-    'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
+    'Cache-Control' => $cache_control,
     'ETag' => '"' . REQUEST_TIME . '"',
   );
   drupal_send_headers($default_headers);
@@ -1346,7 +1370,7 @@ function drupal_serve_page_from_cache(stdClass $cache) {
   // by sending an Expires date in the past. HTTP/1.1 clients ignores the
   // Expires header if a Cache-Control: max-age= directive is specified (see RFC
   // 2616, section 14.9.3).
-  $default_headers['Expires'] = 'Sun, 19 Nov 1978 05:00:00 GMT';
+  $default_headers['Expires'] = 'Sun, 11 Mar 1984 12:00:00 GMT';
 
   drupal_send_headers($default_headers);
 
@@ -2315,12 +2339,12 @@ function _drupal_bootstrap_page_cache() {
   }
   else {
     drupal_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES, FALSE);
-    $cache_enabled = variable_get('cache');
+    $cache_enabled = variable_get('cache', CACHE_MODE_DISABLED);
   }
   drupal_block_denied(ip_address());
   // If there is no session cookie and cache is enabled (or forced), try
   // to serve a cached page.
-  if (!isset($_COOKIE[session_name()]) && $cache_enabled) {
+  if (!isset($_COOKIE[session_name()]) && $cache_enabled && $cache_enabled != CACHE_MODE_EXTERNAL) {
     // Make sure there is a user object because its timestamp will be
     // checked, hook_boot might check for anonymous user etc.
     $user = drupal_anonymous_user();
@@ -2347,7 +2371,7 @@ function _drupal_bootstrap_page_cache() {
       // We are done.
       exit;
     }
-    else {
+    elseif ($cache_enabled != CACHE_MODE_EXTERNAL) {
       header('X-Drupal-Cache: MISS');
     }
   }
