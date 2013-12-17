@@ -5181,6 +5181,13 @@ function drupal_page_set_cache() {
   global $base_root;
 
   if (drupal_page_is_cacheable()) {
+    if (variable_get('cache_lifetime', 0)) {
+      $expire = REQUEST_TIME + variable_get('cache_lifetime', 0);
+    }
+    else {
+      $expire = CACHE_TEMPORARY;
+    }
+
     $cache = (object) array(
       'cid' => $base_root . request_uri(),
       'data' => array(
@@ -5189,7 +5196,7 @@ function drupal_page_set_cache() {
         'title' => drupal_get_title(),
         'headers' => array(),
       ),
-      'expire' => CACHE_TEMPORARY,
+      'expire' => $expire,
       'created' => REQUEST_TIME,
     );
 
