@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.24');
+define('VERSION', '7.25');
 
 /**
  * Core API compatibility.
@@ -244,7 +244,7 @@ define('REGISTRY_WRITE_LOOKUP_CACHE', 2);
 /**
  * Regular expression to match PHP function names.
  *
- * @see http://php.net/manual/en/language.functions.php
+ * @see http://php.net/manual/language.functions.php
  */
 define('DRUPAL_PHP_FUNCTION_PATTERN', '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*');
 
@@ -278,7 +278,7 @@ define('DRUPAL_PHP_FUNCTION_PATTERN', '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*'
  * error, and $var will be populated with the contents of $object['foo'], but
  * that data will be passed by value, not reference. For more information on
  * the PHP limitation, see the note in the official PHP documentation at·
- * http://php.net/manual/en/arrayaccess.offsetget.php on
+ * http://php.net/manual/arrayaccess.offsetget.php on
  * ArrayAccess::offsetGet().
  *
  * By default, the class accounts for caches where calling functions might
@@ -683,7 +683,8 @@ function drupal_environment_initialize() {
   ini_set('session.use_only_cookies', '1');
   ini_set('session.use_trans_sid', '0');
   // Don't send HTTP headers using PHP's session handler.
-  ini_set('session.cache_limiter', 'none');
+  // An empty string is used here to disable the cache limiter.
+  ini_set('session.cache_limiter', '');
   // Use httponly session cookies.
   ini_set('session.cookie_httponly', '1');
 
@@ -1294,7 +1295,7 @@ function drupal_page_header() {
  */
 function drupal_serve_page_from_cache(stdClass $cache) {
   // Negotiate whether to use compression.
-  $page_compression = variable_get('page_compression', TRUE) && extension_loaded('zlib');
+  $page_compression = !empty($cache->data['page_compressed']);
   $return_compressed = $page_compression && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
 
   // Get headers set in hook_boot(). Keys are lower-case.
@@ -2165,7 +2166,7 @@ function drupal_array_merge_deep_array($arrays) {
  * @return Object - the user object.
  */
 function drupal_anonymous_user() {
-  $user = new stdClass();
+  $user = variable_get('drupal_anonymous_user_object', new stdClass);
   $user->uid = 0;
   $user->hostname = ip_address();
   $user->roles = array();
@@ -3321,8 +3322,8 @@ function registry_update() {
  * However, the above line of code does not work, because PHP only allows static
  * variables to be initializied by literal values, and does not allow static
  * variables to be assigned to references.
- * - http://php.net/manual/en/language.variables.scope.php#language.variables.scope.static
- * - http://php.net/manual/en/language.variables.scope.php#language.variables.scope.references
+ * - http://php.net/manual/language.variables.scope.php#language.variables.scope.static
+ * - http://php.net/manual/language.variables.scope.php#language.variables.scope.references
  * The example below shows the syntax needed to work around both limitations.
  * For benchmarks and more information, see http://drupal.org/node/619666.
  *

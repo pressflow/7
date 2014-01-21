@@ -754,10 +754,11 @@ function file_usage_delete(stdClass $file, $module, $type = NULL, $id = NULL, $c
  * stored in the database. This is a powerful function that in many ways
  * performs like an advanced version of copy().
  * - Checks if $source and $destination are valid and readable/writable.
- * - Checks that $source is not equal to $destination; if they are an error
- *   is reported.
  * - If file already exists in $destination either the call will error out,
  *   replace the file or rename the file based on the $replace parameter.
+ * - If the $source and $destination are equal, the behavior depends on the
+ *   $replace parameter. FILE_EXISTS_REPLACE will error out. FILE_EXISTS_RENAME
+ *   will rename the file until the $destination is unique.
  * - Adds the new file to the files database. If the source file is a
  *   temporary file, the resulting file will also be a temporary file. See
  *   file_save_upload() for details on temporary files.
@@ -852,10 +853,11 @@ function file_valid_uri($uri) {
  * This is a powerful function that in many ways performs like an advanced
  * version of copy().
  * - Checks if $source and $destination are valid and readable/writable.
- * - Checks that $source is not equal to $destination; if they are an error
- *   is reported.
  * - If file already exists in $destination either the call will error out,
  *   replace the file or rename the file based on the $replace parameter.
+ * - If the $source and $destination are equal, the behavior depends on the
+ *   $replace parameter. FILE_EXISTS_REPLACE will error out. FILE_EXISTS_RENAME
+ *   will rename the file until the $destination is unique.
  * - Provides a fallback using realpaths if the move fails using stream
  *   wrappers. This can occur because PHP's copy() function does not properly
  *   support streams if safe_mode or open_basedir are enabled. See
@@ -1143,7 +1145,7 @@ function file_munge_filename($filename, $extensions, $alerts = TRUE) {
 
   // Allow potentially insecure uploads for very savvy users and admin
   if (!variable_get('allow_insecure_uploads', 0)) {
-    // Remove any null bytes. See http://php.net/manual/en/security.filesystem.nullbytes.php
+    // Remove any null bytes. See http://php.net/manual/security.filesystem.nullbytes.php
     $filename = str_replace(chr(0), '', $filename);
 
     $whitelist = array_unique(explode(' ', trim($extensions)));
@@ -1449,7 +1451,7 @@ function file_save_upload($source, $validators = array(), $destination = FALSE, 
 
   // Check for file upload errors and return FALSE if a lower level system
   // error occurred. For a complete list of errors:
-  // See http://php.net/manual/en/features.file-upload.errors.php.
+  // See http://php.net/manual/features.file-upload.errors.php.
   switch ($_FILES['files']['error'][$source]) {
     case UPLOAD_ERR_INI_SIZE:
     case UPLOAD_ERR_FORM_SIZE:
@@ -2212,7 +2214,7 @@ function drupal_chmod($uri, $mode = NULL) {
  * @param $uri
  *   A URI or pathname.
  * @param $context
- *   Refer to http://php.net/manual/en/ref.stream.php
+ *   Refer to http://php.net/manual/ref.stream.php
  *
  * @return
  *   Boolean TRUE on success, or FALSE on failure.
@@ -2345,7 +2347,7 @@ function drupal_basename($uri, $suffix = NULL) {
  * @param $recursive
  *   Default to FALSE.
  * @param $context
- *   Refer to http://php.net/manual/en/ref.stream.php
+ *   Refer to http://php.net/manual/ref.stream.php
  *
  * @return
  *   Boolean TRUE on success, or FALSE on failure.
@@ -2376,7 +2378,7 @@ function drupal_mkdir($uri, $mode = NULL, $recursive = FALSE, $context = NULL) {
  * @param $uri
  *   A URI or pathname.
  * @param $context
- *   Refer to http://php.net/manual/en/ref.stream.php
+ *   Refer to http://php.net/manual/ref.stream.php
  *
  * @return
  *   Boolean TRUE on success, or FALSE on failure.
