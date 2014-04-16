@@ -187,7 +187,7 @@ function user_entity_info() {
 }
 
 /**
- * Entity URI callback.
+ * Implements callback_entity_info_uri().
  */
 function user_uri($user) {
   return array(
@@ -321,7 +321,7 @@ class UserController extends DrupalDefaultEntityController {
     }
 
     // Add the full file objects for user pictures if enabled.
-    if (!empty($picture_fids) && variable_get('user_pictures', 1) == 1) {
+    if (!empty($picture_fids) && variable_get('user_pictures', 0)) {
       $pictures = file_load_multiple($picture_fids);
       foreach ($queried_users as $account) {
         if (!empty($account->picture) && isset($pictures[$account->picture])) {
@@ -717,10 +717,14 @@ function user_password($length = 10) {
 
   // Loop the number of times specified by $length.
   for ($i = 0; $i < $length; $i++) {
+    do {
+      // Find a secure random number within the range needed.
+      $index = ord(drupal_random_bytes(1));
+    } while ($index > $len);
 
     // Each iteration, pick a random character from the
     // allowable string and append it to the password:
-    $pass .= $allowable_characters[mt_rand(0, $len)];
+    $pass .= $allowable_characters[$index];
   }
 
   return $pass;
@@ -1083,6 +1087,9 @@ function user_account_form(&$form, &$form_state) {
         '#access' => !empty($protected_values),
         '#description' => $current_pass_description,
         '#weight' => -5,
+        // Do not let web browsers remember this password, since we are trying
+        // to confirm that the person submitting the form actually knows the
+        // current one.
         '#attributes' => array('autocomplete' => 'off'),
       );
       $form['#validate'][] = 'user_validate_current_pass';
@@ -1725,14 +1732,14 @@ function user_menu() {
 
   // Administration pages.
   $items['admin/config/people'] = array(
-   'title' => 'People',
-   'description' => 'Configure user accounts.',
-   'position' => 'left',
-   'weight' => -20,
-   'page callback' => 'system_admin_menu_block_page',
-   'access arguments' => array('access administration pages'),
-   'file' => 'system.admin.inc',
-   'file path' => drupal_get_path('module', 'system'),
+    'title' => 'People',
+    'description' => 'Configure user accounts.',
+    'position' => 'left',
+    'weight' => -20,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
   );
   $items['admin/config/people/accounts'] = array(
     'title' => 'Account settings',
@@ -2115,7 +2122,7 @@ function user_login_default_validators() {
  * A FAPI validate handler. Sets an error if supplied username has been blocked.
  */
 function user_login_name_validate($form, &$form_state) {
-  if (isset($form_state['values']['name']) && user_is_blocked($form_state['values']['name'])) {
+  if (!empty($form_state['values']['name']) && user_is_blocked($form_state['values']['name'])) {
     // Blocked in user administration.
     form_set_error('name', t('The username %name has not been activated or is blocked.', array('%name' => $form_state['values']['name'])));
   }
@@ -2192,7 +2199,7 @@ function user_login_final_validate($form, &$form_state) {
       }
     }
     else {
-      form_set_error('name', t('Sorry, unrecognized username or password. <a href="@password">Have you forgotten your password?</a>', array('@password' => url('user/password'))));
+      form_set_error('name', t('Sorry, unrecognized username or password. <a href="@password">Have you forgotten your password?</a>', array('@password' => url('user/password', array('query' => array('name' => $form_state['values']['name']))))));
       watchdog('user', 'Login attempt failed for %user.', array('%user' => $form_state['values']['name']));
     }
   }
@@ -2238,7 +2245,12 @@ function user_authenticate($name, $password) {
  * Finalize the login process. Must be called when logging in a user.
  *
  * The function records a watchdog message about the new session, saves the
- * login timestamp, calls hook_user op 'login' and generates a new session. *
+ * login timestamp, calls hook_user_login(), and generates a new session.
+ *
+ * @param array $edit
+ *   The array of form values submitted by the user.
+ *
+ * @see hook_user_login()
  */
 function user_login_finalize(&$edit = array()) {
   global $user;
@@ -2306,7 +2318,10 @@ function user_external_login_register($name, $module) {
  * Generates a unique URL for a user to login and reset their password.
  *
  * @param object $account
- *   An object containing the user account.
+ *   An object containing the user account, which must contain at least the
+ *   following properties:
+ *   - uid: The user ID number.
+ *   - login: The UNIX timestamp of the user's last login.
  *
  * @return
  *   A unique URL that provides a one-time log in for the user, from which
@@ -2323,9 +2338,9 @@ function user_pass_reset_url($account) {
  * @param object $account
  *   The user account object, which must contain at least the following
  *   properties:
- *   - uid: The user uid number.
+ *   - uid: The user ID number.
  *   - pass: The hashed user password string.
- *   - login: The user login name.
+ *   - login: The UNIX timestamp of the user's last login.
  *
  * @return
  *   A unique URL that may be used to confirm the cancellation of the user
@@ -2347,15 +2362,15 @@ function user_cancel_url($account) {
  * order to validate the URL, the same hash can be generated again, from the
  * same information, and compared to the hash value from the URL. The URL
  * normally contains both the time stamp and the numeric user ID. The login
- * name and hashed password are retrieved from the database as necessary. For a
- * usage example, see user_cancel_url() and user_cancel_confirm().
+ * timestamp and hashed password are retrieved from the database as necessary.
+ * For a usage example, see user_cancel_url() and user_cancel_confirm().
  *
- * @param $password
+ * @param string $password
  *   The hashed user account password value.
- * @param $timestamp
- *   A unix timestamp.
- * @param $login
- *   The user account login name.
+ * @param int $timestamp
+ *   A UNIX timestamp, typically REQUEST_TIME.
+ * @param int $login
+ *   The UNIX timestamp of the user's last login.
  *
  * @return
  *   A string that is safe for use in URLs and SQL statements.
@@ -2411,6 +2426,14 @@ function user_cancel($edit, $uid, $method) {
       array('_user_cancel', array($edit, $account, $method)),
     ),
   );
+
+  // After cancelling account, ensure that user is logged out.
+  if ($account->uid == $user->uid) {
+    // Batch API stores data in the session, so use the finished operation to
+    // manipulate the current user's session id.
+    $batch['finished'] = '_user_cancel_session_regenerate';
+  }
+
   batch_set($batch);
 
   // Batch processing is either handled via Form API or has to be invoked
@@ -2453,14 +2476,27 @@ function _user_cancel($edit, $account, $method) {
       break;
   }
 
-  // After cancelling account, ensure that user is logged out.
+  // After cancelling account, ensure that user is logged out. We can't destroy
+  // their session though, as we might have information in it, and we can't
+  // regenerate it because batch API uses the session ID, we will regenerate it
+  // in _user_cancel_session_regenerate().
   if ($account->uid == $user->uid) {
-    // Destroy the current session, and reset $user to the anonymous user.
-    session_destroy();
+    $user = drupal_anonymous_user();
   }
 
   // Clear the cache for anonymous users.
   cache_clear_all();
+}
+
+/**
+ * Finished batch processing callback for cancelling a user account.
+ *
+ * @see user_cancel()
+ */
+function _user_cancel_session_regenerate() {
+  // Regenerate the users session instead of calling session_destroy() as we
+  // want to preserve any messages that might have been set.
+  drupal_session_regenerate();
 }
 
 /**
@@ -2805,7 +2841,7 @@ Your account on [site:name] has been canceled.
  *   An associative array of token replacement values. If the 'user' element
  *   exists, it must contain a user account object with the following
  *   properties:
- *   - login: The account login name.
+ *   - login: The UNIX timestamp of the user's last login.
  *   - pass: The hashed account login password.
  * @param $options
  *   Unused parameter required by the token_replace() function.
@@ -3641,7 +3677,14 @@ function user_action_info() {
 }
 
 /**
- * Blocks the current user.
+ * Blocks a specific user or the current user, if one is not specified.
+ *
+ * @param $entity
+ *   (optional) An entity object; if it is provided and it has a uid property,
+ *   the user with that ID is blocked.
+ * @param $context
+ *   (optional) An associative array; if no user ID is found in $entity, the
+ *   'uid' element of this array determines the user to block.
  *
  * @ingroup actions
  */
@@ -3672,7 +3715,7 @@ function user_block_user_action(&$entity, $context = array()) {
 function user_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
   $instance = $form['#instance'];
 
-  if ($instance['entity_type'] == 'user') {
+  if ($instance['entity_type'] == 'user' && !$form['#field']['locked']) {
     $form['instance']['settings']['user_register_form'] = array(
       '#type' => 'checkbox',
       '#title' => t('Display on user registration form.'),

@@ -152,7 +152,7 @@ function comment_node_type_load($name) {
 }
 
 /**
- * Entity URI callback.
+ * Implements callback_entity_info_uri().
  */
 function comment_uri($comment) {
   return array(
@@ -490,7 +490,7 @@ function comment_permalink($cid) {
     // Return the node view, this will show the correct comment in context.
     return menu_execute_active_handler('node/' . $node->nid, FALSE);
   }
-  drupal_not_found();
+  return MENU_NOT_FOUND;
 }
 
 /**

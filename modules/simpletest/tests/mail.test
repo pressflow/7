@@ -38,7 +38,7 @@ class MailTestCase extends DrupalWebTestCase implements MailSystemInterface {
     $message = drupal_mail('simpletest', 'mail_test', 'testing@example.com', $language);
 
     // Assert whether the message was sent through the send function.
-    $this->assertEqual(self::$sent_message['to'], 'testing@example.com', t('Pluggable mail system is extendable.'));
+    $this->assertEqual(self::$sent_message['to'], 'testing@example.com', 'Pluggable mail system is extendable.');
   }
 
   /**
@@ -265,6 +265,31 @@ class DrupalHtmlToTextTestCase extends DrupalWebTestCase {
       'Unsupported <html> and <body> tags not found',
       array('html', 'body')
     );
+  }
+
+  /**
+   * Tests that drupal_wrap_mail() removes trailing whitespace before newlines.
+   */
+  function testDrupalHtmltoTextRemoveTrailingWhitespace() {
+    $text = "Hi there! \nHerp Derp";
+    $mail_lines = explode("\n", drupal_wrap_mail($text));
+    $this->assertNotEqual(" ", substr($mail_lines[0], -1), 'Trailing whitespace removed.');
+  }
+
+  /**
+   * Tests drupal_wrap_mail() retains whitespace from Usenet style signatures.
+   *
+   * RFC 3676 says, "This is a special case; an (optionally quoted or quoted and
+   * stuffed) line consisting of DASH DASH SP is neither fixed nor flowed."
+   */
+  function testDrupalHtmltoTextUsenetSignature() {
+    $text = "Hi there!\n-- \nHerp Derp";
+    $mail_lines = explode("\n", drupal_wrap_mail($text));
+    $this->assertEqual("-- ", $mail_lines[1], 'Trailing whitespace not removed for dash-dash-space signatures.');
+
+    $text = "Hi there!\n--  \nHerp Derp";
+    $mail_lines = explode("\n", drupal_wrap_mail($text));
+    $this->assertEqual("--", $mail_lines[1], 'Trailing whitespace removed for incorrect dash-dash-space signatures.');
   }
 
   /**

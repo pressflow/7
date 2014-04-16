@@ -168,6 +168,12 @@ function drupal_get_form($form_id) {
  *       processed.
  *     - base_form_id: Identification for a base form, as declared in a
  *       hook_forms() implementation.
+ *     - immutable: If this flag is set to TRUE, a new form build id is
+ *       generated when the form is loaded from the cache. If it is subsequently
+ *       saved to the cache again, it will have another cache id and therefore
+ *       the original form and form-state will remain unaltered. This is
+ *       important when page caching is enabled in order to prevent form state
+ *       from leaking between anonymous users.
  *   - rebuild_info: Internal. Similar to 'build_info', but pertaining to
  *     drupal_rebuild_form().
  *   - rebuild: Normally, after the entire form processing is completed and
@@ -235,6 +241,12 @@ function drupal_get_form($form_id) {
  *     likely to occur during Ajax operations.
  *   - programmed: If TRUE, the form was submitted programmatically, usually
  *     invoked via drupal_form_submit(). Defaults to FALSE.
+ *   - programmed_bypass_access_check: If TRUE, programmatic form submissions
+ *     are processed without taking #access into account. Set this to FALSE
+ *     when submitting a form programmatically with values that may have been
+ *     input by the user executing the current request; this will cause #access
+ *     to be respected as it would on a normal form submission. Defaults to
+ *     TRUE.
  *   - process_input: Boolean flag. TRUE signifies correct form submission.
  *     This is always TRUE for programmed forms coming from drupal_form_submit()
  *     (see 'programmed' key), or if the form_id coming from the $_POST data is
@@ -402,6 +414,7 @@ function form_state_defaults() {
     'submitted' => FALSE,
     'executed' => FALSE,
     'programmed' => FALSE,
+    'programmed_bypass_access_check' => TRUE,
     'cache'=> FALSE,
     'method' => 'post',
     'groups' => array(),
@@ -452,17 +465,25 @@ function drupal_rebuild_form($form_id, &$form_state, $old_form = NULL) {
   $form = drupal_retrieve_form($form_id, $form_state);
 
   // If only parts of the form will be returned to the browser (e.g., Ajax or
-  // RIA clients), re-use the old #build_id to not require client-side code to
-  // manually update the hidden 'build_id' input element.
+  // RIA clients), or if the form already had a new build ID regenerated when it
+  // was retrieved from the form cache, reuse the existing #build_id.
   // Otherwise, a new #build_id is generated, to not clobber the previous
   // build's data in the form cache; also allowing the user to go back to an
   // earlier build, make changes, and re-submit.
   // @see drupal_prepare_form()
-  if (isset($old_form['#build_id']) && !empty($form_state['rebuild_info']['copy']['#build_id'])) {
+  $enforce_old_build_id = isset($old_form['#build_id']) && !empty($form_state['rebuild_info']['copy']['#build_id']);
+  $old_form_is_mutable_copy = isset($old_form['#build_id_old']);
+  if ($enforce_old_build_id || $old_form_is_mutable_copy) {
     $form['#build_id'] = $old_form['#build_id'];
+    if ($old_form_is_mutable_copy) {
+      $form['#build_id_old'] = $old_form['#build_id_old'];
+    }
   }
   else {
-    $form['#build_id'] = 'form-' . drupal_hash_base64(uniqid(mt_rand(), TRUE) . mt_rand());
+    if (isset($old_form['#build_id'])) {
+      $form['#build_id_old'] = $old_form['#build_id'];
+    }
+    $form['#build_id'] = 'form-' . drupal_random_key();
   }
 
   // #action defaults to request_uri(), but in case of Ajax and other partial
@@ -516,6 +537,15 @@ function form_get_cache($form_build_id, &$form_state) {
           }
         }
       }
+      // Generate a new #build_id if the cached form was rendered on a cacheable
+      // page.
+      if (!empty($form_state['build_info']['immutable'])) {
+        $form['#build_id_old'] = $form['#build_id'];
+        $form['#build_id'] = 'form-' . drupal_random_key();
+        $form['form_build_id']['#value'] = $form['#build_id'];
+        $form['form_build_id']['#id'] = $form['#build_id'];
+        unset($form_state['build_info']['immutable']);
+      }
       return $form;
     }
   }
@@ -528,15 +558,28 @@ function form_set_cache($form_build_id, $form, $form_state) {
   // 6 hours cache life time for forms should be plenty.
   $expire = 21600;
 
+  // Ensure that the form build_id embedded in the form structure is the same as
+  // the one passed in as a parameter. This is an additional safety measure to
+  // prevent legacy code operating directly with form_get_cache and
+  // form_set_cache from accidentally overwriting immutable form state.
+  if ($form['#build_id'] != $form_build_id) {
+    watchdog('form', 'Form build-id mismatch detected while attempting to store a form in the cache.', array(), WATCHDOG_ERROR);
+    return;
+  }
+
   // Cache form structure.
   if (isset($form)) {
     if ($GLOBALS['user']->uid) {
       $form['#cache_token'] = drupal_get_token();
     }
+    unset($form['#build_id_old']);
     cache_set('form_' . $form_build_id, $form, 'cache_form', REQUEST_TIME + $expire);
   }
 
   // Cache form state.
+  if (variable_get('cache', 0) && drupal_page_is_cacheable()) {
+    $form_state['build_info']['immutable'] = TRUE;
+  }
   if ($data = array_diff_key($form_state, array_flip(form_state_keys_no_cache()))) {
     cache_set('form_state_' . $form_build_id, $data, 'cache_form', REQUEST_TIME + $expire);
   }
@@ -727,8 +770,9 @@ function drupal_retrieve_form($form_id, &$form_state) {
   // Record the filepath of the include file containing the original form, so
   // the form builder callbacks can be loaded when the form is being rebuilt
   // from cache on a different path (such as 'system/ajax'). See
-  // form_get_cache().
-  // $menu_get_item() is not available during installation.
+  // form_get_cache(). Don't do this in maintenance mode as Drupal may not be
+  // fully bootstrapped (i.e. during installation) in which case
+  // menu_get_item() is not available.
   if (!isset($form_state['build_info']['files']['menu']) && !defined('MAINTENANCE_MODE')) {
     $item = menu_get_item();
     if (!empty($item['include_file'])) {
@@ -976,7 +1020,7 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
   // @see drupal_build_form()
   // @see drupal_rebuild_form()
   if (!isset($form['#build_id'])) {
-    $form['#build_id'] = 'form-' . drupal_hash_base64(uniqid(mt_rand(), TRUE) . mt_rand());
+    $form['#build_id'] = 'form-' . drupal_random_key();
   }
   $form['form_build_id'] = array(
     '#type' => 'hidden',
@@ -1128,6 +1172,12 @@ function drupal_validate_form($form_id, &$form, &$form_state) {
 
       // Setting this error will cause the form to fail validation.
       form_set_error('form_token', t('The form has become outdated. Copy any unsaved work in the form below and then <a href="@link">reload this page</a>.', array('@link' => $url)));
+
+      // Stop here and don't run any further validation handlers, because they
+      // could invoke non-safe operations which opens the door for CSRF
+      // vulnerabilities.
+      $validated_forms[$form_id] = TRUE;
+      return;
     }
   }
 
@@ -1978,7 +2028,7 @@ function _form_builder_handle_input_element($form_id, &$element, &$form_state) {
   // #access=FALSE on an element usually allow access for some users, so forms
   // submitted with drupal_form_submit() may bypass access restriction and be
   // treated as high-privilege users instead.
-  $process_input = empty($element['#disabled']) && ($form_state['programmed'] || ($form_state['process_input'] && (!isset($element['#access']) || $element['#access'])));
+  $process_input = empty($element['#disabled']) && (($form_state['programmed'] && $form_state['programmed_bypass_access_check']) || ($form_state['process_input'] && (!isset($element['#access']) || $element['#access'])));
 
   // Set the element's #value property.
   if (!isset($element['#value']) && !array_key_exists('#value', $element)) {

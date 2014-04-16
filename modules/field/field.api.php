@@ -23,14 +23,20 @@
  * @see hook_field_extra_fields_alter()
  *
  * @return
- *   A nested array of 'pseudo-field' components. Each list is nested within
- *   the following keys: entity type, bundle name, context (either 'form' or
+ *   A nested array of 'pseudo-field' elements. Each list is nested within the
+ *   following keys: entity type, bundle name, context (either 'form' or
  *   'display'). The keys are the name of the elements as appearing in the
  *   renderable array (either the entity form or the displayed entity). The
  *   value is an associative array:
- *   - label: The human readable name of the component.
- *   - description: A short description of the component contents.
+ *   - label: The human readable name of the element.
+ *   - description: A short description of the element contents.
  *   - weight: The default weight of the element.
+ *   - edit: (optional) String containing markup (normally a link) used as the
+ *     element's 'edit' operation in the administration interface. Only for
+ *     'form' context.
+ *   - delete: (optional) String containing markup (normally a link) used as the
+ *     element's 'delete' operation in the administration interface. Only for
+ *     'form' context.
  */
 function hook_field_extra_fields() {
   $extra['node']['poll'] = array(
@@ -106,6 +112,9 @@ function hook_field_extra_fields_alter(&$info) {
 
 /**
  * Define Field API field types.
+ *
+ * Along with this hook, you also need to implement other hooks. See
+ * @link field_types Field Types API @endlink for more information.
  *
  * @return
  *   An array whose keys are field type names and whose values are arrays
@@ -193,8 +202,11 @@ function hook_field_info_alter(&$info) {
 /**
  * Define the Field API schema for a field structure.
  *
- * This hook MUST be defined in .install for it to be detected during
- * installation and upgrade.
+ * This is invoked when a field is created, in order to obtain the database
+ * schema from the module that defines the field's type.
+ *
+ * This hook must be defined in the module's .install file for it to be detected
+ * during installation and upgrade.
  *
  * @param $field
  *   A field structure.
@@ -2508,7 +2520,7 @@ function hook_field_delete_field($field) {
  *
  * @param $instance
  *   The instance as it is post-update.
- * @param $prior_$instance
+ * @param $prior_instance
  *   The instance as it was pre-update.
  */
 function hook_field_update_instance($instance, $prior_instance) {
