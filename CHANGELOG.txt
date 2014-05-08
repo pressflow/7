@@ -2,6 +2,9 @@ Drupal 7.29, 2014-07-16
 ----------------------
 - Fixed security issues (multiple vulnerabilities). See SA-CORE-2014-003.
 
+Drupal 7.29, xxxx-xx-xx (development version)
+-----------------------
+
 Drupal 7.28, 2014-05-08
 -----------------------
 - Fixed a regression introduced in Drupal 7.27 that caused JavaScript to break
