@@ -1,4 +1,8 @@
 
+Drupal 7.32, 2014-10-15
+----------------------
+- Fixed security issues (SQL injection). See SA-CORE-2014-005.
+
 Drupal 7.31, 2014-08-06
 ----------------------
 - Fixed security issues (denial of service). See SA-CORE-2014-004.
@@ -610,7 +614,7 @@ Drupal 7.1, 2011-05-25
 ----------------------
 - Fixed security issues (Cross site scripting, File access bypass), see SA-CORE-2011-001.
 
-Drupal 7.0, 2011-01-05 
+Drupal 7.0, 2011-01-05
 ----------------------
 - Database:
     * Fully rewritten database layer utilizing PHP 5's PDO abstraction layer.
@@ -1109,7 +1113,7 @@ Drupal 5.20, 2009-09-16
 Drupal 5.19, 2009-07-01
 -----------------------
 - Fixed security issues (Cross site scripting and Password leakage in URL), see
-  SA-CORE-2009-007.          
+  SA-CORE-2009-007.
 - Fixed a variety of small bugs.
 
 Drupal 5.18, 2009-05-13
