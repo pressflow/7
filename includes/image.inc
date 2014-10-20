@@ -135,7 +135,9 @@ function image_get_info($filepath, $toolkit = FALSE) {
     $image->source = $filepath;
     $image->toolkit = $toolkit;
     $details = image_toolkit_invoke('get_info', $image);
-    if (isset($details) && is_array($details)) {
+    // Allow setting the file_size key manually in the image toolkit to
+    // prevent filesize() from being called for performance reasons.
+    if (isset($details) && is_array($details) && !isset($details['file_size'])) {
       $details['file_size'] = filesize($filepath);
     }
   }

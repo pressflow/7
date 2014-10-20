@@ -322,12 +322,14 @@ function menu_get_ancestors($parts) {
   $length =  $number_parts - 1;
   $end = (1 << $number_parts) - 1;
   $masks = variable_get('menu_masks');
-  // If the optimized menu_masks array is not available use brute force to get
-  // the correct $ancestors and $placeholders returned. Do not use this as the
-  // default value of the menu_masks variable to avoid building such a big
-  // array.
+  // If the optimized menu_masks array is not available, try every character
+  // position to see if that matches up with a wildcard, slash, or the original
+  // value in order to get the correct $ancestors and $placeholders returned.
+  // Do not use this as the default value of the menu_masks variable to avoid
+  // building such a big array. Currently the maximum value for $end is 511
+  // (2^9) - 1. 9 comes from the MENU_MAX_PARTS constant.
   if (!$masks) {
-    $masks = range(511, 1);
+    $masks = range($end, 1);
   }
   // Only examine patterns that actually exist as router items (the masks).
   foreach ($masks as $i) {
@@ -1509,6 +1511,11 @@ function _menu_tree_check_access(&$tree) {
   $new_tree = array();
   foreach ($tree as $key => $v) {
     $item = &$tree[$key]['link'];
+    // Do not load hidden menu items if not in active breadcrumb trail and
+    // user can't administer the menu.
+    if (!empty($item['hidden']) && empty($item['in_active_trail']) && !user_access('administer menu')) {
+      continue;
+    }
     _menu_link_translate($item);
     if ($item['access'] || ($item['in_active_trail'] && strpos($item['href'], '%') !== FALSE)) {
       if ($tree[$key]['below']) {
