@@ -18,7 +18,7 @@
             "command": "en",
             "arguments": [
                 "advagg",
-                "advagg_bundlerr",
+                "advagg_bundler",
                 "advagg_mod",
                 "httprl",
                 "entitycache",
