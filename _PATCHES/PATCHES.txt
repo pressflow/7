@@ -1,0 +1,11 @@
+DON’T HACK CORE!!!!
+
+You’re right, you shouldn’t. That’s why these patches are documented changes
+to Drupal core. These changes are all around performance boosting Drupal core
+
+These performance patches should have 0 implication other then speed.
+They have been selected based on community recommendations by experts and have
+been A/B comparison tested to highlight that they are indeed speeding up Drupal
+over it’s stock version.
+
+Presserflow is a fork of Pressflow D7, a performance optimized Drupal core.
