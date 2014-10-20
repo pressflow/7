@@ -1,0 +1,177 @@
+{
+    "name": "Performance Kitchen Sink",
+    "drush_recipes_api": "1.0",
+    "weight": "0",
+    "core": "7",
+    "recipe": [
+        {
+            "command": "dl",
+            "arguments": [
+                "advagg",
+                "httprl",
+                "entitycache",
+                "imageinfo_cache",
+                "apc"
+            ]
+        },
+        {
+            "command": "en",
+            "arguments": [
+                "advagg",
+                "advagg_bundlerr",
+                "advagg_mod",
+                "httprl",
+                "entitycache",
+                "imageinfo_cache",
+                "apc"
+            ],
+            "options": {
+                "y": true
+            }
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_cache_level\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_combine_css_media\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_css_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_enabled\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_gzip\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter_value\\\", '4095');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_js_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_head_extract\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_preprocess\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_inline_settings\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer_inline_alter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_use_httprl\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"block_cache\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"drupal_http_request_function\\\", 'httprl_override_core');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_background_callback\\\", 1);\""
+            ]
+        }
+    ],
+    "metadata": {
+        "type": "add-on",
+        "version": "1.0",
+        "author": "btopro",
+        "description": "Kitchen sink of performance optimizations from btopro's testing"
+    }
+}
