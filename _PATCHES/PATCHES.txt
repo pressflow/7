@@ -9,3 +9,45 @@ been A/B comparison tested to highlight that they are indeed speeding up Drupal
 over it’s stock version.
 
 Presserflow is a fork of Pressflow D7, a performance optimized Drupal core.
+
+
+Kitchensink / APC
+(applies https://www.drupal.org/node/1650930#comment-8437127 and other cache bin management techniques)
+APC and Kitchensink metrics in this test use the following additions to standard settings.php in order to better utilize cache bin management in memory.
+appended in settings.php
+
+$conf['cache_prefix'] = 'dd1';
+#$conf['apc_show_debug'] = TRUE;
+$conf['cache_backends'][] = 'sites/all/modules/apc/drupal_apc_cache.inc';
+# APC as default container, others are targetted per bin
+$conf['cache_default_class'] = 'DrupalAPCCache';
+# APC as default, so these can be commented out
+$conf['cache_class_cache'] = 'DrupalAPCCache';
+$conf['cache_class_cache_admin_menu'] = 'DrupalAPCCache';
+$conf['cache_class_cache_block'] = 'DrupalAPCCache';
+$conf['cache_class_cache_bootstrap'] = 'DrupalAPCCache';
+$conf['cache_class_cache_entity_file'] = 'DrupalAPCCache';
+$conf['cache_class_cache_entity_og_membership'] = 'DrupalAPCCache';
+$conf['cache_class_cache_entity_og_membership_type'] = 'DrupalAPCCache';
+$conf['cache_class_cache_field'] = 'DrupalAPCCache';
+$conf['cache_class_cache_menu'] = 'DrupalAPCCache';
+$conf['cache_class_cache_libraries'] = 'DrupalAPCCache';
+$conf['cache_class_cache_token'] = 'DrupalAPCCache';
+$conf['cache_class_cache_views'] = 'DrupalAPCCache';
+$conf['cache_class_cache_path_breadcrumbs'] = 'DrupalAPCCache';
+$conf['cache_class_cache_path'] = 'DrupalAPCCache';
+
+# Default DB for the ones that change too frequently and are small
+#$conf['cache_default_class']    = 'DrupalDatabaseCache';
+# THIS MUST BE SERVED FROM DB FOR STABILITY
+$conf['cache_class_cache_cis_connector'] = 'DrupalDatabaseCache';
+$conf['cache_class_cache_drupal_org_user_data'] = 'DrupalDatabaseCache';
+$conf['cache_class_cache_form'] = 'DrupalDatabaseCache';
+
+// this is assuming all databases using this file operate off of default
+// this should always be true of ELMSLN connected systems but just be aware
+// of this in case your doing any prefixing or crazy stuff like connecting to
+// multiple databases
+$databases['default']['default']['init_commands'] = array(
+  'isolation' => "SET SESSION tx_isolation='READ-COMMITTED'"
+);
