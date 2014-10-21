@@ -1,0 +1,1259 @@
+{
+    "name": "DD3 website",
+    "drush_recipes_api": "1.0",
+    "weight": "0",
+    "core": "7",
+    "recipe": [
+        {
+            "command": "en",
+            "arguments": [
+                "strongarm",
+                "block",
+                "accessibility",
+                "accessibility_wysiwyg",
+                "admin_devel",
+                "advagg",
+                "advagg_bundler",
+                "advagg_mod",
+                "backports",
+                "classy_panel_styles",
+                "context",
+                "cps_example",
+                "ctools",
+                "date",
+                "date_api",
+                "date_popup",
+                "date_views",
+                "defaultconfig",
+                "devel_generate",
+                "devel_node_access",
+                "entity",
+                "entityreference",
+                "entity_modified",
+                "facetapi",
+                "fape",
+                "field",
+                "fieldable_panels_panes",
+                "field_sql_storage",
+                "field_ui",
+                "file",
+                "file_entity",
+                "filter",
+                "image",
+                "imageinfo_cache",
+                "imce",
+                "imce_wysiwyg",
+                "jquery_update",
+                "libraries",
+                "link",
+                "list",
+                "media",
+                "media_internet",
+                "media_vimeo",
+                "media_youtube",
+                "menu",
+                "menu_block",
+                "module_filter",
+                "node",
+                "number",
+                "options",
+                "options_element",
+                "panels",
+                "panels_breadcrumbs",
+                "panels_ipe",
+                "panopoly_admin",
+                "panopoly_core",
+                "panopoly_images",
+                "panopoly_magic",
+                "panopoly_pages",
+                "panopoly_search",
+                "panopoly_theme",
+                "panopoly_users",
+                "panopoly_widgets",
+                "paranoia",
+                "path",
+                "pm_existing_pages",
+                "profiler_builder",
+                "registry_autoload",
+                "render_cache",
+                "render_cache_block",
+                "render_cache_entity",
+                "render_cache_node",
+                "render_cache_views",
+                "save_draft",
+                "search",
+                "search_api",
+                "search_api_db",
+                "search_api_facetapi",
+                "search_api_solr",
+                "search_api_views",
+                "seckit",
+                "simple_gmap",
+                "tablefield",
+                "taxonomy",
+                "text",
+                "textbook",
+                "textbook_editor",
+                "token",
+                "transliteration",
+                "typogrify",
+                "update",
+                "user",
+                "user_picture_field",
+                "uuid",
+                "video_filter",
+                "views_autocomplete_filters",
+                "views_bulk_operations",
+                "views_content",
+                "wysiwyg",
+                "ckeditor_link",
+                "ds",
+                "field_group",
+                "pathauto",
+                "views",
+                "panels_node",
+                "admin_views",
+                "features",
+                "manualcrop",
+                "panelizer",
+                "page_manager",
+                "admin_menu",
+                "admin_menu_toolbar",
+                "minimal",
+                "bartik",
+                "dblog",
+                "httprl",
+                "system",
+                "devel"
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"additional_settings__active_tab_panopoly_page\\\", 'edit-submission');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"additional_settings__active_tab_thing\\\", 'edit-submission');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_cache_client\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_display\\\", 'plid');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_show_all\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_cache_level\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_combine_css_media\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_core_groups\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_cron_frequency\\\", '86400');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_css_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_enabled\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_gzip\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter_value\\\", '4095');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_js_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_defer\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_head_extract\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_preprocess\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_inline_pages\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_inline_settings\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_async\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_async_shim\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_defer\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer_inline_alter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_head_extract\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_preprocess\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_remove_unused\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_unified_multisite_dir\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_remove_missing_files_from_db_time\\\", '1209600');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_remove_old_unused_aggregates_time\\\", '3888000');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_use_httprl\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"anonymous\\\", 'Guest');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"block_cache\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"ckeditor_link_autocomplete_menus\\\", array (\n  '- any -' =\u003e '- any -',\n  'devel' =\u003e 0,\n  'features' =\u003e 0,\n  'main-menu' =\u003e 0,\n  'management' =\u003e 0,\n  'navigation' =\u003e 0,\n  'user-menu' =\u003e 0,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"ckeditor_link_autocomplete_node_types\\\", array (\n  '- any -' =\u003e '- any -',\n  'certificate' =\u003e 0,\n  'page' =\u003e 0,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"ckeditor_link_autocomplete_vocabularies\\\", array (\n  '- any -' =\u003e '- any -',\n  1 =\u003e 0,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"ckeditor_link_type_name\\\", 'Internal link');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"ckeditor_link_type_selected\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"classy_panel_styles__base_region_style\\\", 'panels_default_style_render_region');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"classy_panel_styles__css_path\\\", 'sites\/dd3\/modules\/2208431\/cps_example\/styles\/css\/classy_panel_styles.css');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"classy_panel_styles__editor_styling\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"contact_default_status\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"context_block_rebuild_needed\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"ctools_content_all_views\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_api_version\\\", '7.2');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_default_timezone\\\", 'America\/New_York');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_day_format_without_year\\\", 'l, F j');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_day_format_with_year\\\", 'l, F j, Y');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_month_format_without_year\\\", 'F');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_month_format_with_year\\\", 'F Y');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_week_format_without_year\\\", 'F j');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_week_format_with_year\\\", 'F j, Y');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_api_url\\\", 'api.drupal.org');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_error_handlers\\\", array (\n  1 =\u003e '1',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_execution\\\", '5');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_krumo_skin\\\", 'orange');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_memory\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_node_access_debug_mode\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_node_access_user_ajax\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_page_alter\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_query_display\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_query_sort\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_raw_names\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_rebuild_theme_registry\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_redirect_page\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_use_uncompressed_jquery\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_directory\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_enabled\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_url\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"dev_timer\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_node_panopoly_page_default\\\", array (\n  'default' =\u003e \n  array (\n    'use' =\u003e '1',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'field_featured_image' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'body' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'field_featured_status' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'field_featured_categories' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_node_thing_default\\\", array (\n  'default' =\u003e \n  array (\n    'use' =\u003e '1',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'body' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_variables\\\", array (\n  0 =\u003e 'display_cache_node_thing_default',\n  1 =\u003e 'display_cache_node_panopoly_page_default',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"drupal_stale_file_threshold\\\", '2592000');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entitycache_enabled\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entityreference:base-tables\\\", array (\n  'accessibility_test' =\u003e \n  array (\n    0 =\u003e 'accessibility_test',\n    1 =\u003e 'test_id',\n  ),\n  'fieldable_panels_pane' =\u003e \n  array (\n    0 =\u003e 'fieldable_panels_panes',\n    1 =\u003e 'fpid',\n  ),\n  'node' =\u003e \n  array (\n    0 =\u003e 'node',\n    1 =\u003e 'nid',\n  ),\n  'search_api_server' =\u003e \n  array (\n    0 =\u003e 'search_api_server',\n    1 =\u003e 'id',\n  ),\n  'search_api_index' =\u003e \n  array (\n    0 =\u003e 'search_api_index',\n    1 =\u003e 'id',\n  ),\n  'file' =\u003e \n  array (\n    0 =\u003e 'file_managed',\n    1 =\u003e 'fid',\n  ),\n  'taxonomy_term' =\u003e \n  array (\n    0 =\u003e 'taxonomy_term_data',\n    1 =\u003e 'tid',\n  ),\n  'taxonomy_vocabulary' =\u003e \n  array (\n    0 =\u003e 'taxonomy_vocabulary',\n    1 =\u003e 'vid',\n  ),\n  'user' =\u003e \n  array (\n    0 =\u003e 'users',\n    1 =\u003e 'uid',\n  ),\n  'wysiwyg_profile' =\u003e \n  array (\n    0 =\u003e 'wysiwyg',\n    1 =\u003e 'format',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entity_cache_tables_created\\\", NULL);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"error_level\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"facetapi:block_cache:search_api@database_node_index\\\", -1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"facetapi:block_cache:search_api@node_index\\\", -1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"features_ignored_orphans\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"features_semaphore\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_accessibility_test__accessibility_test\\\", array (\n  'view_modes' =\u003e \n  array (\n    'popup' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'full' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n      'quail_name' =\u003e \n      array (\n        'default' =\u003e \n        array (\n          'weight' =\u003e '3',\n          'visible' =\u003e false,\n        ),\n        'popup' =\u003e \n        array (\n          'weight' =\u003e '3',\n          'visible' =\u003e false,\n        ),\n      ),\n      'severity' =\u003e \n      array (\n        'default' =\u003e \n        array (\n          'weight' =\u003e '2',\n          'visible' =\u003e false,\n        ),\n        'popup' =\u003e \n        array (\n          'weight' =\u003e '2',\n          'visible' =\u003e false,\n        ),\n      ),\n      'status' =\u003e \n      array (\n        'default' =\u003e \n        array (\n          'weight' =\u003e '1',\n          'visible' =\u003e false,\n        ),\n        'popup' =\u003e \n        array (\n          'weight' =\u003e '1',\n          'visible' =\u003e false,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_file__audio\\\", array (\n  'view_modes' =\u003e \n  array (\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n      'file' =\u003e \n      array (\n        'media_small' =\u003e \n        array (\n          'weight' =\u003e 0,\n          'visible' =\u003e false,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_file__default\\\", array (\n  'view_modes' =\u003e \n  array (\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n      'file' =\u003e \n      array (\n        'media_small' =\u003e \n        array (\n          'weight' =\u003e 0,\n          'visible' =\u003e false,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_file__image\\\", array (\n  'view_modes' =\u003e \n  array (\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n      'file' =\u003e \n      array (\n        'media_small' =\u003e \n        array (\n          'weight' =\u003e 0,\n          'visible' =\u003e false,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_file__video\\\", array (\n  'view_modes' =\u003e \n  array (\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n      'file' =\u003e \n      array (\n        'media_small' =\u003e \n        array (\n          'weight' =\u003e 0,\n          'visible' =\u003e false,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_node__panopoly_page\\\", array (\n  'view_modes' =\u003e \n  array (\n    'teaser' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'search_result' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'featured' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'full' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'rss' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'search_index' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'token' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n      'title' =\u003e \n      array (\n        'weight' =\u003e '0',\n      ),\n      'path' =\u003e \n      array (\n        'weight' =\u003e '5',\n      ),\n    ),\n    'display' =\u003e \n    array (\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_node__thing\\\", array (\n  'view_modes' =\u003e \n  array (\n    'teaser' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'featured' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'full' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'rss' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'search_index' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'search_result' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'token' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"filter_fallback_format\\\", 'plain_text');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_disable_on_demand_generation\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_field_basic_image_image\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_field_featured_image\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_field_user_picture\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_field_video_file\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_getimagesize\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_use_httprl\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imce_profiles\\\", array (\n  1 =\u003e \n  array (\n    'name' =\u003e 'User-1',\n    'usertab' =\u003e 1,\n    'filesize' =\u003e 0,\n    'quota' =\u003e 0,\n    'tuquota' =\u003e 0,\n    'extensions' =\u003e '*',\n    'dimensions' =\u003e '1200x1200',\n    'filenum' =\u003e 0,\n    'directories' =\u003e \n    array (\n      0 =\u003e \n      array (\n        'name' =\u003e '.',\n        'subnav' =\u003e 1,\n        'browse' =\u003e 1,\n        'upload' =\u003e 1,\n        'thumb' =\u003e 1,\n        'delete' =\u003e 1,\n        'resize' =\u003e 1,\n      ),\n    ),\n    'thumbnails' =\u003e \n    array (\n      0 =\u003e \n      array (\n        'name' =\u003e 'Small',\n        'dimensions' =\u003e '90x90',\n        'prefix' =\u003e 'small_',\n        'suffix' =\u003e '',\n      ),\n      1 =\u003e \n      array (\n        'name' =\u003e 'Medium',\n        'dimensions' =\u003e '120x120',\n        'prefix' =\u003e 'medium_',\n        'suffix' =\u003e '',\n      ),\n      2 =\u003e \n      array (\n        'name' =\u003e 'Large',\n        'dimensions' =\u003e '180x180',\n        'prefix' =\u003e 'large_',\n        'suffix' =\u003e '',\n      ),\n    ),\n  ),\n  2 =\u003e \n  array (\n    'name' =\u003e 'Sample profile',\n    'usertab' =\u003e 1,\n    'filesize' =\u003e 1,\n    'quota' =\u003e 2,\n    'tuquota' =\u003e 0,\n    'extensions' =\u003e 'gif png jpg jpeg',\n    'dimensions' =\u003e '800x600',\n    'filenum' =\u003e 1,\n    'directories' =\u003e \n    array (\n      0 =\u003e \n      array (\n        'name' =\u003e 'u%uid',\n        'subnav' =\u003e 0,\n        'browse' =\u003e 1,\n        'upload' =\u003e 1,\n        'thumb' =\u003e 1,\n        'delete' =\u003e 0,\n        'resize' =\u003e 0,\n      ),\n    ),\n    'thumbnails' =\u003e \n    array (\n      0 =\u003e \n      array (\n        'name' =\u003e 'Thumb',\n        'dimensions' =\u003e '90x90',\n        'prefix' =\u003e 'thumb_',\n        'suffix' =\u003e '',\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_jquery_version\\\", '1.7');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"manualcrop\\\", array (\n  'cache_control' =\u003e 1,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"manualcrop_cache_control\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_expanded\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_options_panopoly_page\\\", array (\n  0 =\u003e 'main-menu',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_options_thing\\\", array (\n  0 =\u003e 'main-menu',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_parent_panopoly_page\\\", 'main-menu:0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_parent_thing\\\", 'main-menu:0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"module_filter_recent_modules\\\", array (\n  'httprl' =\u003e 1413817746,\n  'imageinfo_cache' =\u003e 1413818213,\n  'display_cache' =\u003e 1413829204,\n  'render_cache' =\u003e 1413829204,\n  'render_cache_block' =\u003e 1413829204,\n  'render_cache_entity' =\u003e 1413829204,\n  'render_cache_page' =\u003e 1413829279,\n  'render_cache_comment' =\u003e 1413829373,\n  'render_cache_context' =\u003e 1413829373,\n  'render_cache_ds' =\u003e 1413829279,\n  'render_cache_node' =\u003e 1413829442,\n  'render_cache_views' =\u003e 1413829442,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_options_panopoly_page\\\", array (\n  0 =\u003e 'status',\n  1 =\u003e 'promote',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_options_thing\\\", array (\n  0 =\u003e 'status',\n  1 =\u003e 'promote',\n  2 =\u003e 'revision',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_preview_panopoly_page\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_preview_thing\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_submitted_panopoly_page\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_submitted_thing\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"page_manager_node_edit_disabled\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"page_manager_node_view_disabled\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"page_manager_term_view_disabled\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"page_manager_user_view_disabled\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_basic_file\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_fieldable_panels_pane\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_image\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_map\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_quick_links\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_spotlight\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_table\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_text\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_fieldable_panels_pane_video\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_node_panopoly_page\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'page_manager' =\u003e \n    array (\n      'status' =\u003e 1,\n      'default' =\u003e 1,\n      'choice' =\u003e 0,\n    ),\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 1,\n      'choice' =\u003e 0,\n    ),\n    'teaser' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 1,\n      'choice' =\u003e 0,\n    ),\n    'search_result' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'featured' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 1,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_node_thing\\\", array (\n  'status' =\u003e 1,\n  'view modes' =\u003e \n  array (\n    'page_manager' =\u003e \n    array (\n      'status' =\u003e 1,\n      'default' =\u003e 1,\n      'choice' =\u003e 1,\n    ),\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'teaser' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'featured' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_taxonomy_term_panopoly_categories\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'page_manager' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'full' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'featured' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'token' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_defaults_user_user\\\", array (\n  'status' =\u003e 0,\n  'view modes' =\u003e \n  array (\n    'page_manager' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'default' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n    'featured' =\u003e \n    array (\n      'status' =\u003e 0,\n      'default' =\u003e 0,\n      'choice' =\u003e 0,\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_node:panopoly_page_allowed_layouts_default\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_node:panopoly_page_allowed_types_default\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_node:thing_allowed_layouts\\\", 'O:22:\"panels_allowed_layouts\":4:{s:9:\"allow_new\";b:1;s:11:\"module_name\";s:20:\"panelizer_node:thing\";s:23:\"allowed_layout_settings\";a:41:{s:8:\"flexible\";b:0;s:17:\"flexible:sdffgsfd\";b:0;s:14:\"twocol_stacked\";b:0;s:17:\"threecol_25_50_25\";b:0;s:6:\"twocol\";b:0;s:25:\"threecol_33_34_33_stacked\";b:0;s:6:\"onecol\";b:0;s:25:\"threecol_25_50_25_stacked\";b:0;s:13:\"twocol_bricks\";b:0;s:17:\"threecol_33_34_33\";b:0;s:5:\"rolph\";b:0;s:9:\"sanderson\";b:0;s:8:\"mccoppin\";b:0;s:16:\"bartlett_flipped\";b:0;s:4:\"webb\";b:0;s:6:\"boxton\";b:1;s:12:\"sutro_double\";b:1;s:7:\"hewston\";b:0;s:8:\"bartlett\";b:0;s:6:\"bryant\";b:0;s:4:\"pond\";b:1;s:15:\"brenham_flipped\";b:0;s:4:\"burr\";b:0;s:5:\"brown\";b:1;s:5:\"sutro\";b:1;s:15:\"moscone_flipped\";b:1;s:14:\"taylor_flipped\";b:0;s:5:\"geary\";b:0;s:6:\"phelan\";b:0;s:12:\"webb_flipped\";b:0;s:6:\"harris\";b:0;s:17:\"sanderson_flipped\";b:0;s:13:\"selby_flipped\";b:0;s:15:\"hewston_flipped\";b:0;s:12:\"burr_flipped\";b:0;s:6:\"whelan\";b:0;s:7:\"brenham\";b:1;s:7:\"moscone\";b:1;s:22:\"bryant_flipped_flipped\";b:1;s:5:\"selby\";b:0;s:6:\"taylor\";b:0;}s:10:\"form_state\";N;}');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_node:thing_allowed_layouts_default\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_node:thing_allowed_types\\\", array (\n  'vocabulary_terms-vocabulary_terms' =\u003e 'vocabulary_terms-vocabulary_terms',\n  'form-form' =\u003e 'form-form',\n  'term_description-term_description' =\u003e 'term_description-term_description',\n  'term_list-term_list' =\u003e 'term_list-term_list',\n  'user_signature-user_signature' =\u003e 'user_signature-user_signature',\n  'user_profile-user_profile' =\u003e 'user_profile-user_profile',\n  'user_picture-user_picture' =\u003e 'user_picture-user_picture',\n  'node_body-node_body' =\u003e 'node_body-node_body',\n  'node_title-node_title' =\u003e 'node_title-node_title',\n  'node_terms-node_terms' =\u003e 'node_terms-node_terms',\n  'node_type_desc-node_type_desc' =\u003e 'node_type_desc-node_type_desc',\n  'node_author-node_author' =\u003e 'node_author-node_author',\n  'node_updated-node_updated' =\u003e 'node_updated-node_updated',\n  'node_created-node_created' =\u003e 'node_created-node_created',\n  'node_content-node_content' =\u003e 'node_content-node_content',\n  'node_links-node_links' =\u003e 'node_links-node_links',\n  'node_attachments-node_attachments' =\u003e 'node_attachments-node_attachments',\n  'page_actions-page_actions' =\u003e 'page_actions-page_actions',\n  'page_help-page_help' =\u003e 'page_help-page_help',\n  'page_secondary_links-page_secondary_links' =\u003e 'page_secondary_links-page_secondary_links',\n  'page_logo-page_logo' =\u003e 'page_logo-page_logo',\n  'page_primary_links-page_primary_links' =\u003e 'page_primary_links-page_primary_links',\n  'page_slogan-page_slogan' =\u003e 'page_slogan-page_slogan',\n  'page_messages-page_messages' =\u003e 'page_messages-page_messages',\n  'page_breadcrumb-page_breadcrumb' =\u003e 'page_breadcrumb-page_breadcrumb',\n  'page_site_name-page_site_name' =\u003e 'page_site_name-page_site_name',\n  'page_feed_icons-page_feed_icons' =\u003e 'page_feed_icons-page_feed_icons',\n  'page_title-page_title' =\u003e 'page_title-page_title',\n  'page_tabs-page_tabs' =\u003e 'page_tabs-page_tabs',\n  'search_result-search_result' =\u003e 'search_result-search_result',\n  'search_form-search_form' =\u003e 'search_form-search_form',\n  'node-node' =\u003e 'node-node',\n  'node_form_path-node_form_path' =\u003e 'node_form_path-node_form_path',\n  'node_form_publishing-node_form_publishing' =\u003e 'node_form_publishing-node_form_publishing',\n  'node_form_buttons-node_form_buttons' =\u003e 'node_form_buttons-node_form_buttons',\n  'node_form_author-node_form_author' =\u003e 'node_form_author-node_form_author',\n  'node_form_title-node_form_title' =\u003e 'node_form_title-node_form_title',\n  'node_form_log-node_form_log' =\u003e 'node_form_log-node_form_log',\n  'node_form_language-node_form_language' =\u003e 'node_form_language-node_form_language',\n  'node_form_menu-node_form_menu' =\u003e 'node_form_menu-node_form_menu',\n  'file_display-file_display' =\u003e 'file_display-file_display',\n  'file_content-file_content' =\u003e 'file_content-file_content',\n  'reusable_widgets-reusable_widgets' =\u003e 'reusable_widgets-reusable_widgets',\n  'general_widgets-general_widgets' =\u003e 'general_widgets-general_widgets',\n  'content-content' =\u003e 'content-content',\n  'taxonomy-taxonomy' =\u003e 'taxonomy-taxonomy',\n  'overridden_page_templates-overridden_page_templates' =\u003e 'overridden_page_templates-overridden_page_templates',\n  'theme-theme' =\u003e 'theme-theme',\n  'users-users' =\u003e 'users-users',\n  'general_panes-general_panes' =\u003e 'general_panes-general_panes',\n  'panels_layouts-panels_layouts' =\u003e 'panels_layouts-panels_layouts',\n  'landing_pages-landing_pages' =\u003e 'landing_pages-landing_pages',\n  'menus-menus' =\u003e 'menus-menus',\n  'facet-facet' =\u003e 'facet-facet',\n  'search_current-search_current' =\u003e 'search_current-search_current',\n  'search_box-search_box' =\u003e 'search_box-search_box',\n  'pm_existing_pages-pm_existing_pages' =\u003e 'pm_existing_pages-pm_existing_pages',\n  'views_empty-views_empty' =\u003e 'views_empty-views_empty',\n  'views_row-views_row' =\u003e 'views_row-views_row',\n  'views_pager-views_pager' =\u003e 'views_pager-views_pager',\n  'views_feed-views_feed' =\u003e 'views_feed-views_feed',\n  'views_header-views_header' =\u003e 'views_header-views_header',\n  'views_exposed-views_exposed' =\u003e 'views_exposed-views_exposed',\n  'views_attachments-views_attachments' =\u003e 'views_attachments-views_attachments',\n  'views_view-views_view' =\u003e 'views_view-views_view',\n  'views_footer-views_footer' =\u003e 'views_footer-views_footer',\n  'panelizer_form_default-panelizer_form_default' =\u003e 'panelizer_form_default-panelizer_form_default',\n  'custom-custom' =\u003e 'custom-custom',\n  'entity_form_field-accessibility_test:error_description' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_quick_links_links' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_basic_file_file' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_basic_file_text' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_basic_image_caption' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_basic_image_image' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_basic_text_text' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_map_address' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_map_information' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_basic_table_table' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_video_file' =\u003e 0,\n  'entity_form_field-fieldable_panels_pane:field_basic_spotlight_items' =\u003e 0,\n  'entity_form_field-node:body' =\u003e 0,\n  'entity_form_field-node:field_featured_image' =\u003e 0,\n  'entity_form_field-node:field_featured_categories' =\u003e 0,\n  'entity_form_field-node:field_featured_status' =\u003e 0,\n  'entity_form_field-file:field_file_image_alt_text' =\u003e 0,\n  'entity_form_field-file:field_file_image_title_text' =\u003e 0,\n  'entity_form_field-taxonomy_term:field_featured_image' =\u003e 0,\n  'entity_form_field-user:field_user_about' =\u003e 0,\n  'entity_form_field-user:field_user_picture' =\u003e 0,\n  'token-node:source' =\u003e 'token-node:source',\n  'token-node:log' =\u003e 'token-node:log',\n  'token-node:content-type' =\u003e 'token-node:content-type',\n  'token-node:menu-link' =\u003e 'token-node:menu-link',\n  'token-node:nid' =\u003e 'token-node:nid',\n  'token-node:vid' =\u003e 'token-node:vid',\n  'token-node:title' =\u003e 'token-node:title',\n  'token-node:body' =\u003e 'token-node:body',\n  'token-node:summary' =\u003e 'token-node:summary',\n  'token-node:language' =\u003e 'token-node:language',\n  'token-node:url' =\u003e 'token-node:url',\n  'token-node:edit-url' =\u003e 'token-node:edit-url',\n  'token-node:created' =\u003e 'token-node:created',\n  'token-node:changed' =\u003e 'token-node:changed',\n  'token-node:author' =\u003e 'token-node:author',\n  'token-node:uuid' =\u003e 'token-node:uuid',\n  'token-node:vuuid' =\u003e 'token-node:vuuid',\n  'token-node:original' =\u003e 'token-node:original',\n  'token-node:field_featured_image' =\u003e 'token-node:field_featured_image',\n  'token-node:field_featured_categories' =\u003e 'token-node:field_featured_categories',\n  'token-node:field_featured_status' =\u003e 'token-node:field_featured_status',\n  'token-content-type:name' =\u003e 'token-content-type:name',\n  'token-content-type:machine-name' =\u003e 'token-content-type:machine-name',\n  'token-content-type:description' =\u003e 'token-content-type:description',\n  'token-content-type:node-count' =\u003e 'token-content-type:node-count',\n  'token-content-type:edit-url' =\u003e 'token-content-type:edit-url',\n  'token-term:edit-url' =\u003e 'token-term:edit-url',\n  'token-term:parents' =\u003e 'token-term:parents',\n  'token-term:root' =\u003e 'token-term:root',\n  'token-term:tid' =\u003e 'token-term:tid',\n  'token-term:name' =\u003e 'token-term:name',\n  'token-term:description' =\u003e 'token-term:description',\n  'token-term:node-count' =\u003e 'token-term:node-count',\n  'token-term:url' =\u003e 'token-term:url',\n  'token-term:vocabulary' =\u003e 'token-term:vocabulary',\n  'token-term:parent' =\u003e 'token-term:parent',\n  'token-term:uuid' =\u003e 'token-term:uuid',\n  'token-term:original' =\u003e 'token-term:original',\n  'token-term:field_featured_image' =\u003e 'token-term:field_featured_image',\n  'token-vocabulary:machine-name' =\u003e 'token-vocabulary:machine-name',\n  'token-vocabulary:edit-url' =\u003e 'token-vocabulary:edit-url',\n  'token-vocabulary:vid' =\u003e 'token-vocabulary:vid',\n  'token-vocabulary:name' =\u003e 'token-vocabulary:name',\n  'token-vocabulary:description' =\u003e 'token-vocabulary:description',\n  'token-vocabulary:node-count' =\u003e 'token-vocabulary:node-count',\n  'token-vocabulary:term-count' =\u003e 'token-vocabulary:term-count',\n  'token-vocabulary:original' =\u003e 'token-vocabulary:original',\n  'token-file:basename' =\u003e 'token-file:basename',\n  'token-file:extension' =\u003e 'token-file:extension',\n  'token-file:size-raw' =\u003e 'token-file:size-raw',\n  'token-file:type' =\u003e 'token-file:type',\n  'token-file:download-url' =\u003e 'token-file:download-url',\n  'token-file:fid' =\u003e 'token-file:fid',\n  'token-file:name' =\u003e 'token-file:name',\n  'token-file:path' =\u003e 'token-file:path',\n  'token-file:mime' =\u003e 'token-file:mime',\n  'token-file:size' =\u003e 'token-file:size',\n  'token-file:url' =\u003e 'token-file:url',\n  'token-file:timestamp' =\u003e 'token-file:timestamp',\n  'token-file:owner' =\u003e 'token-file:owner',\n  'token-file:uuid' =\u003e 'token-file:uuid',\n  'token-file:original' =\u003e 'token-file:original',\n  'token-file:field_file_image_alt_text' =\u003e 'token-file:field_file_image_alt_text',\n  'token-file:field_file_image_title_text' =\u003e 'token-file:field_file_image_title_text',\n  'token-user:cancel-url' =\u003e 'token-user:cancel-url',\n  'token-user:one-time-login-url' =\u003e 'token-user:one-time-login-url',\n  'token-user:roles' =\u003e 'token-user:roles',\n  'token-user:uid' =\u003e 'token-user:uid',\n  'token-user:name' =\u003e 'token-user:name',\n  'token-user:mail' =\u003e 'token-user:mail',\n  'token-user:url' =\u003e 'token-user:url',\n  'token-user:edit-url' =\u003e 'token-user:edit-url',\n  'token-user:last-login' =\u003e 'token-user:last-login',\n  'token-user:created' =\u003e 'token-user:created',\n  'token-user:uuid' =\u003e 'token-user:uuid',\n  'token-user:original' =\u003e 'token-user:original',\n  'token-user:field_user_about' =\u003e 'token-user:field_user_about',\n  'token-user:field_user_picture' =\u003e 'token-user:field_user_picture',\n  'token-current-user:ip-address' =\u003e 'token-current-user:ip-address',\n  'token-menu-link:mlid' =\u003e 'token-menu-link:mlid',\n  'token-menu-link:title' =\u003e 'token-menu-link:title',\n  'token-menu-link:url' =\u003e 'token-menu-link:url',\n  'token-menu-link:parent' =\u003e 'token-menu-link:parent',\n  'token-menu-link:parents' =\u003e 'token-menu-link:parents',\n  'token-menu-link:root' =\u003e 'token-menu-link:root',\n  'token-menu-link:menu' =\u003e 'token-menu-link:menu',\n  'token-menu-link:edit-url' =\u003e 'token-menu-link:edit-url',\n  'token-current-page:title' =\u003e 'token-current-page:title',\n  'token-current-page:url' =\u003e 'token-current-page:url',\n  'token-current-page:page-number' =\u003e 'token-current-page:page-number',\n  'token-current-page:query' =\u003e 'token-current-page:query',\n  'token-url:path' =\u003e 'token-url:path',\n  'token-url:relative' =\u003e 'token-url:relative',\n  'token-url:absolute' =\u003e 'token-url:absolute',\n  'token-url:brief' =\u003e 'token-url:brief',\n  'token-url:unaliased' =\u003e 'token-url:unaliased',\n  'token-url:args' =\u003e 'token-url:args',\n  'token-array:first' =\u003e 'token-array:first',\n  'token-array:last' =\u003e 'token-array:last',\n  'token-array:count' =\u003e 'token-array:count',\n  'token-array:reversed' =\u003e 'token-array:reversed',\n  'token-array:keys' =\u003e 'token-array:keys',\n  'token-array:join' =\u003e 'token-array:join',\n  'token-array:value' =\u003e 'token-array:value',\n  'token-array:join-path' =\u003e 'token-array:join-path',\n  'token-random:number' =\u003e 'token-random:number',\n  'token-random:hash' =\u003e 'token-random:hash',\n  'token-date-field-value:date' =\u003e 'token-date-field-value:date',\n  'token-date-field-value:to-date' =\u003e 'token-date-field-value:to-date',\n  'token-facetapi_results:keys' =\u003e 'token-facetapi_results:keys',\n  'token-facetapi_results:page-number' =\u003e 'token-facetapi_results:page-number',\n  'token-facetapi_results:page-limit' =\u003e 'token-facetapi_results:page-limit',\n  'token-facetapi_results:page-total' =\u003e 'token-facetapi_results:page-total',\n  'token-facetapi_results:offset' =\u003e 'token-facetapi_results:offset',\n  'token-facetapi_results:start-count' =\u003e 'token-facetapi_results:start-count',\n  'token-facetapi_results:end-count' =\u003e 'token-facetapi_results:end-count',\n  'token-facetapi_results:result-count' =\u003e 'token-facetapi_results:result-count',\n  'token-facetapi_results:search-path' =\u003e 'token-facetapi_results:search-path',\n  'token-facetapi_active:active-value' =\u003e 'token-facetapi_active:active-value',\n  'token-facetapi_active:active-value-raw' =\u003e 'token-facetapi_active:active-value-raw',\n  'token-facetapi_active:active-pos' =\u003e 'token-facetapi_active:active-pos',\n  'token-facetapi_active:facet-label' =\u003e 'token-facetapi_active:facet-label',\n  'token-facetapi_active:facet-name' =\u003e 'token-facetapi_active:facet-name',\n  'token-facetapi_facet:facet-label' =\u003e 'token-facetapi_facet:facet-label',\n  'token-facetapi_facet:facet-name' =\u003e 'token-facetapi_facet:facet-name',\n  'token-file-type:name' =\u003e 'token-file-type:name',\n  'token-file-type:machine-name' =\u003e 'token-file-type:machine-name',\n  'token-file-type:count' =\u003e 'token-file-type:count',\n  'token-file-type:edit-url' =\u003e 'token-file-type:edit-url',\n  'token-menu:name' =\u003e 'token-menu:name',\n  'token-menu:machine-name' =\u003e 'token-menu:machine-name',\n  'token-menu:description' =\u003e 'token-menu:description',\n  'token-menu:menu-link-count' =\u003e 'token-menu:menu-link-count',\n  'token-menu:edit-url' =\u003e 'token-menu:edit-url',\n  'token-site:name' =\u003e 'token-site:name',\n  'token-site:slogan' =\u003e 'token-site:slogan',\n  'token-site:mail' =\u003e 'token-site:mail',\n  'token-site:url' =\u003e 'token-site:url',\n  'token-site:url-brief' =\u003e 'token-site:url-brief',\n  'token-site:login-url' =\u003e 'token-site:login-url',\n  'token-date:short' =\u003e 'token-date:short',\n  'token-date:medium' =\u003e 'token-date:medium',\n  'token-date:long' =\u003e 'token-date:long',\n  'token-date:custom' =\u003e 'token-date:custom',\n  'token-date:since' =\u003e 'token-date:since',\n  'token-date:raw' =\u003e 'token-date:raw',\n  'token-date:panopoly_time' =\u003e 'token-date:panopoly_time',\n  'token-date:panopoly_day' =\u003e 'token-date:panopoly_day',\n  'token-view:name' =\u003e 'token-view:name',\n  'token-view:description' =\u003e 'token-view:description',\n  'token-view:machine-name' =\u003e 'token-view:machine-name',\n  'token-view:title' =\u003e 'token-view:title',\n  'token-view:url' =\u003e 'token-view:url',\n  'block-facetapi-1Cpx6naJU4Y3YvKVc0vcLK7Yo0ahaN0l' =\u003e 0,\n  'block-facetapi-fA1pg0Ubd1zgx1mvzHkFUGaNoMb4Gs0s' =\u003e 0,\n  'block-facetapi-Shb0Q1vWgCArrHrjHszTyhl2jaEhIjzW' =\u003e 0,\n  'block-node-syndicate' =\u003e 0,\n  'block-node-recent' =\u003e 0,\n  'block-search-form' =\u003e 0,\n  'block-system-powered-by' =\u003e 0,\n  'block-system-help' =\u003e 0,\n  'block-system-navigation' =\u003e 0,\n  'block-system-management' =\u003e 0,\n  'block-system-user-menu' =\u003e 0,\n  'block-system-main-menu' =\u003e 0,\n  'block-user-login' =\u003e 0,\n  'block-user-new' =\u003e 0,\n  'block-user-online' =\u003e 0,\n  'entity_field-accessibility_test:error_description' =\u003e 'entity_field-accessibility_test:error_description',\n  'entity_field-fieldable_panels_pane:field_quick_links_links' =\u003e 'entity_field-fieldable_panels_pane:field_quick_links_links',\n  'entity_field-fieldable_panels_pane:field_basic_file_file' =\u003e 'entity_field-fieldable_panels_pane:field_basic_file_file',\n  'entity_field-fieldable_panels_pane:field_basic_file_text' =\u003e 'entity_field-fieldable_panels_pane:field_basic_file_text',\n  'entity_field-fieldable_panels_pane:field_basic_image_caption' =\u003e 'entity_field-fieldable_panels_pane:field_basic_image_caption',\n  'entity_field-fieldable_panels_pane:field_basic_image_image' =\u003e 'entity_field-fieldable_panels_pane:field_basic_image_image',\n  'entity_field-fieldable_panels_pane:field_basic_text_text' =\u003e 'entity_field-fieldable_panels_pane:field_basic_text_text',\n  'entity_field-fieldable_panels_pane:field_map_address' =\u003e 'entity_field-fieldable_panels_pane:field_map_address',\n  'entity_field-fieldable_panels_pane:field_map_information' =\u003e 'entity_field-fieldable_panels_pane:field_map_information',\n  'entity_field-fieldable_panels_pane:field_basic_table_table' =\u003e 'entity_field-fieldable_panels_pane:field_basic_table_table',\n  'entity_field-fieldable_panels_pane:field_video_file' =\u003e 'entity_field-fieldable_panels_pane:field_video_file',\n  'entity_field-fieldable_panels_pane:field_basic_spotlight_items' =\u003e 'entity_field-fieldable_panels_pane:field_basic_spotlight_items',\n  'entity_field-node:body' =\u003e 'entity_field-node:body',\n  'entity_field-node:field_featured_image' =\u003e 'entity_field-node:field_featured_image',\n  'entity_field-node:field_featured_categories' =\u003e 'entity_field-node:field_featured_categories',\n  'entity_field-node:field_featured_status' =\u003e 'entity_field-node:field_featured_status',\n  'entity_field-file:field_file_image_alt_text' =\u003e 'entity_field-file:field_file_image_alt_text',\n  'entity_field-file:field_file_image_title_text' =\u003e 'entity_field-file:field_file_image_title_text',\n  'entity_field-taxonomy_term:field_featured_image' =\u003e 'entity_field-taxonomy_term:field_featured_image',\n  'entity_field-user:field_user_about' =\u003e 'entity_field-user:field_user_about',\n  'entity_field-user:field_user_picture' =\u003e 'entity_field-user:field_user_picture',\n  'entity_field_extra-accessibility_test:quail_name' =\u003e 0,\n  'entity_field_extra-accessibility_test:severity' =\u003e 0,\n  'entity_field_extra-accessibility_test:status' =\u003e 0,\n  'entity_field_extra-fieldable_panels_pane:title' =\u003e 0,\n  'entity_field_extra-file:file' =\u003e 0,\n  'entity_field_extra-taxonomy_term:description' =\u003e 0,\n  'entity_field_extra-user:summary' =\u003e 0,\n  'entity_view-node' =\u003e 'entity_view-node',\n  'entity_view-accessibility_test' =\u003e 0,\n  'entity_view-fieldable_panels_pane' =\u003e 0,\n  'entity_view-search_api_server' =\u003e 0,\n  'entity_view-search_api_index' =\u003e 0,\n  'entity_view-file' =\u003e 0,\n  'entity_view-taxonomy_term' =\u003e 0,\n  'entity_view-user' =\u003e 0,\n  'fieldable_panels_pane-fieldable_panels_pane' =\u003e 0,\n  'fieldable_panels_pane-quick_links' =\u003e 0,\n  'fieldable_panels_pane-basic_file' =\u003e 0,\n  'fieldable_panels_pane-image' =\u003e 0,\n  'fieldable_panels_pane-text' =\u003e 0,\n  'fieldable_panels_pane-map' =\u003e 0,\n  'fieldable_panels_pane-table' =\u003e 0,\n  'fieldable_panels_pane-video' =\u003e 0,\n  'fieldable_panels_pane-spotlight' =\u003e 0,\n  'menu_tree-_active' =\u003e 0,\n  'menu_tree-main-menu' =\u003e 0,\n  'menu_tree-management' =\u003e 0,\n  'menu_tree-navigation' =\u003e 0,\n  'menu_tree-user-menu' =\u003e 0,\n  'views_panes-panopoly_widgets_general_content-list_of_content' =\u003e 'views_panes-panopoly_widgets_general_content-list_of_content',\n  'views_panes-panopoly_widgets_general_content-piece_of_content' =\u003e 'views_panes-panopoly_widgets_general_content-piece_of_content',\n  'views_panes-panopoly_taxonomy-taxonomy_content' =\u003e 0,\n  'views_panes-panopoly_database_search-search_database_results' =\u003e 0,\n  'views_panes-panopoly_search-search_solr_results' =\u003e 0,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_node:thing_allowed_types_default\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_node:thing_default\\\", array (\n  'custom' =\u003e 'custom',\n  'entity_view' =\u003e 'entity_view',\n  'views_panes' =\u003e 'views_panes',\n  'other' =\u003e 'other',\n  'entity_form_field' =\u003e 0,\n  'token' =\u003e 0,\n  'block' =\u003e 0,\n  'entity_field' =\u003e 0,\n  'entity_field_extra' =\u003e 0,\n  'fieldable_panels_pane' =\u003e 0,\n  'menu_tree' =\u003e 0,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_taxonomy_term:panopoly_categories_allowed_layouts_default\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_taxonomy_term:panopoly_categories_allowed_types_default\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_user:user_allowed_layouts_default\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panelizer_user:user_allowed_types_default\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panopoly_admin_advanced_plugins\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panopoly_admin_front_page_and_sticky\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panopoly_admin_link_description\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panopoly_admin_machine_name\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panopoly_core_breadcrumb_title\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panopoly_users_login_destination\\\", '\u003cfront\u003e');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"panopoly_users_remove_tabs\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_blog_pattern\\\", 'blogs\/[user:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_file_pattern\\\", 'file\/[file:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_forum_pattern\\\", '[term:vocabulary]\/[term:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_node_pattern\\\", 'content\/[node:title]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_punctuation_hyphen\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_taxonomy_term_pattern\\\", '[term:vocabulary]\/[term:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_user_pattern\\\", 'users\/[user:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"path_alias_whitelist\\\", array (\n  'media' =\u003e true,\n  'node' =\u003e true,\n  'user' =\u003e true,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pm_existing_pages_disabled_user_login\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pm_existing_pages_disabled_user_password\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pm_existing_pages_disabled_user_register\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"save_continue_panopoly_page\\\", 'Save and add fields');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"search_active_modules\\\", array (\n  'node' =\u003e 'node',\n  'user' =\u003e 0,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"search_api_facets_search_ids\\\", array (\n  'node_index' =\u003e \n  array (\n    'search_api_views:panopoly_search:search_solr_results' =\u003e 'search_api_views:panopoly_search:search_solr_results',\n    'search_api_views:panopoly_search:page_1' =\u003e 'search_api_views:panopoly_search:page_1',\n  ),\n  'database_node_index' =\u003e \n  array (\n    'search_api_views:panopoly_database_search:default' =\u003e 'search_api_views:panopoly_database_search:default',\n    'search_api_views:panopoly_database_search:panel_pane_1' =\u003e 'search_api_views:panopoly_database_search:panel_pane_1',\n    'search_api_views:panopoly_database_search:search_database_results' =\u003e 'search_api_views:panopoly_database_search:search_database_results',\n    'search_api_views:panopoly_database_search:page_1' =\u003e 'search_api_views:panopoly_database_search:page_1',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"search_api_solr_last_optimize\\\", 1413810499);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"theme_default\\\", 'bartik');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_cancel_method\\\", 'user_cancel_block');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_email_verification\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_mail_status_blocked_notify\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_mail_status_canceled_notify\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_pictures\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_default\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_dimensions\\\", '85x85');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_field_source_bundle\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_field_source_entity\\\", 'user');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_field_source_field\\\", 'field_user_picture');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_file_size\\\", '30');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_guidelines\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_path\\\", 'pictures');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_style\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_register\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_signatures\\\", 0);\""
+            ]
+        }
+    ],
+    "metadata": {
+        "type": "testing",
+        "description": "Blueprint of dd3.btopro.net",
+        "version": "0.0",
+        "author": "btopro"
+    }
+}
