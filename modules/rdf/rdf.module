@@ -190,17 +190,33 @@ function _rdf_get_default_mapping($type) {
  *   An RDF mapping structure or an empty array if no record was found.
  */
 function _rdf_mapping_load($type, $bundle) {
-  $mapping = db_select('rdf_mapping')
-    ->fields(NULL, array('mapping'))
-    ->condition('type', $type)
-    ->condition('bundle', $bundle)
-    ->execute()
-    ->fetchField();
+  $mappings = _rdf_mapping_load_multiple($type, array($bundle));
+  return $mappings ? reset($mappings) : array();
+}
 
-  if (!$mapping) {
-    return array();
+/**
+ * Helper function to retrieve a set of RDF mappings from the database.
+ *
+ * @param $type
+ *   The entity type of the mappings.
+ * @param $bundles
+ *   The bundles the mappings refer to.
+ *
+ * @return
+ *   An array of RDF mapping structures, or an empty array.
+ */
+function _rdf_mapping_load_multiple($type, array $bundles) {
+  $mappings = db_select('rdf_mapping')
+    ->fields(NULL, array('bundle', 'mapping'))
+    ->condition('type', $type)
+    ->condition('bundle', $bundles)
+    ->execute()
+    ->fetchAllKeyed();
+
+  foreach ($mappings as $bundle => $mapping) {
+    $mappings[$bundle] = unserialize($mapping);
   }
-  return unserialize($mapping);
+  return $mappings;
 }
 
 /**
@@ -368,10 +384,13 @@ function rdf_modules_uninstalled($modules) {
 function rdf_entity_info_alter(&$entity_info) {
   // Loop through each entity type and its bundles.
   foreach ($entity_info as $entity_type => $entity_type_info) {
-    if (isset($entity_type_info['bundles'])) {
-      foreach ($entity_type_info['bundles'] as $bundle => $bundle_info) {
-        if ($mapping = _rdf_mapping_load($entity_type, $bundle)) {
-          $entity_info[$entity_type]['bundles'][$bundle]['rdf_mapping'] = $mapping;
+    if (!empty($entity_type_info['bundles'])) {
+      $bundles = array_keys($entity_type_info['bundles']);
+      $mappings = _rdf_mapping_load_multiple($entity_type, $bundles);
+
+      foreach ($bundles as $bundle) {
+        if (isset($mappings[$bundle])) {
+          $entity_info[$entity_type]['bundles'][$bundle]['rdf_mapping'] = $mappings[$bundle];
         }
         else {
           // If no mapping was found in the database, assign the default RDF
@@ -471,27 +490,17 @@ function rdf_preprocess_node(&$variables) {
   $variables['attributes_array']['about'] = empty($variables['node_url']) ? NULL: $variables['node_url'];
   $variables['attributes_array']['typeof'] = empty($variables['node']->rdf_mapping['rdftype']) ? NULL : $variables['node']->rdf_mapping['rdftype'];
 
-  // Adds RDFa markup to the title of the node. Because the RDFa markup is
-  // added to the <h2> tag which might contain HTML code, we specify an empty
-  // datatype to ensure the value of the title read by the RDFa parsers is a
-  // literal.
-  $variables['title_attributes_array']['property'] = empty($variables['node']->rdf_mapping['title']['predicates']) ? NULL : $variables['node']->rdf_mapping['title']['predicates'];
-  $variables['title_attributes_array']['datatype'] = '';
-
-  // In full node mode, the title is not displayed by node.tpl.php so it is
-  // added in the <head> tag of the HTML page.
-  if ($variables['page']) {
-    $element = array(
-      '#tag' => 'meta',
-      '#attributes' => array(
-        'content' => $variables['node']->title,
-        'about' => $variables['node_url'],
+  // Adds RDFa markup about the title of the node to the title_suffix.
+  if (!empty($variables['node']->rdf_mapping['title']['predicates'])) {
+    $variables['title_suffix']['rdf_meta_title'] = array(
+      '#theme' => 'rdf_metadata',
+      '#metadata' => array(
+        array(
+          'property' => $variables['node']->rdf_mapping['title']['predicates'],
+          'content' => $variables['node']->title,
+        ),
       ),
     );
-    if (!empty($variables['node']->rdf_mapping['title']['predicates'])) {
-      $element['#attributes']['property'] = $variables['node']->rdf_mapping['title']['predicates'];
-    }
-    drupal_add_html_head($element, 'rdf_node_title');
   }
 
   // Adds RDFa markup for the date.
@@ -511,35 +520,20 @@ function rdf_preprocess_node(&$variables) {
   }
 
   // Adds RDFa markup annotating the number of comments a node has.
-  if (isset($variables['node']->comment_count) && !empty($variables['node']->rdf_mapping['comment_count']['predicates'])) {
-    // Annotates the 'x comments' link in teaser view.
-    if (isset($variables['content']['links']['comment']['#links']['comment-comments'])) {
-      $comment_count_attributes['property'] = $variables['node']->rdf_mapping['comment_count']['predicates'];
-      $comment_count_attributes['content'] = $variables['node']->comment_count;
-      $comment_count_attributes['datatype'] = $variables['node']->rdf_mapping['comment_count']['datatype'];
-      // According to RDFa parsing rule number 4, a new subject URI is created
-      // from the href attribute if no rel/rev attribute is present. To get the
-      // original node URL from the about attribute of the parent container we
-      // set an empty rel attribute which triggers rule number 5. See
-      // http://www.w3.org/TR/rdfa-syntax/#sec_5.5.
-      $comment_count_attributes['rel'] = '';
-      $variables['content']['links']['comment']['#links']['comment-comments']['attributes'] += $comment_count_attributes;
-    }
-    // In full node view, the number of comments is not displayed by
-    // node.tpl.php so it is expressed in RDFa in the <head> tag of the HTML
-    // page.
-    if ($variables['page'] && user_access('access comments')) {
-      $element = array(
-        '#tag' => 'meta',
-        '#attributes' => array(
-          'about' => $variables['node_url'],
+  if (isset($variables['node']->comment_count) &&
+      !empty($variables['node']->rdf_mapping['comment_count']['predicates']) &&
+      user_access('access comments')) {
+    // Adds RDFa markup for the comment count near the node title as metadata.
+    $variables['title_suffix']['rdf_meta_comment_count'] = array(
+      '#theme' => 'rdf_metadata',
+      '#metadata' => array(
+        array(
           'property' => $variables['node']->rdf_mapping['comment_count']['predicates'],
           'content' => $variables['node']->comment_count,
           'datatype' => $variables['node']->rdf_mapping['comment_count']['datatype'],
         ),
-      );
-      drupal_add_html_head($element, 'rdf_node_comment_count');
-    }
+      ),
+    );
   }
 }
 
@@ -865,9 +859,9 @@ function theme_rdf_metadata($variables) {
   $output = '';
   foreach ($variables['metadata'] as $attributes) {
     // Add a class so that developers viewing the HTML source can see why there
-    // are empty <span> tags in the document. The class can also be used to set
-    // a CSS display:none rule in a theme where empty spans affect display.
+    // are empty <span> tags in the document.
     $attributes['class'][] = 'rdf-meta';
+    $attributes['class'][] = 'element-hidden';
     // The XHTML+RDFa doctype allows either <span></span> or <span /> syntax to
     // be used, but for maximum browser compatibility, W3C recommends the
     // former when serving pages using the text/html media type, see
