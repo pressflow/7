@@ -985,9 +985,10 @@ function drupal_http_request($url, array $options = array()) {
   $response = preg_split("/\r\n|\n|\r/", $response);
 
   // Parse the response status line.
-  list($protocol, $code, $status_message) = explode(' ', trim(array_shift($response)), 3);
-  $result->protocol = $protocol;
-  $result->status_message = $status_message;
+  $response_status_array = _drupal_parse_response_status(trim(array_shift($response)));
+  $result->protocol = $response_status_array['http_version'];
+  $result->status_message = $response_status_array['reason_phrase'];
+  $code = $response_status_array['response_code'];
 
   $result->headers = array();
 
@@ -1078,9 +1079,40 @@ function drupal_http_request($url, array $options = array()) {
       }
       break;
     default:
-      $result->error = $status_message;
+      $result->error = $result->status_message;
   }
 
+  return $result;
+}
+
+/**
+ * Splits an HTTP response status line into components.
+ *
+ * See the @link http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html status line definition @endlink
+ * in RFC 2616.
+ *
+ * @param string $respone
+ *   The response status line, for example 'HTTP/1.1 500 Internal Server Error'.
+ *
+ * @return array
+ *   Keyed array containing the component parts. If the response is malformed,
+ *   all possible parts will be extracted. 'reason_phrase' could be empty.
+ *   Possible keys:
+ *   - 'http_version'
+ *   - 'response_code'
+ *   - 'reason_phrase'
+ */
+function _drupal_parse_response_status($response) {
+  $response_array = explode(' ', trim($response), 3);
+  // Set up empty values.
+  $result = array(
+    'reason_phrase' => '',
+  );
+  $result['http_version'] = $response_array[0];
+  $result['response_code'] = $response_array[1];
+  if (isset($response_array[2])) {
+    $result['reason_phrase'] = $response_array[2];
+  }
   return $result;
 }
 
@@ -3442,7 +3474,11 @@ function drupal_pre_render_styles($elements) {
             $import_batch = array_slice($import, 0, 31);
             $import = array_slice($import, 31);
             $element = $style_element_defaults;
-            $element['#value'] = implode("\n", $import_batch);
+            // This simplifies the JavaScript regex, allowing each line
+            // (separated by \n) to be treated as a completely different string.
+            // This means that we can use ^ and $ on one line at a time, and not
+            // worry about style tags since they'll never match the regex.
+            $element['#value'] = "\n" . implode("\n", $import_batch) . "\n";
             $element['#attributes']['media'] = $group['media'];
             $element['#browsers'] = $group['browsers'];
             $elements[] = $element;
@@ -3768,7 +3804,7 @@ function _drupal_load_stylesheet($matches) {
   // Alter all internal url() paths. Leave external paths alone. We don't need
   // to normalize absolute paths here (i.e. remove folder/... segments) because
   // that will be done later.
-  return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)/i', 'url(\1'. $directory, $file);
+  return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)([^\'")]+)([\'"]?)\s*\)/i', 'url(\1' . $directory . '\2\3)', $file);
 }
 
 /**
@@ -5273,8 +5309,6 @@ function drupal_cron_run() {
     foreach ($queues as $queue_name => $info) {
       DrupalQueue::get($queue_name)->createQueue();
     }
-    // Register shutdown callback.
-    drupal_register_shutdown_function('drupal_cron_cleanup');
 
     // Iterate through the modules calling their cron handlers (if any):
     foreach (module_implements('cron') as $module) {
@@ -5326,10 +5360,13 @@ function drupal_cron_run() {
 }
 
 /**
- * Shutdown function: Performs cron cleanup.
+ * DEPRECATED: Shutdown function: Performs cron cleanup.
  *
- * @see drupal_cron_run()
- * @see drupal_register_shutdown_function()
+ * This function is deprecated because the 'cron_semaphore' variable it
+ * references no longer exists. It is therefore no longer used as a shutdown
+ * function by Drupal core.
+ *
+ * @deprecated
  */
 function drupal_cron_cleanup() {
   // See if the semaphore is still locked.
@@ -6654,10 +6691,10 @@ function drupal_array_set_nested_value(array &$array, array $parents, $value, $f
  * $value = drupal_array_get_nested_value($form, $parents);
  * @endcode
  *
- * The return value will be NULL, regardless of whether the actual value is NULL
- * or whether the requested key does not exist. If it is required to know
- * whether the nested array key actually exists, pass a third argument that is
- * altered by reference:
+ * A return value of NULL is ambiguous, and can mean either that the requested
+ * key does not exist, or that the actual value is NULL. If it is required to
+ * know whether the nested array key actually exists, pass a third argument that
+ * is altered by reference:
  * @code
  * $key_exists = NULL;
  * $value = drupal_array_get_nested_value($form, $parents, $key_exists);
@@ -7914,6 +7951,56 @@ function entity_prepare_view($entity_type, $entities, $langcode = NULL) {
   if (!empty($prepare)) {
     module_invoke_all('entity_prepare_view', $prepare, $entity_type, $langcode);
   }
+}
+
+/**
+ * Invoke hook_entity_view_mode_alter().
+ *
+ * If adding a new entity similar to nodes, comments or users, you should invoke
+ * this function during the ENTITY_build_content() or ENTITY_view_multiple()
+ * phases of rendering to allow other modules to alter the view mode during this
+ * phase. This function needs to be called before field_attach_prepare_view() to
+ * ensure that the correct content is loaded by field API.
+ *
+ * @param $entity_type
+ *   The type of entity, i.e. 'node', 'user'.
+ * @param $entities
+ *   The entity objects which are being prepared for view, keyed by object ID.
+ * @param $view_mode
+ *   The original view mode e.g. 'full', 'teaser'...
+ * @param $langcode
+ *   (optional) A language code to be used for rendering. Defaults to the global
+ *   content language of the current request.
+ * @return
+ *   An associative array with arrays of entities keyed by view mode.
+ *
+ * @see hook_entity_view_mode_alter()
+ */
+function entity_view_mode_prepare($entity_type, $entities, $view_mode, $langcode = NULL) {
+  if (!isset($langcode)) {
+    $langcode = $GLOBALS['language_content']->language;
+  }
+
+  // To ensure hooks are never run after field_attach_prepare_view() only
+  // process items without the entity_view_prepared flag.
+  $entities_by_view_mode = array();
+  foreach ($entities as $id => $entity) {
+    $entity_view_mode = $view_mode;
+    if (empty($entity->entity_view_prepared)) {
+
+      // Allow modules to change the view mode.
+      $context = array(
+        'entity_type' => $entity_type,
+        'entity' => $entity,
+        'langcode' => $langcode,
+      );
+      drupal_alter('entity_view_mode', $entity_view_mode, $context);
+    }
+
+    $entities_by_view_mode[$entity_view_mode][$id] = $entity;
+  }
+
+  return $entities_by_view_mode;
 }
 
 /**
