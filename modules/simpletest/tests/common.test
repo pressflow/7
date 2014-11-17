@@ -661,6 +661,10 @@ class CascadingStylesheetsTestCase extends DrupalWebTestCase {
     drupal_add_css($css);
     $styles = drupal_get_css();
     $this->assertTrue(strpos($styles, $css) > 0, 'Rendered CSS includes the added stylesheet.');
+    // Verify that newlines are properly added inside style tags.
+    $query_string = variable_get('css_js_query_string', '0');
+    $css_processed = "<style type=\"text/css\" media=\"all\">\n@import url(\"" . check_plain(file_create_url($css)) . "?" . $query_string ."\");\n</style>";
+    $this->assertEqual(trim($styles), $css_processed, 'Rendered CSS includes newlines inside style tags for JavaScript use.');
   }
 
   /**
@@ -914,9 +918,10 @@ class CascadingStylesheetsUnitTest extends DrupalUnitTestCase {
    * Tests basic CSS loading with and without optimization via drupal_load_stylesheet().
    *
    * Known tests:
-   * - Retain white-space in selectors. (http://drupal.org/node/472820)
-   * - Proper URLs in imported files. (http://drupal.org/node/265719)
-   * - Retain pseudo-selectors. (http://drupal.org/node/460448)
+   * - Retain white-space in selectors. (https://drupal.org/node/472820)
+   * - Proper URLs in imported files. (https://drupal.org/node/265719)
+   * - Retain pseudo-selectors. (https://drupal.org/node/460448)
+   * - Don't adjust data URIs. (https://drupal.org/node/2142441)
    */
   function testLoadCssBasic() {
     // Array of files to test living in 'simpletest/files/css_test_files/'.
@@ -1079,6 +1084,74 @@ class DrupalHTTPRequestTestCase extends DrupalWebTestCase {
     // Request front page and check for matching Content-Language.
     $request = drupal_http_request(url('<front>', array('absolute' => TRUE)));
     $this->assertEqual($request->headers['content-language'], 'de', 'Content-Language HTTP header is German.');
+  }
+}
+
+/**
+ * Tests parsing of the HTTP response status line.
+ */
+class DrupalHTTPResponseStatusLineTest extends DrupalUnitTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Drupal HTTP request response status parsing',
+      'description' => 'Perform unit tests on _drupal_parse_response_status().',
+      'group' => 'System',
+    );
+  }
+
+  /**
+   * Tests parsing HTTP response status line.
+   */
+  public function testStatusLine() {
+    // Grab the big array of test data from statusLineData().
+    $data = $this->statusLineData();
+    foreach($data as $test_case) {
+      $test_data = array_shift($test_case);
+      $expected = array_shift($test_case);
+
+      $outcome = _drupal_parse_response_status($test_data);
+
+      foreach(array_keys($expected) as $key) {
+        $this->assertIdentical($outcome[$key], $expected[$key]);
+      }
+    }
+  }
+
+  /**
+   * Data provider for testStatusLine().
+   *
+   * @return array
+   *   Test data.
+   */
+  protected function statusLineData() {
+    return array(
+      array(
+        'HTTP/1.1 200 OK',
+        array(
+          'http_version' => 'HTTP/1.1',
+          'response_code' => '200',
+          'reason_phrase' => 'OK',
+        ),
+      ),
+      // Data set with no reason phrase.
+      array(
+        'HTTP/1.1 200',
+        array(
+          'http_version' => 'HTTP/1.1',
+          'response_code' => '200',
+          'reason_phrase' => '',
+        ),
+      ),
+      // Arbitrary strings.
+      array(
+        'version code multi word explanation',
+        array(
+          'http_version' => 'version',
+          'response_code' => 'code',
+          'reason_phrase' => 'multi word explanation',
+        ),
+      ),
+    );
   }
 }
 

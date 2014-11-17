@@ -704,7 +704,6 @@ ul.links {
 }
 .comment .submitted .comment-permalink {
   font-size: 0.786em;
-  text-transform: lowercase;
 }
 .comment .content {
   font-size: 0.929em;
@@ -1324,14 +1323,6 @@ input.form-button-disabled:active,
 }
 .form-disabled label {
   color: #717171;
-}
-
-/* Animated throbber */
-html.js input.form-autocomplete {
-  background-position: 100% 4px; /* LTR */
-}
-html.js input.throbbing {
-  background-position: 100% -16px; /* LTR */
 }
 
 /* Comment form */
