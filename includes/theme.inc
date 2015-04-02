@@ -1691,7 +1691,7 @@ function theme_status_messages($variables) {
       $output .= " </ul>\n";
     }
     else {
-      $output .= $messages[0];
+      $output .= reset($messages);
     }
     $output .= "</div>\n";
   }
@@ -2621,6 +2621,9 @@ function template_preprocess_page(&$variables) {
   foreach (system_region_list($GLOBALS['theme']) as $region_key => $region_name) {
     if (!isset($variables['page'][$region_key])) {
       $variables['page'][$region_key] = array();
+    }
+    if ($region_content = drupal_get_region_content($region_key)) {
+      $variables['page'][$region_key][]['#markup'] = $region_content;
     }
   }
 
