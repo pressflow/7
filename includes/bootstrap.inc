@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.35');
+define('VERSION', '7.36');
 
 /**
  * Core API compatibility.
@@ -529,9 +529,8 @@ function timer_stop($name) {
  * Returns the appropriate configuration directory.
  *
  * Returns the configuration path based on the site's hostname, port, and
- * pathname. Uses find_conf_path() to find the current configuration directory.
- * See default.settings.php for examples on how the URL is converted to a
- * directory.
+ * pathname. See default.settings.php for examples on how the URL is converted
+ * to a directory.
  *
  * @param bool $require_settings
  *   Only configuration directories with an existing settings.php file
@@ -1262,23 +1261,10 @@ function drupal_send_headers($default_headers = array(), $only_default = FALSE) 
  * fresh page on every request. This prevents authenticated users from seeing
  * locally cached pages.
  *
- * Also give each page a unique ETag. This will force clients to include both
- * an If-Modified-Since header and an If-None-Match header when doing
- * conditional requests for the page (required by RFC 2616, section 13.3.4),
- * making the validation more robust. This is a workaround for a bug in Mozilla
- * Firefox that is triggered when Drupal's caching is enabled and the user
- * accesses Drupal via an HTTP proxy (see
- * https://bugzilla.mozilla.org/show_bug.cgi?id=269303): When an authenticated
- * user requests a page, and then logs out and requests the same page again,
- * Firefox may send a conditional request based on the page that was cached
- * locally when the user was logged in. If this page did not have an ETag
- * header, the request only contains an If-Modified-Since header. The date will
- * be recent, because with authenticated users the Last-Modified header always
- * refers to the time of the request. If the user accesses Drupal via a proxy
- * server, and the proxy already has a cached copy of the anonymous page with an
- * older Last-Modified date, the proxy may respond with 304 Not Modified, making
- * the client think that the anonymous and authenticated pageviews are
- * identical.
+ * ETag and Last-Modified headers are not set per default for authenticated
+ * users so that browsers do not send If-Modified-Since headers from
+ * authenticated user pages. drupal_serve_page_from_cache() will set appropriate
+ * ETag and Last-Modified headers for cached pages.
  *
  * @see drupal_page_set_cache()
  */
@@ -1291,9 +1277,7 @@ function drupal_page_header() {
 
   $default_headers = array(
     'Expires' => 'Sun, 19 Nov 1978 05:00:00 GMT',
-    'Last-Modified' => gmdate(DATE_RFC7231, REQUEST_TIME),
     'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
-    'ETag' => '"' . REQUEST_TIME . '"',
   );
   drupal_send_headers($default_headers);
 }
@@ -1675,14 +1659,14 @@ function request_uri() {
  *   information about the passed-in exception is used.
  * @param $variables
  *   Array of variables to replace in the message on display. Defaults to the
- *   return value of drupal_decode_exception().
+ *   return value of _drupal_decode_exception().
  * @param $severity
  *   The severity of the message, as per RFC 3164.
  * @param $link
  *   A link to associate with the message.
  *
  * @see watchdog()
- * @see drupal_decode_exception()
+ * @see _drupal_decode_exception()
  */
 function watchdog_exception($type, Exception $exception, $message = NULL, $variables = array(), $severity = WATCHDOG_ERROR, $link = NULL) {
 
@@ -2680,7 +2664,7 @@ function drupal_installation_attempted() {
  *
  * This would include implementations of hook_install(), which could run
  * during the Drupal installation phase, and might also be run during
- * non-installation time, such as while installing the module from the the
+ * non-installation time, such as while installing the module from the
  * module administration page.
  *
  * Example usage:
@@ -3209,10 +3193,13 @@ function _registry_check_code($type, $name = NULL) {
   // This function may get called when the default database is not active, but
   // there is no reason we'd ever want to not use the default database for
   // this query.
-  $file = Database::getConnection('default', 'default')->query("SELECT filename FROM {registry} WHERE name = :name AND type = :type", array(
-      ':name' => $name,
-      ':type' => $type,
-    ))
+  $file = Database::getConnection('default', 'default')
+    ->select('registry', 'r', array('target' => 'default'))
+    ->fields('r', array('filename'))
+    // Use LIKE here to make the query case-insensitive.
+    ->condition('r.name', db_like($name), 'LIKE')
+    ->condition('r.type', $type)
+    ->execute()
     ->fetchField();
 
   // Flag that we've run a lookup query and need to update the cache.
@@ -3549,4 +3536,35 @@ function drupal_check_memory_limit($required, $memory_limit = NULL) {
   // - The memory limit is set to unlimited (-1).
   // - The memory limit is greater than the memory required for the operation.
   return ((!$memory_limit) || ($memory_limit == -1) || (parse_size($memory_limit) >= parse_size($required)));
+}
+
+/**
+ * Invalidates a PHP file from any active opcode caches.
+ *
+ * If the opcode cache does not support the invalidation of individual files,
+ * the entire cache will be flushed.
+ *
+ * @param string $filepath
+ *   The absolute path of the PHP file to invalidate.
+ */
+function drupal_clear_opcode_cache($filepath) {
+  if (!defined('PHP_VERSION_ID') || PHP_VERSION_ID < 50300) {
+    // Below PHP 5.3, clearstatcache does not accept any function parameters.
+    clearstatcache();
+  }
+  else {
+    clearstatcache(TRUE, $filepath);
+  }
+
+  // Zend OPcache.
+  if (function_exists('opcache_invalidate')) {
+    opcache_invalidate($filepath, TRUE);
+  }
+  // APC.
+  if (function_exists('apc_delete_file')) {
+    // apc_delete_file() throws a PHP warning in case the specified file was
+    // not compiled yet.
+    // @see http://php.net/apc-delete-file
+    @apc_delete_file($filepath);
+  }
 }

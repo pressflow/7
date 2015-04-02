@@ -153,6 +153,8 @@ class BootstrapPageCacheTestCase extends DrupalWebTestCase {
     $this->drupalGet('', array(), array('If-Modified-Since: ' . $last_modified, 'If-None-Match: ' . $etag));
     $this->assertResponse(200, 'Conditional request returned 200 OK for authenticated user.');
     $this->assertFalse($this->drupalGetHeader('X-Drupal-Cache'), 'Absense of Page was not cached.');
+    $this->assertFalse($this->drupalGetHeader('ETag'), 'ETag HTTP headers are not present for logged in users.');
+    $this->assertFalse($this->drupalGetHeader('Last-Modified'), 'Last-Modified HTTP headers are not present for logged in users.');
   }
 
   /**
@@ -282,6 +284,35 @@ class BootstrapVariableTestCase extends DrupalWebTestCase {
 
     // Tests passing 5 to the default parameter.
     $this->assertIdentical(5, variable_get('simpletest_bootstrap_variable_test', 5), 'The default variable parameter is passed through correctly.');
+  }
+
+}
+
+/**
+ * Tests the auto-loading behavior of the code registry.
+ */
+class BootstrapAutoloadTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Code registry',
+      'description' => 'Test that the code registry functions correctly.',
+      'group' => 'Bootstrap',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('drupal_autoload_test');
+  }
+
+  /**
+   * Tests that autoloader name matching is not case sensitive.
+   */
+  function testAutoloadCase() {
+    // Test interface autoloader.
+    $this->assertTrue(drupal_autoload_interface('drupalautoloadtestinterface'), 'drupal_autoload_interface() recognizes <em>DrupalAutoloadTestInterface</em> in lower case.');
+    // Test class autoloader.
+    $this->assertTrue(drupal_autoload_class('drupalautoloadtestclass'), 'drupal_autoload_class() recognizes <em>DrupalAutoloadTestClass</em> in lower case.');
   }
 
 }

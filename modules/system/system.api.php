@@ -606,8 +606,8 @@ function hook_cron() {
  * @return
  *   An associative array where the key is the queue name and the value is
  *   again an associative array. Possible keys are:
- *   - 'worker callback': The name of the function to call. It will be called
- *     with one argument, the item created via DrupalQueue::createItem().
+ *   - 'worker callback': A PHP callable to call that is an implementation of
+ *     callback_queue_worker().
  *   - 'time': (optional) How much time Drupal should spend on calling this
  *     worker in seconds. Defaults to 15.
  *   - 'skip on cron': (optional) Set to TRUE to avoid being processed during
@@ -641,6 +641,28 @@ function hook_cron_queue_info_alter(&$queues) {
   // This site has many feeds so let's spend 90 seconds on each cron run
   // updating feeds instead of the default 60.
   $queues['aggregator_feeds']['time'] = 90;
+}
+
+/**
+ * Work on a single queue item.
+ *
+ * Callback for hook_queue_info().
+ *
+ * @param $queue_item_data
+ *   The data that was passed to DrupalQueue::createItem() when the item was
+ *   queued.
+ *
+ * @throws \Exception
+ *   The worker callback may throw an exception to indicate there was a problem.
+ *   The cron process will log the exception, and leave the item in the queue to
+ *   be processed again later.
+ *
+ * @see drupal_cron_run()
+ */
+function callback_queue_worker($queue_item_data) {
+  $node = node_load($queue_item_data);
+  $node->title = 'Updated title';
+  $node->save();
 }
 
 /**
@@ -1910,9 +1932,8 @@ function hook_init() {
 /**
  * Define image toolkits provided by this module.
  *
- * The file which includes each toolkit's functions must be declared as part of
- * the files array in the module .info file so that the registry will find and
- * parse it.
+ * The file which includes each toolkit's functions must be included in this
+ * hook.
  *
  * The toolkit's functions must be named image_toolkitname_operation().
  * where the operation may be:

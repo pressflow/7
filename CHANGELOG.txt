@@ -1,4 +1,62 @@
 
+Drupal 7.36, 2015-04-01
+-----------------------
+- Added a 'file_public_schema' variable which allows modules that define
+  publicly-accessible streams in hook_stream_wrappers() to bypass file download
+  access checks when processing managed file upload fields.
+- Fixed a bug that caused database query tags not to be added to search-related
+  database queries under many circumstances, and which prevented the
+  corresponding hook_query_TAG_alter() implementations from being called.
+- Fixed the "for" attribute on managed file upload field labels to improve
+  accessibility (minor markup change).
+- Added a 'javascript_always_use_jquery' variable which can be set to FALSE by
+  sites that may not need jQuery loaded on all pages, and a 'requires_jquery'
+  option to drupal_add_js() which modules can set to FALSE when adding
+  JavaScript files that have no dependency on jQuery (API addition:
+  https://www.drupal.org/node/2462717).
+- Fixed incorrect foreign keys in the User module's role_permission and
+  users_roles database tables.
+- Changed permission descriptions throughout Drupal core to consistently link
+  to relevant administrative pages, regardless of whether the user viewing the
+  Permissions page can view the page being linked to (minor UI change).
+- Fixed the drupal_add_region_content() function so that it actually adds
+  content to the page.
+- Added an 'image_suppress_itok_output' variable to allow sites already using
+  the existing 'image_allow_insecure_derivatives' variable to also prevent
+  security tokens from appearing in image derivative URLs.
+- Fixed double-escaping of theme names in the Block module administrative
+  interface (minor string change).
+- Added basic support for Xdebug when running automated tests.
+- Fixed a bug which caused previewing a node to remove elements from the node
+  being edited. With this fix, calling node_preview() will no longer modify the
+  passed-in node object (minor API change).
+- Added a user_has_role() function to check whether a user has a particular
+  role (API addition: https://www.drupal.org/node/2462411).
+- Fixed installation failures when an opcode cache is enabled.
+- Fixed a bug in the Drupal 6 to Drupal 7 upgrade path which caused private
+  files to be inaccessible.
+- Fixed a bug in the Drupal 6 to Drupal 7 upgrade path which caused user
+  pictures to be lost.
+- Fixed missing language code in hook_field_attach_view_alter() when it is
+  invoked from field_view_field().
+- Stopped sending ETag and Last-Modified headers for uncached page requests,
+  since they break caching for certain Varnish and Nginx configurations.
+- Changed the Simpletest module to allow PSR-4 test classes to be used in
+  Drupal 7.
+- Fixed a fatal error that occurred when using the Comment module's "Unpublish
+  comment containing keyword(s)" action.
+- Changed the "lang" attribute on language links to "xml:lang" so it validates
+  as XHTML (minor markup change).
+- Prevented the form API from allowing arrays to be submitted for various form
+  elements, such as textfields, textareas, and password fields (API change:
+  https://www.drupal.org/node/2462723).
+- Fixed a bug in the Contact module which caused the global user object to have
+  the incorrect name and e-mail address during the remainder of the page
+  request after the contact form is submitted.
+- Numerous small bug fixes.
+- Numerous API documentation improvements.
+- Additional automated test coverage.
+
 Drupal 7.35, 2015-03-18
 ----------------------
 - Fixed security issues (multiple vulnerabilities). See SA-CORE-2015-001.
