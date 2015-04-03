@@ -3834,8 +3834,8 @@ function _drupal_load_stylesheet($matches) {
  */
 function drupal_clear_css_cache() {
   variable_del('drupal_css_cache_files');
-  drupal_aggregated_file_flush('css');
   file_scan_directory('public://css', '/.*/', array('callback' => 'drupal_delete_file_if_stale'));
+  drupal_aggregated_file_flush('css');
 }
 
 /**
@@ -5111,8 +5111,8 @@ function drupal_build_js_cache($files) {
 function drupal_clear_js_cache() {
   variable_del('javascript_parsed');
   variable_del('drupal_js_cache_files');
-  drupal_aggregated_file_flush('js');
   file_scan_directory('public://js', '/.*/', array('callback' => 'drupal_delete_file_if_stale'));
+  drupal_aggregated_file_flush('js');
 }
 
 /**
