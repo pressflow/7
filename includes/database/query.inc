@@ -930,6 +930,38 @@ class TruncateQuery extends Query {
    *   Return value is dependent on the database type.
    */
   public function execute() {
+    // Keep track of the tables that will be truncated.
+    $tables_to_truncate = &drupal_static('TruncateQuery::execute');
+
+    // NoOp if table is empty.
+    $table_name = $this->connection->escapeTable($this->table);
+    $query = db_select($table_name);
+    $query->addExpression('COUNT(*)');
+    $count = $query->execute()->fetchField();
+    if ($count == 0) {
+      return $this;
+    }
+
+    // Renaming tables is a lot faster than truncate. Rename and then Truncate
+    // at the end of the request if not in a transaction.
+    if (!$this->connection->inTransaction()) {
+      // Make sure truncated table exists before trying to use it.
+      db_query('CREATE TABLE IF NOT EXISTS {' . $table_name . '__truncated_table} LIKE {' . $table_name . '};');
+
+      // Remove any values from the *__truncated_table if needed.
+      $query = db_select($table_name . '__truncated_table');
+      $query->addExpression('COUNT(*)');
+      $count = $query->execute()->fetchField();
+      if ($count > 0) {
+        db_query('TRUNCATE {' . $table_name . '__truncated_table}');
+      }
+
+      // Run TRUNCATE at the end of this request.
+      if (empty($tables_to_truncate[$table_name . '__truncated_table'])) {
+        $tables_to_truncate[$table_name . '__truncated_table'] = TRUE;
+        drupal_register_shutdown_function('db_query', 'TRUNCATE {' . $table_name . '__truncated_table}');
+      }
+    }
     return $this->connection->query((string) $this, array(), $this->queryOptions);
   }
 
@@ -952,7 +984,10 @@ class TruncateQuery extends Query {
       return $comments . 'DELETE FROM {' . $this->connection->escapeTable($this->table) . '}';
     }
     else {
-      return $comments . 'TRUNCATE {' . $this->connection->escapeTable($this->table) . '} ';
+      $table_name = $this->connection->escapeTable($this->table);
+      // Use rename so the truncate happens at the end of this request.
+      $sql = $comments . 'RENAME TABLE {' . $table_name . '} TO {' . $table_name . '__temp_table}, {' . $table_name . '__truncated_table} TO {' . $table_name . '}, {' . $table_name . '__temp_table} TO {' . $table_name . '__truncated_table} ; ';
+      return $sql;
     }
   }
 }

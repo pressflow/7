@@ -1,0 +1,692 @@
+{
+    "name": "DD1 website",
+    "drush_recipes_api": "1.0",
+    "weight": "0",
+    "core": "7",
+    "recipe": [
+        {
+            "command": "en",
+            "arguments": [
+                "block",
+                "admin_devel",
+                "advagg",
+                "advagg_bundler",
+                "advagg_mod",
+                "backports",
+                "bulk_export",
+                "coffee",
+                "context",
+                "contextual",
+                "ctools",
+                "defaultconfig",
+                "devel_generate",
+                "drupal_org_user_data",
+                "ds_ui",
+                "eck",
+                "elmslnorg_doud",
+                "entity",
+                "entity_modified",
+                "eva",
+                "fences",
+                "field",
+                "field_collection",
+                "field_collection_fieldset",
+                "field_collection_table",
+                "field_sql_storage",
+                "field_ui",
+                "file",
+                "filter",
+                "image",
+                "imageinfo_cache",
+                "jquery_update",
+                "libraries",
+                "list",
+                "machine_name",
+                "menu",
+                "module_filter",
+                "node",
+                "number",
+                "options",
+                "paranoia",
+                "profiler_builder",
+                "registry_autoload",
+                "render_cache",
+                "render_cache_block",
+                "render_cache_comment",
+                "render_cache_context",
+                "render_cache_ds",
+                "render_cache_entity",
+                "render_cache_node",
+                "render_cache_page",
+                "render_cache_views",
+                "seckit",
+                "simplehtmldom",
+                "slack",
+                "system",
+                "text",
+                "update",
+                "user",
+                "views_data_export",
+                "views_ui",
+                "ds",
+                "field_group",
+                "views",
+                "features",
+                "admin_menu",
+                "admin_menu_toolbar",
+                "minimal",
+                "bartik",
+                "bootstrap",
+                "dblog",
+                "httprl",
+                "devel"
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"additional_settings__active_tab_things\\\", 'edit-submission');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_display\\\", 'plid');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_show_all\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_cache_level\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_combine_css_media\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_core_groups\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_cron_frequency\\\", '86400');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_css_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_enabled\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_gzip\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter_value\\\", '4095');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_js_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_defer\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_head_extract\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_preprocess\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_inline_pages\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_inline_settings\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_async\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_async_shim\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_defer\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer_inline_alter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_head_extract\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_preprocess\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_remove_unused\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_unified_multisite_dir\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_remove_missing_files_from_db_time\\\", '1209600');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_remove_old_unused_aggregates_time\\\", '3888000');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_use_httprl\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"anonymous\\\", 'Guest');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"block_cache\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"cache_flush_cache_drupal_org_user_data\\\", 1413809609);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"contact_default_status\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"context_block_rebuild_needed\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_default_timezone\\\", 'America\/New_York');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"default_nodes_main\\\", '10');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_api_url\\\", 'api.drupal.org');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_error_handlers\\\", array (\n  1 =\u003e '1',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_execution\\\", '5');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_krumo_skin\\\", 'default');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_memory\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_page_alter\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_query_display\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_query_sort\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_raw_names\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_rebuild_theme_registry\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_redirect_page\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_use_uncompressed_jquery\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_directory\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_enabled\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_url\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"dev_timer\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_node_things_default\\\", array (\n  'default' =\u003e \n  array (\n    'use' =\u003e '1',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'body' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'field_drush_recipes_api' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_variables\\\", array (\n  0 =\u003e 'display_cache_node_things_default',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"drupal_http_request_function\\\", 'httprl_override_core');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"drupal_stale_file_threshold\\\", '2592000');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"eck_clear_caches\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entitycache_enabled\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entity_cache_tables_created\\\", array (\n  'field_collection' =\u003e \n  array (\n    0 =\u003e 'cache_entity_field_collection_item',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"error_level\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"features_ignored_orphans\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"features_semaphore\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_node__things\\\", array (\n  'view_modes' =\u003e \n  array (\n    'teaser' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'full' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'rss' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'revision' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n      'title' =\u003e \n      array (\n        'weight' =\u003e '-5',\n      ),\n    ),\n    'display' =\u003e \n    array (\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"filter_fallback_format\\\", 'plain_text');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_background_callback\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_connect_timeout\\\", '5');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_dns_timeout\\\", '5');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_global_timeout\\\", '120');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_server_addr\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_timeout\\\", '30');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"httprl_ttfb_timeout\\\", '20');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_compression_type\\\", 'min');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_jquery_admin_version\\\", '1.5');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_jquery_cdn\\\", 'none');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_jquery_version\\\", '1.5');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_expanded\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_options_things\\\", array (\n  0 =\u003e 'devel',\n  1 =\u003e 'features',\n  2 =\u003e 'main-menu',\n  3 =\u003e 'management',\n  4 =\u003e 'navigation',\n  5 =\u003e 'user-menu',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_parent_things\\\", 'main-menu:0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"module_filter_recent_modules\\\", array (\n  'advagg_bundler' =\u003e 1413817964,\n  'advagg_mod' =\u003e 1413817964,\n  'advagg' =\u003e 1413817964,\n  'expire' =\u003e 1413817964,\n  'eck_entitycache' =\u003e 1413817964,\n  'rc_site' =\u003e 1413817964,\n  'render_cache_block' =\u003e 1413828793,\n  'render_cache_page' =\u003e 1413828793,\n  'render_cache' =\u003e 1413828793,\n  'imageinfo_cache' =\u003e 1413818183,\n  'display_cache' =\u003e 1413827252,\n  'render_cache_entity' =\u003e 1413828793,\n  'render_cache_comment' =\u003e 1413828793,\n  'render_cache_context' =\u003e 1413828793,\n  'render_cache_ds' =\u003e 1413828793,\n  'render_cache_node' =\u003e 1413828793,\n  'render_cache_views' =\u003e 1413828793,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_options_things\\\", array (\n  0 =\u003e 'status',\n  1 =\u003e 'promote',\n  2 =\u003e 'sticky',\n  3 =\u003e 'revision',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_preview_things\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_submitted_things\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"path_alias_whitelist\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"save_continue_things\\\", 'Save and add fields');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"site_403\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"site_404\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"site_frontpage\\\", 'drupal_org_user_data');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"theme_default\\\", 'bartik');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_email_verification\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_register\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"views_defaults\\\", array (\n  'frontpage' =\u003e false,\n));\""
+            ]
+        },
+        {
+            "command": "en",
+            "arguments": [
+                "drush_recipes_entity"
+            ]
+        },
+        {
+            "command": "en",
+            "arguments": [
+                "drush_recipes_service"
+            ]
+        }
+    ],
+    "metadata": {
+        "type": "testing",
+        "description": "Blueprint of dd1.btopro.net",
+        "version": "0.0",
+        "author": "btopro"
+    }
+}

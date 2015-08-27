@@ -1,0 +1,22 @@
+#What are Recipes?
+
+#Recipes are a series of drush commands that act as one. It is a format that allows for drush call chaining and other utilities. Learn more at https://www.drupal.org/project/drush_recipes
+
+#How to use
+#Run the following:
+
+drush dl drush_recipes
+drush cc drush
+drush cook performance_kitchen_sink --y --dr-locations={PATHTOREPO}/_RECIPES
+
+#To create site like dd1
+drush si minimal --y
+drush cook dd1 --y --dr-locations={PATHTOREPO}/_RECIPES
+
+#To create site like dd2
+drush si minimal --y
+drush cook dd2 --y --dr-locations={PATHTOREPO}/_RECIPES
+
+#To create site like dd3
+drush si minimal --y
+drush cook dd3 --y --dr-locations={PATHTOREPO}/_RECIPES

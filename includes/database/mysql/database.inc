@@ -6,6 +6,258 @@
  */
 
 /**
+ * Return a mysqli object that is ready to be used.
+ *
+ * @param bool $create_new_connection
+ *   If FALSE, it will not create a new connection (cache_get).
+ * @param string $table
+ *   Database table name.
+ * @param array $cids
+ *   An array of cache IDs.
+ *
+ * @return mysqli
+ *   returns a mysqli object on success or FALSE on failure.
+ */
+function drupal_mysqli_get_object($create_new_connection = TRUE, $table = '', array $cids = array()) {
+  // Bail out if not mysql that is async capable.
+  $mysqli = FALSE;
+  if (   !function_exists('mysqli_init')
+      || !defined('MYSQLI_ASYNC')
+      || Database::getConnection()->databaseType() !== 'mysql'
+    ) {
+    return $mysqli;
+  }
+
+  // Use the advanced drupal_static() pattern for $db_info.
+  static $db_info;
+  if (!isset($db_info)) {
+    $db_info = &drupal_static(__FUNCTION__);
+
+    // 'var' stores variables about the mysql database.
+    if (!isset($db_info['var'])) {
+      $db_info['var'] = db_query("SELECT @@global.max_connections AS max_connections, @@global.wait_timeout AS wait_timeout")->fetchAssoc();
+      // Limit total DB connections to 90 or 80% of the max; whatever is smaller.
+      $db_info['var']['max_connections'] = floor(min(90, $db_info['var']['max_connections'] * 0.8));
+      // Set wait timeout to 90 seconds or the current value; whatever is smaller.
+      $db_info['var']['wait_timeout'] = min(90, $db_info['var']['wait_timeout']);
+      $db_info['var']['connect_timeout'] = 2;
+      $db_info['var']['innodb_lock_wait_timeout'] = 2;
+    }
+
+    // 'connection' stores the info needed to make a new connection to mysql.
+    if (!isset($db_info['connection'])) {
+      // Use default connection info.
+      $connection_info = Database::getConnectionInfo();
+      $db_info['connection'] = reset($connection_info);
+      if (empty($db_info['connection']['port'])) {
+        $db_info['connection']['port'] = NULL;
+      }
+      else {
+        $db_info['connection']['port'] = (int)$db_info['connection']['port'];
+      }
+      if (empty($db_info['connection']['unix_socket'])) {
+        $db_info['connection']['unix_socket'] = NULL;
+      }
+      if (empty($db_info['connection']['password'])) {
+        $db_info['connection']['password'] = NULL;
+      }
+    }
+
+    // 'pool' stores a collection of open mysql connections.
+    if (!isset($db_info['pool'])) {
+      $db_info['pool'] = array();
+    }
+  }
+
+  // Make sure a table/cid pair is used by the same connection in order to avoid
+  // record level deadlocks.
+  if (empty($create_new_connection) && !empty($db_info['pool']) && !empty($table) && !empty($cids)) {
+    $match = FALSE;
+    foreach ($db_info['pool'] as $values) {
+      // Match the table.
+      if ($table == $values[1]) {
+        // Match the cache id.
+        $intersect = array_intersect($cids, $values[2]);
+        if (!empty($intersect)) {
+          // Wait for the query to finish.
+          @$values[0]->reap_async_query();
+          $match = $values[0];
+        }
+      }
+    }
+    if (!empty($match)) {
+      drupal_mysqli_ping($match, $db_info, $table, $cids);
+      return $match;
+    }
+  }
+
+  // Try to reuse an old connection.
+  if (!empty($db_info['pool'])) {
+    $mysqli_pool = array();
+    foreach ($db_info['pool'] as $values) {
+      $mysqli_pool[] = $values[0];
+    }
+    $links = $errors = $reject = $mysqli_pool;
+    $ready = @mysqli_poll($links, $errors, $reject, 0, 1);
+    if (!empty($reject)) {
+      // A non async connection is ready; use the first one.
+      $mysqli = reset($reject);
+      drupal_mysqli_ping($mysqli, $db_info, $table, $cids);
+      return $mysqli;
+    }
+    if (!empty($links)) {
+      // An async connection is ready; use the first one.
+      $mysqli = reset($links);
+      @$mysqli->reap_async_query();
+      drupal_mysqli_ping($mysqli, $db_info, $table, $cids);
+      return $mysqli;
+    }
+
+    // All current connections are in use.
+    if (count($db_info['pool']) < 6) {
+      // Create a new DB connection.
+      $mysqli = drupal_mysqli_new_connection($db_info);
+      if (!empty($mysqli)) {
+        $db_info['pool'][$mysqli->thread_id] = array($mysqli, $table, $cids);
+      }
+      return $mysqli;
+    }
+    else {
+      // Wait for a db connection to be ready.
+      $ready = FALSE;
+      while (!$ready) {
+        $mysqli_pool = array();
+        foreach ($db_info['pool'] as $values) {
+          $mysqli_pool[] = $values[0];
+        }
+        $links = $errors = $reject = $mysqli_pool;
+        $ready = @mysqli_poll($links, $errors, $reject, 0, 5000);
+        if (!$ready && !empty($reject)) {
+          $ready = TRUE;
+        }
+      }
+      if (!empty($reject)) {
+        // A non async connection is ready; use the first one.
+        $mysqli = reset($reject);
+        drupal_mysqli_ping($mysqli, $db_info, $table, $cids);
+        return $mysqli;
+      }
+      if (!empty($links)) {
+        // An async connection is ready; use the first one.
+        $mysqli = reset($links);
+        @$mysqli->reap_async_query();
+        drupal_mysqli_ping($mysqli, $db_info, $table, $cids);
+        return $mysqli;
+      }
+    }
+  }
+
+  if (empty($db_info['pool']) && $create_new_connection) {
+    $mysqli = drupal_mysqli_new_connection($db_info);
+    if (!empty($mysqli)) {
+      $db_info['pool'][$mysqli->thread_id] = array($mysqli, $table, $cids);
+    }
+  }
+  return $mysqli;
+}
+
+/**
+ * Create a new MySQLi connection.
+ *
+ * @param array $db_info
+ *   static var from 'drupal_mysqli_get_object'.
+ *
+ * @return mysqli
+ *   returns a mysqli object on success or FALSE on failure.
+ */
+function drupal_mysqli_new_connection(array $db_info) {
+  // Get Threads_connected, max_connections, & wait_timeout from the DB.
+  $db_info['var'] += db_query("SHOW STATUS WHERE Variable_name LIKE 'Threads_connected'")->fetchAllKeyed();
+  $db_info['var'] = array_change_key_case($db_info['var'], CASE_LOWER);
+  if ($db_info['var']['threads_connected'] >= $db_info['var']['max_connections']) {
+    // Bail out if the DB has a lot of connections currently.
+    return FALSE;
+  }
+
+  // Create new MySQL connection.
+  $mysqli = new mysqli();
+  $mysqli->options(MYSQLI_OPT_CONNECT_TIMEOUT, $db_info['var']['connect_timeout']);
+  @$mysqli->real_connect($db_info['connection']['host'], $db_info['connection']['username'], $db_info['connection']['password'], $db_info['connection']['database'], $db_info['connection']['port'], $db_info['connection']['unix_socket']);
+
+  if (empty($mysqli) || !empty($mysqli->connect_errno) || empty($mysqli->host_info)) {
+    // Bail out if the DB didn't connect.
+    return FALSE;
+  }
+  if (!empty($mysqli)) {
+    // Get connection ready for usage.
+    $mysqli->set_charset('utf8');
+    if (!isset($db_info['connection']['init_commands'])) {
+      $db_info['connection']['init_commands'] = array();
+    }
+    $db_info['connection']['init_commands'] += array(
+      'sql_mode' => "SET sql_mode = 'ANSI,STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER'",
+      'isolation' => "SET SESSION tx_isolation='READ-UNCOMMITTED'",
+      'wait_timeout' => 'SET SESSION wait_timeout = ' . $db_info['var']['wait_timeout'],
+      'innodb_lock' => 'SET SESSION innodb_lock_wait_timeout = ' . $db_info['var']['innodb_lock_wait_timeout'],
+    );
+    foreach ($db_info['connection']['init_commands'] as $query) {
+      $good = $mysqli->query($query);
+      if (empty($good)) {
+        // Bail out if the these queries failed.
+        return FALSE;
+      }
+    }
+  }
+  // Make sure all async queries finish before php is killed.
+  // Using a nested register_shutdown_function makes sure this is executed last.
+  register_shutdown_function('register_shutdown_function', 'drupal_mysqli_close', $mysqli);
+  return $mysqli;
+}
+
+/**
+ * Reconnect to the MySQL database if the connection has been lost.
+ *
+ * Will also record the table and cache ID used.
+ *
+ * @param mysqli $mysqli
+ *   mysqlnd connection object. Passed by reference.
+ * @param array $db_info
+ *   static var from 'drupal_mysqli_get_object'. Passed by reference.
+ * @param string $table
+ *   table name.
+ * @param array $cids
+ *   An array of cache IDs.
+ */
+function drupal_mysqli_ping(mysqli &$mysqli, array &$db_info, $table, array $cids) {
+  $timeout_check = max(1, $db_info['var']['wait_timeout'] - 5);
+  $timer = ceil(timer_read('page') / 1000);
+  if ($timer > $timeout_check) {
+    if (empty($mysqli) || !@$mysqli->ping()) {
+      unset($db_info['pool'][$mysqli->thread_id]);
+      $mysqli = drupal_mysqli_new_connection($db_info);
+      if (empty($mysqli) || !@$mysqli->ping()) {
+        $mysqli = FALSE;
+      }
+    }
+  }
+  if (!empty($mysqli)) {
+    $db_info['pool'][$mysqli->thread_id] = array($mysqli, $table, $cids);
+  }
+}
+
+/**
+ * Wait for the result from an async query and then unset the connection.
+ *
+ * @param mysqli $mysqli
+ *   mysqlnd connection object. Passed by reference.
+ */
+function drupal_mysqli_close(mysqli &$mysqli) {
+  @$mysqli->reap_async_query();
+  unset($mysqli);
+  $mysqli = FALSE;
+}
+
+/**
  * @addtogroup database
  * @{
  */

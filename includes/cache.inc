@@ -345,7 +345,37 @@ class DrupalDatabaseCache implements DrupalCacheInterface {
       // is used here only due to the performance overhead we would incur
       // otherwise. When serving an uncached page, the overhead of using
       // db_select() is a much smaller proportion of the request.
-      $result = db_query('SELECT cid, data, created, expire, serialized FROM {' . db_escape_table($this->bin) . '} WHERE cid IN (:cids)', array(':cids' => $cids));
+      if (function_exists('drupal_mysqli_get_object')) {
+        $mysqli = drupal_mysqli_get_object(FALSE, $this->bin, $cids);
+      }
+      if (!empty($mysqli)) {
+        // Build query.
+        $escaped_table = db_escape_table($this->bin);
+        $query = "SELECT cid, data, created, expire, serialized FROM {{$escaped_table}}";
+        $query = Database::getConnection()->prefixTables($query);
+        foreach ($cids as $cid) {
+          $escaped_cids[] = $mysqli->real_escape_string($cid);
+        }
+        $escaped_cids = "'" . implode("', '", $escaped_cids) . "'";
+        $query .= " WHERE cid IN ({$escaped_cids})";
+        // Run query.
+        $results = $mysqli->query($query);
+
+        // Convert to an object to mirror db_query.
+        $result = array();
+        if (!empty($results) && is_object($results) && method_exists($results, 'fetch_object')) {
+          while ($obj = $results->fetch_object()) {
+            $result[] = $obj;
+          }
+        }
+        $result = (object) $result;
+        if (!empty($results)) {
+          $results->close();
+        }
+      }
+      else {
+        $result = db_query('SELECT cid, data, created, expire, serialized FROM {' . db_escape_table($this->bin) . '} WHERE cid IN (:cids)', array(':cids' => $cids));
+      }
       $cache = array();
       foreach ($result as $item) {
         $item = $this->prepareItem($item);
@@ -460,10 +490,27 @@ class DrupalDatabaseCache implements DrupalCacheInterface {
     }
 
     try {
-      db_merge($this->bin)
-        ->key(array('cid' => $cid))
-        ->fields($fields)
-        ->execute();
+      if (function_exists('drupal_mysqli_get_object')) {
+        $mysqli = drupal_mysqli_get_object(TRUE, $this->bin, array($cid));
+      }
+      if (empty($mysqli)) {
+        db_merge($this->bin)
+          ->key(array('cid' => $cid))
+          ->fields($fields)
+          ->execute();
+      }
+      else {
+        // Build query.
+        $escaped_table = db_escape_table($this->bin);
+        $escaped_cid = $mysqli->real_escape_string($cid);
+        $escaped_data = $mysqli->real_escape_string($fields['data']);
+        $query = "INSERT INTO {{$escaped_table}}";
+        $query = Database::getConnection()->prefixTables($query);
+        $query .= " (cid, serialized, created, expire, data) VALUES ('$escaped_cid', '{$fields['serialized']}', '{$fields['created']}', '{$fields['expire']}', '$escaped_data')";
+        $query .= " ON DUPLICATE KEY UPDATE serialized = '{$fields['serialized']}', created = '{$fields['created']}', expire = '{$fields['expire']}', data = '$escaped_data'";
+        // Run query.
+        $results = $mysqli->query($query, MYSQLI_ASYNC);
+      }
     }
     catch (Exception $e) {
       // The database may not be available, so we'll ignore cache_set requests.

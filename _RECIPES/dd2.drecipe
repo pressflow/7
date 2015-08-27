@@ -1,0 +1,1035 @@
+{
+    "name": "DD2 website",
+    "drush_recipes_api": "1.0",
+    "weight": "0",
+    "core": "7",
+    "recipe": [
+        {
+            "command": "en",
+            "arguments": [
+                "strongarm",
+                "block",
+                "advagg",
+                "advagg_bundler",
+                "advagg_mod",
+                "atjs",
+                "chain_menu_access",
+                "cis_connector",
+                "cis_section",
+                "codefilter",
+                "context",
+                "ctools",
+                "date",
+                "date_api",
+                "date_popup",
+                "date_views",
+                "defaultconfig",
+                "devel_generate",
+                "devel_node_access",
+                "diff",
+                "elements",
+                "entity",
+                "entityreference",
+                "entityreference_prepopulate",
+                "entity_modified",
+                "entity_quote",
+                "entity_token",
+                "features_override",
+                "field",
+                "field_sql_storage",
+                "field_ui",
+                "file",
+                "filter",
+                "flag",
+                "harmony_access",
+                "harmony_access_og",
+                "harmony_atjs",
+                "harmony_core",
+                "harmony_default_permissions",
+                "harmony_forum_access",
+                "harmony_search",
+                "image",
+                "imageinfo_cache",
+                "inline_entity_form",
+                "jquery_update",
+                "libraries",
+                "link",
+                "list",
+                "machine_name",
+                "markdown",
+                "menu",
+                "module_filter",
+                "node",
+                "number",
+                "og",
+                "og_access",
+                "og_context",
+                "og_field_access",
+                "og_ui",
+                "options",
+                "options_element",
+                "path",
+                "placeholder",
+                "profiler_builder",
+                "registry_autoload",
+                "render_cache",
+                "render_cache_block",
+                "render_cache_comment",
+                "render_cache_context",
+                "render_cache_entity",
+                "render_cache_node",
+                "render_cache_page",
+                "render_cache_views",
+                "search_api",
+                "short_scale_formatter",
+                "taxonomy",
+                "taxonomy_display",
+                "text",
+                "token",
+                "transliteration",
+                "update",
+                "user",
+                "uuid",
+                "viewfield",
+                "views_bulk_operations",
+                "views_load_more",
+                "views_ui",
+                "wysiwyg_filter",
+                "field_group",
+                "nodeformcols",
+                "pathauto",
+                "prepopulate",
+                "views",
+                "features",
+                "admin_menu",
+                "better_formats",
+                "admin_menu_toolbar",
+                "minimal",
+                "bartik",
+                "zurb_foundation",
+                "dblog",
+                "httprl",
+                "system",
+                "devel"
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_cache_client\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_components\\\", array (\n  'admin_menu.icon' =\u003e true,\n  'admin_menu.menu' =\u003e true,\n  'admin_menu.search' =\u003e true,\n  'admin_menu.users' =\u003e true,\n  'admin_menu.account' =\u003e true,\n  'shortcut.links' =\u003e false,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_devel_modules_skip\\\", array (\n  'admin_devel' =\u003e 0,\n  'context_ui' =\u003e 0,\n  'devel' =\u003e 0,\n  'devel_node_access' =\u003e 0,\n  'field_ui' =\u003e 0,\n  'views_ui' =\u003e 0,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_display\\\", 'plid');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_margin_top\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_position_fixed\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_show_all\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_tweak_modules\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_tweak_permissions\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"admin_menu_tweak_tabs\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+                "arguments": [
+                "\"variable_set(\\\"admin_theme\\\", 'rubik');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_cache_level\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_combine_css_media\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_core_groups\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_cron_frequency\\\", '86400');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_css_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_enabled\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_gzip\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_ie_css_selector_limiter_value\\\", '4095');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_js_fix_type\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_defer\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_head_extract\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_css_preprocess\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_inline_pages\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_inline_settings\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_browsers\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_external\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_adjust_sort_inline\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_async\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_async_shim\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_defer\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_footer_inline_alter\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_head_extract\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_preprocess\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_js_remove_unused\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_mod_unified_multisite_dir\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_remove_missing_files_from_db_time\\\", '1209600');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_remove_old_unused_aggregates_time\\\", '3888000');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advagg_use_httprl\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"advanced__active_tab\\\", 'edit-plugins');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"anonymous\\\", 'Anonymous');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"block_cache\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"clone_menu_links\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"clone_method\\\", 'prepopulate');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"clone_nodes_without_confirm\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"clone_reset_section\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"clone_use_node_type_name\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"comment_anonymous_section\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"comment_default_mode_section\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"comment_default_per_page_section\\\", '50');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"comment_form_location_section\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"comment_preview_section\\\", '1');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"comment_section\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"comment_subject_field_section\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"context_block_rebuild_needed\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_api_version\\\", '7.2');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_default_timezone\\\", 'America\/New_York');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_day_format_without_year\\\", 'l, F j');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_day_format_with_year\\\", 'l, F j, Y');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_month_format_without_year\\\", 'F');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_month_format_with_year\\\", 'F Y');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_week_format_without_year\\\", 'F j');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"date_views_week_format_with_year\\\", 'F j, Y');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"default_nodes_main\\\", '10');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_api_url\\\", 'api.drupal.org');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_error_handlers\\\", array (\n  1 =\u003e '1',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_execution\\\", '5');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_krumo_skin\\\", 'default');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_memory\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_node_access_debug_mode\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_node_access_user_ajax\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_page_alter\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_query_display\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_query_sort\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_raw_names\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_rebuild_theme_registry\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_redirect_page\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_use_uncompressed_jquery\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_directory\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_enabled\\\", false);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"devel_xhprof_url\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"dev_timer\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_harmony_post_harmony_post_default\\\", array (\n  'default' =\u003e \n  array (\n    'use' =\u003e '1',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'field_harmony_text' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_node_section_default\\\", array (\n  'default' =\u003e \n  array (\n    'use' =\u003e '1',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'field_section_id' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n  'field_cis_active' =\u003e \n  array (\n    'override' =\u003e '2',\n    'page_granularity' =\u003e '0',\n    'user_granularity' =\u003e '1',\n    'granularity' =\u003e '1',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"display_cache_variables\\\", array (\n  0 =\u003e 'display_cache_harmony_post_harmony_post_default',\n  1 =\u003e 'display_cache_node_section_default',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"drupal_stale_file_threshold\\\", '2592000');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entitycache_enabled\\\", true);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entityreference:base-tables\\\", array (\n  'flagging' =\u003e \n  array (\n    0 =\u003e 'flagging',\n    1 =\u003e 'flagging_id',\n  ),\n  'harmony_thread' =\u003e \n  array (\n    0 =\u003e 'harmony_thread',\n    1 =\u003e 'thread_id',\n  ),\n  'harmony_thread_type' =\u003e \n  array (\n    0 =\u003e 'harmony_thread_type',\n    1 =\u003e 'id',\n  ),\n  'harmony_post' =\u003e \n  array (\n    0 =\u003e 'harmony_post',\n    1 =\u003e 'post_id',\n  ),\n  'node' =\u003e \n  array (\n    0 =\u003e 'node',\n    1 =\u003e 'nid',\n  ),\n  'og_membership_type' =\u003e \n  array (\n    0 =\u003e 'og_membership_type',\n    1 =\u003e 'id',\n  ),\n  'og_membership' =\u003e \n  array (\n    0 =\u003e 'og_membership',\n    1 =\u003e 'id',\n  ),\n  'search_api_server' =\u003e \n  array (\n    0 =\u003e 'search_api_server',\n    1 =\u003e 'id',\n  ),\n  'search_api_index' =\u003e \n  array (\n    0 =\u003e 'search_api_index',\n    1 =\u003e 'id',\n  ),\n  'file' =\u003e \n  array (\n    0 =\u003e 'file_managed',\n    1 =\u003e 'fid',\n  ),\n  'taxonomy_term' =\u003e \n  array (\n    0 =\u003e 'taxonomy_term_data',\n    1 =\u003e 'tid',\n  ),\n  'taxonomy_vocabulary' =\u003e \n  array (\n    0 =\u003e 'taxonomy_vocabulary',\n    1 =\u003e 'vid',\n  ),\n  'user' =\u003e \n  array (\n    0 =\u003e 'users',\n    1 =\u003e 'uid',\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"entity_cache_tables_created\\\", NULL);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"features_ignored_orphans\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"features_semaphore\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_harmony_post__harmony_post\\\", array (\n  'view_modes' =\u003e \n  array (\n    'full' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'inline_reply' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'diff_standard' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'token' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n      'harmony_core_post_revision_display_log' =\u003e \n      array (\n        'default' =\u003e \n        array (\n          'weight' =\u003e '5',\n          'visible' =\u003e true,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_node__section\\\", array (\n  'view_modes' =\u003e \n  array (\n    'teaser' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'full' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'rss' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'token' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'diff_standard' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n      'title' =\u003e \n      array (\n        'weight' =\u003e '-5',\n      ),\n    ),\n    'display' =\u003e \n    array (\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_taxonomy_term__harmony_category\\\", array (\n  'view_modes' =\u003e \n  array (\n    'full' =\u003e \n    array (\n      'custom_settings' =\u003e true,\n    ),\n    'diff_standard' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n    'token' =\u003e \n    array (\n      'custom_settings' =\u003e false,\n    ),\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n      'metatags' =\u003e \n      array (\n        'weight' =\u003e '6',\n      ),\n      'path' =\u003e \n      array (\n        'weight' =\u003e '5',\n      ),\n      'name' =\u003e \n      array (\n        'weight' =\u003e '0',\n      ),\n      'description' =\u003e \n      array (\n        'weight' =\u003e '1',\n      ),\n    ),\n    'display' =\u003e \n    array (\n      'description' =\u003e \n      array (\n        'default' =\u003e \n        array (\n          'weight' =\u003e '0',\n          'visible' =\u003e true,\n        ),\n        'full' =\u003e \n        array (\n          'weight' =\u003e '0',\n          'visible' =\u003e true,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"field_bundle_settings_user__user\\\", array (\n  'view_modes' =\u003e \n  array (\n  ),\n  'extra_fields' =\u003e \n  array (\n    'form' =\u003e \n    array (\n    ),\n    'display' =\u003e \n    array (\n      'summary' =\u003e \n      array (\n        'harmony_user_post_profile' =\u003e \n        array (\n          'weight' =\u003e '2',\n          'visible' =\u003e false,\n        ),\n      ),\n      'name' =\u003e \n      array (\n        'harmony_user_post_profile' =\u003e \n        array (\n          'weight' =\u003e '11',\n          'visible' =\u003e true,\n        ),\n      ),\n      'user_picture' =\u003e \n      array (\n        'harmony_user_post_profile' =\u003e \n        array (\n          'weight' =\u003e '10',\n          'visible' =\u003e true,\n        ),\n      ),\n      'username' =\u003e \n      array (\n        'harmony_user_post_profile' =\u003e \n        array (\n          'weight' =\u003e '11',\n          'visible' =\u003e true,\n        ),\n      ),\n      'harmony_core_user_name' =\u003e \n      array (\n        'harmony_user_post_profile' =\u003e \n        array (\n          'weight' =\u003e '11',\n          'visible' =\u003e true,\n        ),\n      ),\n    ),\n  ),\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"filter_fallback_format\\\", 'plain_text');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"harmony_core_bundle__open_discussion__reply_as_new_thread\\\", '2');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"harmony_core_bundle__open_discussion__show_anon_reply_links\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_disable_on_demand_generation\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_getimagesize\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"imageinfo_cache_use_httprl\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_compression_type\\\", 'min');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_jquery_admin_version\\\", 'default');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_jquery_cdn\\\", 'google');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"jquery_update_jquery_version\\\", '1.8');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"lti_tool_provider_og_group_mapping\\\", array (\n  'context_id' =\u003e 'field_section_id',\n  'context_label' =\u003e 'none',\n  'context_title' =\u003e 'title',\n  'context_type' =\u003e 'none',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"lti_tool_provider_og_group_mapping_bundle\\\", 'node:section');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"lti_tool_provider_og_group_role_array\\\", array (\n  'Learner' =\u003e '2',\n  'Instructor' =\u003e '2',\n  'ContentDeveloper' =\u003e '2',\n  'Member' =\u003e '2',\n  'Manager' =\u003e '2',\n  'Mentor' =\u003e '2',\n  'Administrator' =\u003e '2',\n  'TeachingAssistant' =\u003e '2',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"lti_tool_provider_og_provision_groups\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_expanded\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_options_section\\\", array (\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"menu_parent_section\\\", 'main-menu:0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"module_filter_recent_modules\\\", array (\n  'apc' =\u003e 1413817797,\n  'entitycache' =\u003e 1413817797,\n  'advagg_bundler' =\u003e 1413817993,\n  'advagg_mod' =\u003e 1413817993,\n  'advagg' =\u003e 1413817993,\n  'imageinfo_cache' =\u003e 1413818162,\n  'display_cache' =\u003e 1413827615,\n  'render_cache' =\u003e 1413827496,\n  'render_cache_block' =\u003e 1413827496,\n  'render_cache_entity' =\u003e 1413827496,\n  'render_cache_page' =\u003e 1413827496,\n  'render_cache_comment' =\u003e 1413827496,\n  'render_cache_node' =\u003e 1413827496,\n  'render_cache_views' =\u003e 1413827496,\n  'render_cache_context' =\u003e 1413827615,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_admin_theme\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_options_section\\\", array (\n  0 =\u003e 'status',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_preview_section\\\", '0');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"node_submitted_section\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_blog_pattern\\\", 'blogs\/[user:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_forum_pattern\\\", '[term:vocabulary]\/[term:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_harmony_core_pattern\\\", 'thread\/[harmony_thread:thread-id]\/[harmony_thread:title]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_node_pattern\\\", 'content\/[node:title]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_punctuation_hyphen\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_taxonomy_term_harmony_category_pattern\\\", 'category\/[term:parents:join-path]\/[term:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_taxonomy_term_pattern\\\", '[term:vocabulary]\/[term:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"pathauto_user_pattern\\\", 'users\/[user:name]');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"path_alias_whitelist\\\", array (\n  'node' =\u003e true,\n  'taxonomy' =\u003e true,\n  'thread' =\u003e true,\n  'user' =\u003e true,\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"site_403\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"site_404\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"site_frontpage\\\", 'forum');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"theme_default\\\", 'bartik');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"theme_zurb_foundation_settings\\\", array (\n  'toggle_logo' =\u003e 1,\n  'toggle_name' =\u003e 1,\n  'toggle_slogan' =\u003e 1,\n  'toggle_node_user_picture' =\u003e 1,\n  'toggle_comment_user_picture' =\u003e 1,\n  'toggle_comment_user_verification' =\u003e 1,\n  'toggle_favicon' =\u003e 1,\n  'toggle_main_menu' =\u003e 1,\n  'toggle_secondary_menu' =\u003e 1,\n  'default_logo' =\u003e 1,\n  'logo_path' =\u003e '',\n  'logo_upload' =\u003e '',\n  'default_favicon' =\u003e 1,\n  'favicon_path' =\u003e '',\n  'favicon_upload' =\u003e '',\n  'zurb_foundation_top_bar_enable' =\u003e '1',\n  'zurb_foundation_top_bar_grid' =\u003e 1,\n  'zurb_foundation_top_bar_sticky' =\u003e 1,\n  'zurb_foundation_top_bar_scrolltop' =\u003e 1,\n  'zurb_foundation_top_bar_is_hover' =\u003e 1,\n  'zurb_foundation_top_bar_menu_text' =\u003e 'Menu',\n  'zurb_foundation_top_bar_custom_back_text' =\u003e 1,\n  'zurb_foundation_top_bar_back_text' =\u003e 'Back',\n  'zurb_foundation_tooltip_enable' =\u003e 1,\n  'zurb_foundation_tooltip_position' =\u003e 'tip-top',\n  'zurb_foundation_tooltip_mode' =\u003e 'text',\n  'zurb_foundation_tooltip_text' =\u003e 'More information?',\n  'zurb_foundation_tooltip_touch' =\u003e 0,\n  'zurb_foundation_disable_core_css' =\u003e 0,\n  'zurb_foundation_html_tags' =\u003e 1,\n  'zurb_foundation_messages_modal' =\u003e 0,\n  'zurb_foundation_pager_center' =\u003e 1,\n  'zurb_foundation__active_tab' =\u003e 'edit-topbar',\n));\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"transliteration_file_lowercase\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"transliteration_file_uploads\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"transliteration_file_uploads_display_name\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_cancel_method\\\", 'user_cancel_block');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_email_verification\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_mail_status_blocked_notify\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_mail_status_canceled_notify\\\", 0);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_pictures\\\", 1);\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_default\\\", '');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_dimensions\\\", '85x85');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_file_size\\\", '30');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_guidelines\\\", 'Nothing stupid please');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_path\\\", 'pictures');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_picture_style\\\", 'harmony-32-32');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_register\\\", '2');\""
+            ]
+        },
+        {
+            "command": "ev",
+            "arguments": [
+                "\"variable_set(\\\"user_signatures\\\", 0);\""
+            ]
+        }
+    ],
+    "metadata": {
+        "type": "testing",
+        "description": "Blueprint of dd2.btopro.net",
+        "version": "0.0",
+        "author": "btopro"
+    }
+}
