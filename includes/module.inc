@@ -227,6 +227,10 @@ function system_list_reset() {
   drupal_static_reset('list_themes');
   cache_clear_all('bootstrap_modules', 'cache_bootstrap');
   cache_clear_all('system_list', 'cache_bootstrap');
+
+  // Clean up the bootstrap file scan cache.
+  drupal_static_reset('_drupal_file_scan_cache');
+  cache_clear_all('_drupal_file_scan_cache', 'cache_bootstrap');
 }
 
 /**
@@ -936,7 +940,9 @@ function module_invoke($module, $hook) {
  *
  * @return
  *   An array of return values of the hook implementations. If modules return
- *   arrays from their implementations, those are merged into one array.
+ *   arrays from their implementations, those are merged into one array
+ *   recursively. Note: integer keys in arrays will be lost, as the merge is
+ *   done using array_merge_recursive().
  *
  * @see drupal_alter()
  */

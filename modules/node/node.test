@@ -1518,7 +1518,7 @@ class NodeTypeTestCase extends DrupalWebTestCase {
    * Tests editing a node type using the UI.
    */
   function testNodeTypeEditing() {
-    $web_user = $this->drupalCreateUser(array('bypass node access', 'administer content types'));
+    $web_user = $this->drupalCreateUser(array('bypass node access', 'administer content types', 'administer fields'));
     $this->drupalLogin($web_user);
 
     $instance = field_info_instance('node', 'body', 'page');
@@ -2768,8 +2768,8 @@ class NodeAccessFieldTestCase extends NodeWebTestCase {
     node_access_rebuild();
 
     // Create some users.
-    $this->admin_user = $this->drupalCreateUser(array('access content', 'bypass node access'));
-    $this->content_admin_user = $this->drupalCreateUser(array('access content', 'administer content types'));
+    $this->admin_user = $this->drupalCreateUser(array('access content', 'bypass node access', 'administer fields'));
+    $this->content_admin_user = $this->drupalCreateUser(array('access content', 'administer content types', 'administer fields'));
 
     // Add a custom field to the page content type.
     $this->field_name = drupal_strtolower($this->randomName() . '_field_name');
@@ -2985,4 +2985,37 @@ class NodePageCacheTest extends NodeWebTestCase {
     $this->drupalGet($node_path);
     $this->assertResponse(404);
   }
+}
+
+/**
+ * Tests that multi-byte UTF-8 characters are stored and retrieved correctly.
+ */
+class NodeMultiByteUtf8Test extends NodeWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Multi-byte UTF-8',
+      'description' => 'Test that multi-byte UTF-8 characters are stored and retrieved correctly.',
+      'group' => 'Node',
+    );
+  }
+
+  /**
+   * Tests that multi-byte UTF-8 characters are stored and retrieved correctly.
+   */
+  public function testMultiByteUtf8() {
+    $connection = Database::getConnection();
+    // On MySQL, this test will only run if 'charset' is set to 'utf8mb4' in
+    // settings.php.
+    if (!($connection->utf8mb4IsSupported() && $connection->utf8mb4IsActive())) {
+      return;
+    }
+    $title = '🐙';
+    $this->assertTrue(drupal_strlen($title, 'utf-8') < strlen($title), 'Title has multi-byte characters.');
+    $node = $this->drupalCreateNode(array('title' => $title));
+    $this->drupalGet('node/' . $node->nid);
+    $result = $this->xpath('//h1[@id="page-title"]');
+    $this->assertEqual(trim((string) $result[0]), $title, 'The passed title was returned.');
+  }
+
 }

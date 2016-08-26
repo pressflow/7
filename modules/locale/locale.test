@@ -2237,6 +2237,37 @@ class LocaleContentFunctionalTest extends DrupalWebTestCase {
 
     $this->drupalLogout();
   }
+
+  /**
+   * Verifies that nodes may be created with different languages.
+   */
+  function testNodeCreationWithLanguage() {
+    // Create an admin user and log them in.
+    $perms = array(
+      // Standard node permissions.
+      'create page content',
+      'administer content types',
+      'administer nodes',
+      'bypass node access',
+      // Locale.
+      'administer languages',
+    );
+    $web_user = $this->drupalCreateUser($perms);
+    $this->drupalLogin($web_user);
+
+    // Create some test nodes using different langcodes.
+    foreach (array(LANGUAGE_NONE, 'en', 'fr') as $langcode) {
+      $node_args = array(
+        'type' => 'page',
+        'promote' => 1,
+        'language' => $langcode,
+      );
+      $node = $this->drupalCreateNode($node_args);
+      $node_reloaded = node_load($node->nid, NULL, TRUE);
+      $this->assertEqual($node_reloaded->language, $langcode, format_string('The language code of the node was successfully set to @langcode.', array('@langcode' => $langcode)));
+    }
+  }
+
 }
 
 /**
@@ -2628,6 +2659,68 @@ class LocaleUrlRewritingTest extends DrupalWebTestCase {
     }
     $this->drupalGet("$prefix/$path");
     $this->assertResponse(404, $message2);
+  }
+
+  /**
+   * Check URL rewriting when using a domain name and a non-standard port.
+   */
+  function testDomainNameNegotiationPort() {
+    $language_domain = 'example.fr';
+    $edit = array(
+      'locale_language_negotiation_url_part' => 1,
+    );
+    $this->drupalPost('admin/config/regional/language/configure/url', $edit, t('Save configuration'));
+    $edit = array(
+      'prefix' => '',
+      'domain' => $language_domain
+    );
+    $this->drupalPost('admin/config/regional/language/edit/fr', $edit, t('Save language'));
+
+    // Enable domain configuration.
+    variable_set('locale_language_negotiation_url_part', LOCALE_LANGUAGE_NEGOTIATION_URL_DOMAIN);
+
+    // Reset static caching.
+    drupal_static_reset('language_list');
+    drupal_static_reset('language_url_outbound_alter');
+    drupal_static_reset('language_url_rewrite_url');
+
+    // In case index.php is part of the URLs, we need to adapt the asserted
+    // URLs as well.
+    $index_php = strpos(url('', array('absolute' => TRUE)), 'index.php') !== FALSE;
+
+    // Remember current HTTP_HOST.
+    $http_host = $_SERVER['HTTP_HOST'];
+
+    // Fake a different port.
+    $_SERVER['HTTP_HOST'] .= ':88';
+
+    // Create an absolute French link.
+    $languages = language_list();
+    $language = $languages['fr'];
+    $url = url('', array(
+      'absolute' => TRUE,
+      'language' => $language
+    ));
+
+    $expected = 'http://example.fr:88/';
+    $expected .= $index_php ? 'index.php/' : '';
+
+    $this->assertEqual($url, $expected, 'The right port is used.');
+
+    // If we set the port explicitly in url(), it should not be overriden.
+    $url = url('', array(
+      'absolute' => TRUE,
+      'language' => $language,
+      'base_url' => $GLOBALS['base_url'] . ':90',
+    ));
+
+    $expected = 'http://example.fr:90/';
+    $expected .= $index_php ? 'index.php/' : '';
+
+    $this->assertEqual($url, $expected, 'A given port is not overriden.');
+
+    // Restore HTTP_HOST.
+    $_SERVER['HTTP_HOST'] = $http_host;
   }
 }
 
@@ -3139,5 +3232,48 @@ class LocaleCSSAlterTest extends DrupalWebTestCase {
     $this->assertRaw('@import url("' . $base_url . '/modules/system/system.base.css' . $query_string . '");' . "\n" . '@import url("' . $base_url . '/modules/system/system.base-rtl.css' . $query_string . '");' . "\n", 'CSS: system.base-rtl.css is added directly after system.base.css.');
     $this->assertRaw('@import url("' . $base_url . '/modules/system/system.menus.css' . $query_string . '");' . "\n" . '@import url("' . $base_url . '/modules/system/system.menus-rtl.css' . $query_string . '");' . "\n", 'CSS: system.menus-rtl.css is added directly after system.menus.css.');
     $this->assertRaw('@import url("' . $base_url . '/modules/system/system.messages.css' . $query_string . '");' . "\n" . '@import url("' . $base_url . '/modules/system/system.messages-rtl.css' . $query_string . '");' . "\n", 'CSS: system.messages-rtl.css is added directly after system.messages.css.');
+  }
+}
+
+/**
+ * Tests locale translation safe string handling.
+ */
+class LocaleStringIsSafeTest extends DrupalWebTestCase {
+  public static function getInfo() {
+    return array(
+      'name' => 'Test if a string is safe',
+      'description' => 'Tests locale translation safe string handling.',
+      'group' => 'Locale',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('locale');
+  }
+
+  /**
+   * Tests for locale_string_is_safe().
+   */
+  public function testLocaleStringIsSafe() {
+    // Check a translatable string without HTML.
+    $string = 'Hello world!';
+    $result = locale_string_is_safe($string);
+    $this->assertTrue($result);
+
+    // Check a translatable string which includes trustable HTML.
+    $string = 'Hello <strong>world</strong>!';
+    $result = locale_string_is_safe($string);
+    $this->assertTrue($result);
+
+    // Check an untranslatable string which includes untrustable HTML (according
+    // to the locale_string_is_safe() function definition).
+    $string = 'Hello <img src="world.png" alt="world" />!';
+    $result = locale_string_is_safe($string);
+    $this->assertFalse($result);
+
+    // Check a translatable string which includes a token in an href attribute.
+    $string = 'Hi <a href="[current-user:url]">user</a>';
+    $result = locale_string_is_safe($string);
+    $this->assertTrue($result);
   }
 }

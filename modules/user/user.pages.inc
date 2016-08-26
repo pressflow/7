@@ -44,6 +44,12 @@ function user_pass() {
     $form['name']['#value'] = $user->mail;
     $form['mail'] = array(
       '#prefix' => '<p>',
+      // As of https://www.drupal.org/node/889772 the user no longer must log
+      // out (if they are still logged in when using the password reset link,
+      // they will be logged out automatically then), but this text is kept as
+      // is to avoid breaking translations as well as to encourage the user to
+      // log out manually at a time of their own choosing (when it will not
+      // interrupt anything else they may have been in the middle of doing).
       '#markup' =>  t('Password reset instructions will be mailed to %email. You must log out to use the password reset link in the e-mail.', array('%email' => $user->mail)),
       '#suffix' => '</p>',
     );
@@ -54,6 +60,11 @@ function user_pass() {
   return $form;
 }
 
+/**
+ * Form validation handler for user_pass().
+ *
+ * @see user_pass_submit()
+ */
 function user_pass_validate($form, &$form_state) {
   $name = trim($form_state['values']['name']);
   // Try to load by email.
@@ -72,6 +83,11 @@ function user_pass_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Form submission handler for user_pass().
+ *
+ * @see user_pass_validate()
+ */
 function user_pass_submit($form, &$form_state) {
   global $language;
 
@@ -96,9 +112,20 @@ function user_pass_reset($form, &$form_state, $uid, $timestamp, $hashed_pass, $a
   // When processing the one-time login link, we have to make sure that a user
   // isn't already logged in.
   if ($user->uid) {
-    // The existing user is already logged in.
+    // The existing user is already logged in. Log them out and reload the
+    // current page so the password reset process can continue.
     if ($user->uid == $uid) {
-      drupal_set_message(t('You are logged in as %user. <a href="!user_edit">Change your password.</a>', array('%user' => $user->name, '!user_edit' => url("user/$user->uid/edit"))));
+      // Preserve the current destination (if any) and ensure the redirect goes
+      // back to the current page; any custom destination set in
+      // hook_user_logout() and intended for regular logouts would not be
+      // appropriate here.
+      $destination = array();
+      if (isset($_GET['destination'])) {
+        $destination = drupal_get_destination();
+      }
+      user_logout_current_user();
+      unset($_GET['destination']);
+      drupal_goto(current_path(), array('query' => drupal_get_query_parameters() + $destination));
     }
     // A different user is already logged in on the computer.
     else {
@@ -110,8 +137,8 @@ function user_pass_reset($form, &$form_state, $uid, $timestamp, $hashed_pass, $a
         // Invalid one-time link specifies an unknown user.
         drupal_set_message(t('The one-time login link you clicked is invalid.'), 'error');
       }
+      drupal_goto();
     }
-    drupal_goto();
   }
   else {
     // Time out, in seconds, until login URL expires. Defaults to 24 hours =
@@ -168,6 +195,14 @@ function user_pass_reset($form, &$form_state, $uid, $timestamp, $hashed_pass, $a
  * Menu callback; logs the current user out, and redirects to the home page.
  */
 function user_logout() {
+  user_logout_current_user();
+  drupal_goto();
+}
+
+/**
+ * Logs the current user out.
+ */
+function user_logout_current_user() {
   global $user;
 
   watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
@@ -176,8 +211,6 @@ function user_logout() {
 
   // Destroy the current session, and reset $user to the anonymous user.
   session_destroy();
-
-  drupal_goto();
 }
 
 /**
@@ -294,14 +327,18 @@ function user_profile_form($form, &$form_state, $account, $category = 'account')
 }
 
 /**
- * Validation function for the user account and profile editing form.
+ * Form validation handler for user_profile_form().
+ *
+ * @see user_profile_form_submit()
  */
 function user_profile_form_validate($form, &$form_state) {
   entity_form_field_validate('user', $form, $form_state);
 }
 
 /**
- * Submit function for the user account and profile editing form.
+ * Form submission handler for user_profile_form().
+ *
+ * @see user_profile_form_validate()
  */
 function user_profile_form_submit($form, &$form_state) {
   $account = $form_state['user'];

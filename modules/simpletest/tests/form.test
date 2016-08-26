@@ -994,6 +994,26 @@ class FormsElementsTableSelectFunctionalTest extends DrupalWebTestCase {
     $this->assertTrue(isset($errors['tableselect']), 'Option checker disallows invalid values for radio buttons.');
   }
 
+  /**
+   * Test presence of ajax functionality
+   */
+  function testAjax() {
+    $rows = array('row1', 'row2', 'row3');
+    // Test checkboxes (#multiple == TRUE).
+    foreach ($rows as $row) {
+      $element = 'tableselect[' . $row . ']';
+      $edit = array($element => TRUE);
+      $result = $this->drupalPostAJAX('form_test/tableselect/multiple-true', $edit, $element);
+      $this->assertFalse(empty($result), t('Ajax triggers on checkbox for @row.', array('@row' => $row)));
+    }
+    // Test radios (#multiple == FALSE).
+    $element = 'tableselect';
+    foreach ($rows as $row) {
+      $edit = array($element => $row);
+      $result = $this->drupalPostAjax('form_test/tableselect/multiple-false', $edit, $element);
+      $this->assertFalse(empty($result), t('Ajax triggers on radio for @row.', array('@row' => $row)));
+    }
+  }
 
   /**
    * Helper function for the option check test to submit a form while collecting errors.
@@ -2097,5 +2117,38 @@ class HTMLIdTestCase extends DrupalWebTestCase {
     $edit = array();
     $this->drupalPost(NULL, $edit, 'Save', array(), array(), 'form-test-html-id--2');
     $this->assertNoDuplicateIds('There are no duplicate IDs');
+  }
+}
+
+/**
+ * Tests for form textarea.
+ */
+class FormTextareaTestCase extends DrupalUnitTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Form textarea',
+      'description' => 'Tests form textarea related functions.',
+      'group' => 'Form API',
+    );
+  }
+
+  /**
+   * Tests that textarea value is properly set.
+   */
+  public function testValueCallback() {
+    $element = array();
+    $form_state = array();
+    $test_cases = array(
+      array(NULL, FALSE),
+      array(NULL, NULL),
+      array('', array('test')),
+      array('test', 'test'),
+      array('123', 123),
+    );
+    foreach ($test_cases as $test_case) {
+      list($expected, $input) = $test_case;
+      $this->assertIdentical($expected, form_type_textarea_value($element, $input, $form_state));
+    }
   }
 }

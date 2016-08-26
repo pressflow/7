@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.44');
+define('VERSION', '7.50');
 
 /**
  * Core API compatibility.
@@ -844,14 +844,21 @@ function drupal_settings_initialize() {
  * @param $filename
  *   The filename of the item if it is to be set explicitly rather
  *   than by consulting the database.
+ * @param bool $trigger_error
+ *   Whether to trigger an error when a file is missing or has unexpectedly
+ *   moved. This defaults to TRUE, but can be set to FALSE by calling code that
+ *   merely wants to check whether an item exists in the filesystem.
  *
  * @return
  *   The filename of the requested item or NULL if the item is not found.
  */
-function drupal_get_filename($type, $name, $filename = NULL) {
+function drupal_get_filename($type, $name, $filename = NULL, $trigger_error = TRUE) {
+  // The $files static variable will hold the locations of all requested files.
+  // We can be sure that any file listed in this static variable actually
+  // exists as all additions have gone through a file_exists() check.
   // The location of files will not change during the request, so do not use
   // drupal_static().
-  static $files = array(), $dirs = array();
+  static $files = array();
 
   // Profiles are a special case: they have a fixed location and naming.
   if ($type == 'profile') {
@@ -863,64 +870,296 @@ function drupal_get_filename($type, $name, $filename = NULL) {
   }
 
   if (!empty($filename) && file_exists($filename)) {
+    // Prime the static cache with the provided filename.
     $files[$type][$name] = $filename;
   }
   elseif (isset($files[$type][$name])) {
-    // nothing
+    // This item had already been found earlier in the request, either through
+    // priming of the static cache (for example, in system_list()), through a
+    // lookup in the {system} table, or through a file scan (cached or not). Do
+    // nothing.
   }
-  // Verify that we have an active database connection, before querying
-  // the database. This is required because this function is called both
-  // before we have a database connection (i.e. during installation) and
-  // when a database connection fails.
   else {
+    // Look for the filename listed in the {system} table. Verify that we have
+    // an active database connection before doing so, since this function is
+    // called both before we have a database connection (i.e. during
+    // installation) and when a database connection fails.
+    $database_unavailable = TRUE;
     try {
       if (function_exists('db_query')) {
         $file = db_query("SELECT filename FROM {system} WHERE name = :name AND type = :type", array(':name' => $name, ':type' => $type))->fetchField();
         if ($file !== FALSE && file_exists(DRUPAL_ROOT . '/' . $file)) {
           $files[$type][$name] = $file;
         }
+        $database_unavailable = FALSE;
       }
     }
     catch (Exception $e) {
       // The database table may not exist because Drupal is not yet installed,
-      // or the database might be down. We have a fallback for this case so we
-      // hide the error completely.
+      // the database might be down, or we may have done a non-database cache
+      // flush while $conf['page_cache_without_database'] = TRUE and
+      // $conf['page_cache_invoke_hooks'] = TRUE. We have a fallback for these
+      // cases so we hide the error completely.
     }
-    // Fallback to searching the filesystem if the database could not find the
-    // file or the file returned by the database is not found.
+    // Fall back to searching the filesystem if the database could not find the
+    // file or the file does not exist at the path returned by the database.
     if (!isset($files[$type][$name])) {
-      // We have a consistent directory naming: modules, themes...
-      $dir = $type . 's';
-      if ($type == 'theme_engine') {
-        $dir = 'themes/engines';
-        $extension = 'engine';
-      }
-      elseif ($type == 'theme') {
-        $extension = 'info';
-      }
-      else {
-        $extension = $type;
-      }
-
-      if (!isset($dirs[$dir][$extension])) {
-        $dirs[$dir][$extension] = TRUE;
-        if (!function_exists('drupal_system_listing')) {
-          require_once DRUPAL_ROOT . '/includes/common.inc';
-        }
-        // Scan the appropriate directories for all files with the requested
-        // extension, not just the file we are currently looking for. This
-        // prevents unnecessary scans from being repeated when this function is
-        // called more than once in the same page request.
-        $matches = drupal_system_listing("/^" . DRUPAL_PHP_FUNCTION_PATTERN . "\.$extension$/", $dir, 'name', 0);
-        foreach ($matches as $matched_name => $file) {
-          $files[$type][$matched_name] = $file->uri;
-        }
-      }
+      $files[$type][$name] = _drupal_get_filename_fallback($type, $name, $trigger_error, $database_unavailable);
     }
   }
 
   if (isset($files[$type][$name])) {
     return $files[$type][$name];
+  }
+}
+
+/**
+ * Performs a cached file system scan as a fallback when searching for a file.
+ *
+ * This function looks for the requested file by triggering a file scan,
+ * caching the new location if the file has moved and caching the miss
+ * if the file is missing. If a file had been marked as missing in a previous
+ * file scan, or if it has been marked as moved and is still in the last known
+ * location, no new file scan will be performed.
+ *
+ * @param string $type
+ *   The type of the item (theme, theme_engine, module, profile).
+ * @param string $name
+ *   The name of the item for which the filename is requested.
+ * @param bool $trigger_error
+ *   Whether to trigger an error when a file is missing or has unexpectedly
+ *   moved.
+ * @param bool $database_unavailable
+ *   Whether this function is being called because the Drupal database could
+ *   not be queried for the file's location.
+ *
+ * @return
+ *   The filename of the requested item or NULL if the item is not found.
+ *
+ * @see drupal_get_filename()
+ */
+function _drupal_get_filename_fallback($type, $name, $trigger_error, $database_unavailable) {
+  $file_scans = &_drupal_file_scan_cache();
+  $filename = NULL;
+
+  // If the cache indicates that the item is missing, or we can verify that the
+  // item exists in the location the cache says it exists in, use that.
+  if (isset($file_scans[$type][$name]) && ($file_scans[$type][$name] === FALSE || file_exists($file_scans[$type][$name]))) {
+    $filename = $file_scans[$type][$name];
+  }
+  // Otherwise, perform a new file scan to find the item.
+  else {
+    $filename = _drupal_get_filename_perform_file_scan($type, $name);
+    // Update the static cache, and mark the persistent cache for updating at
+    // the end of the page request. See drupal_file_scan_write_cache().
+    $file_scans[$type][$name] = $filename;
+    $file_scans['#write_cache'] = TRUE;
+  }
+
+  // If requested, trigger a user-level warning about the missing or
+  // unexpectedly moved file. If the database was unavailable, do not trigger a
+  // warning in the latter case, though, since if the {system} table could not
+  // be queried there is no way to know if the location found here was
+  // "unexpected" or not.
+  if ($trigger_error) {
+    $error_type = $filename === FALSE ? 'missing' : 'moved';
+    if ($error_type == 'missing' || !$database_unavailable) {
+      _drupal_get_filename_fallback_trigger_error($type, $name, $error_type);
+    }
+  }
+
+  // The cache stores FALSE for files that aren't found (to be able to
+  // distinguish them from files that have not yet been searched for), but
+  // drupal_get_filename() expects NULL for these instead, so convert to NULL
+  // before returning.
+  if ($filename === FALSE) {
+    $filename = NULL;
+  }
+  return $filename;
+}
+
+/**
+ * Returns the current list of cached file system scan results.
+ *
+ * @return
+ *   An associative array tracking the most recent file scan results for all
+ *   files that have had scans performed. The keys are the type and name of the
+ *   item that was searched for, and the values can be either:
+ *   - Boolean FALSE if the item was not found in the file system.
+ *   - A string pointing to the location where the item was found.
+ */
+function &_drupal_file_scan_cache() {
+  $file_scans = &drupal_static(__FUNCTION__, array());
+
+  // The file scan results are stored in a persistent cache (in addition to the
+  // static cache) but because this function can be called before the
+  // persistent cache is available, we must merge any items that were found
+  // earlier in the page request into the results from the persistent cache.
+  if (!isset($file_scans['#cache_merge_done'])) {
+    try {
+      if (function_exists('cache_get')) {
+        $cache = cache_get('_drupal_file_scan_cache', 'cache_bootstrap');
+        if (!empty($cache->data)) {
+          // File scan results from the current request should take precedence
+          // over the results from the persistent cache, since they are newer.
+          $file_scans = drupal_array_merge_deep($cache->data, $file_scans);
+        }
+        // Set a flag to indicate that the persistent cache does not need to be
+        // merged again.
+        $file_scans['#cache_merge_done'] = TRUE;
+      }
+    }
+    catch (Exception $e) {
+      // Hide the error.
+    }
+  }
+
+  return $file_scans;
+}
+
+/**
+ * Performs a file system scan to search for a system resource.
+ *
+ * @param $type
+ *   The type of the item (theme, theme_engine, module, profile).
+ * @param $name
+ *   The name of the item for which the filename is requested.
+ *
+ * @return
+ *   The filename of the requested item or FALSE if the item is not found.
+ *
+ * @see drupal_get_filename()
+ * @see _drupal_get_filename_fallback()
+ */
+function _drupal_get_filename_perform_file_scan($type, $name) {
+  // The location of files will not change during the request, so do not use
+  // drupal_static().
+  static $dirs = array(), $files = array();
+
+  // We have a consistent directory naming: modules, themes...
+  $dir = $type . 's';
+  if ($type == 'theme_engine') {
+    $dir = 'themes/engines';
+    $extension = 'engine';
+  }
+  elseif ($type == 'theme') {
+    $extension = 'info';
+  }
+  else {
+    $extension = $type;
+  }
+
+  // Check if we had already scanned this directory/extension combination.
+  if (!isset($dirs[$dir][$extension])) {
+    // Log that we have now scanned this directory/extension combination
+    // into a static variable so as to prevent unnecessary file scans.
+    $dirs[$dir][$extension] = TRUE;
+    if (!function_exists('drupal_system_listing')) {
+      require_once DRUPAL_ROOT . '/includes/common.inc';
+    }
+    // Scan the appropriate directories for all files with the requested
+    // extension, not just the file we are currently looking for. This
+    // prevents unnecessary scans from being repeated when this function is
+    // called more than once in the same page request.
+    $matches = drupal_system_listing("/^" . DRUPAL_PHP_FUNCTION_PATTERN . "\.$extension$/", $dir, 'name', 0);
+    foreach ($matches as $matched_name => $file) {
+      // Log the locations found in the file scan into a static variable.
+      $files[$type][$matched_name] = $file->uri;
+    }
+  }
+
+  // Return the results of the file system scan, or FALSE to indicate the file
+  // was not found.
+  return isset($files[$type][$name]) ? $files[$type][$name] : FALSE;
+}
+
+/**
+ * Triggers a user-level warning for missing or unexpectedly moved files.
+ *
+ * @param $type
+ *   The type of the item (theme, theme_engine, module, profile).
+ * @param $name
+ *   The name of the item for which the filename is requested.
+ * @param $error_type
+ *   The type of the error ('missing' or 'moved').
+ *
+ * @see drupal_get_filename()
+ * @see _drupal_get_filename_fallback()
+ */
+function _drupal_get_filename_fallback_trigger_error($type, $name, $error_type) {
+  // Hide messages due to known bugs that will appear on a lot of sites.
+  // @todo Remove this in https://www.drupal.org/node/2762241
+  if (empty($name) || ($type == 'module' && $name == 'default')) {
+    return;
+  }
+
+  // Make sure we only show any missing or moved file errors only once per
+  // request.
+  static $errors_triggered = array();
+  if (empty($errors_triggered[$type][$name][$error_type])) {
+    // Use _drupal_trigger_error_with_delayed_logging() here since these are
+    // triggered during low-level operations that cannot necessarily be
+    // interrupted by a watchdog() call.
+    if ($error_type == 'missing') {
+      _drupal_trigger_error_with_delayed_logging(format_string('The following @type is missing from the file system: %name. In order to fix this, put the @type back in its original location. For more information, see <a href="@documentation">the documentation page</a>.', array('@type' => $type, '%name' => $name, '@documentation' => 'https://www.drupal.org/node/2487215')), E_USER_WARNING);
+    }
+    elseif ($error_type == 'moved') {
+      _drupal_trigger_error_with_delayed_logging(format_string('The following @type has moved within the file system: %name. In order to fix this, clear caches or put the @type back in its original location. For more information, see <a href="@documentation">the documentation page</a>.', array('@type' => $type, '%name' => $name, '@documentation' => 'https://www.drupal.org/node/2487215')), E_USER_WARNING);
+    }
+    $errors_triggered[$type][$name][$error_type] = TRUE;
+  }
+}
+
+/**
+ * Invokes trigger_error() with logging delayed until the end of the request.
+ *
+ * This is an alternative to PHP's trigger_error() function which can be used
+ * during low-level Drupal core operations that need to avoid being interrupted
+ * by a watchdog() call.
+ *
+ * Normally, Drupal's error handler calls watchdog() in response to a
+ * trigger_error() call. However, this invokes hook_watchdog() which can run
+ * arbitrary code. If the trigger_error() happens in the middle of an
+ * operation such as a rebuild operation which should not be interrupted by
+ * arbitrary code, that could potentially break or trigger the rebuild again.
+ * This function protects against that by delaying the watchdog() call until
+ * the end of the current page request.
+ *
+ * This is an internal function which should only be called by low-level Drupal
+ * core functions. It may be removed in a future Drupal 7 release.
+ *
+ * @param string $error_msg
+ *   The error message to trigger. As with trigger_error() itself, this is
+ *   limited to 1024 bytes; additional characters beyond that will be removed.
+ * @param int $error_type
+ *   (optional) The type of error. This should be one of the E_USER family of
+ *   constants. As with trigger_error() itself, this defaults to E_USER_NOTICE
+ *   if not provided.
+ *
+ * @see _drupal_log_error()
+ */
+function _drupal_trigger_error_with_delayed_logging($error_msg, $error_type = E_USER_NOTICE) {
+  $delay_logging = &drupal_static(__FUNCTION__, FALSE);
+  $delay_logging = TRUE;
+  trigger_error($error_msg, $error_type);
+  $delay_logging = FALSE;
+}
+
+/**
+ * Writes the file scan cache to the persistent cache.
+ *
+ * This cache stores all files marked as missing or moved after a file scan
+ * to prevent unnecessary file scans in subsequent requests. This cache is
+ * cleared in system_list_reset() (i.e. after a module/theme rebuild).
+ */
+function drupal_file_scan_write_cache() {
+  // Only write to the persistent cache if requested, and if we know that any
+  // data previously in the cache was successfully loaded and merged in by
+  // _drupal_file_scan_cache().
+  $file_scans = &_drupal_file_scan_cache();
+  if (isset($file_scans['#write_cache']) && isset($file_scans['#cache_merge_done'])) {
+    unset($file_scans['#write_cache']);
+    cache_set('_drupal_file_scan_cache', $file_scans, 'cache_bootstrap');
   }
 }
 
@@ -1277,7 +1516,7 @@ function drupal_page_header() {
 
   $default_headers = array(
     'Expires' => 'Sun, 19 Nov 1978 05:00:00 GMT',
-    'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
+    'Cache-Control' => 'no-cache, must-revalidate',
     // Prevent browsers from sniffing a response and picking a MIME type
     // different from the declared content-type, since that can lead to
     // XSS and other vulnerabilities.
@@ -1455,6 +1694,23 @@ function drupal_unpack($obj, $field = 'data') {
  * available to code that needs localization. See st() and get_t() for
  * alternatives.
  *
+ * @section sec_context String context
+ * Matching source strings are normally only translated once, and the same
+ * translation is used everywhere that has a matching string. However, in some
+ * cases, a certain English source string needs to have multiple translations.
+ * One example of this is the string "May", which could be used as either a
+ * full month name or a 3-letter abbreviated month. In other languages where
+ * the month name for May has more than 3 letters, you would need to provide
+ * two different translations (one for the full name and one abbreviated), and
+ * the correct form would need to be chosen, depending on how "May" is being
+ * used. To facilitate this, the "May" string should be provided with two
+ * different contexts in the $options parameter when calling t(). For example:
+ * @code
+ * t('May', array(), array('context' => 'Long month name')
+ * t('May', array(), array('context' => 'Abbreviated month name')
+ * @endcode
+ * See https://localize.drupal.org/node/2109 for more information.
+ *
  * @param $string
  *   A string containing the English string to translate.
  * @param $args
@@ -1465,8 +1721,9 @@ function drupal_unpack($obj, $field = 'data') {
  *   An associative array of additional options, with the following elements:
  *   - 'langcode' (defaults to the current language): The language code to
  *     translate to a language other than what is used to display the page.
- *   - 'context' (defaults to the empty context): The context the source string
- *     belongs to.
+ *   - 'context' (defaults to the empty context): A string giving the context
+ *     that the source string belongs to. See @ref sec_context above for more
+ *     information.
  *
  * @return
  *   The translated string.
@@ -2972,8 +3229,15 @@ function ip_address() {
         // Eliminate all trusted IPs.
         $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
 
-        // The right-most IP is the most specific we can trust.
-        $ip_address = array_pop($untrusted);
+        if (!empty($untrusted)) {
+          // The right-most IP is the most specific we can trust.
+          $ip_address = array_pop($untrusted);
+        }
+        else {
+          // All IP addresses in the forwarded array are configured proxy IPs
+          // (and thus trusted). We take the leftmost IP.
+          $ip_address = array_shift($forwarded);
+        }
       }
     }
   }
@@ -3214,7 +3478,7 @@ function _registry_check_code($type, $name = NULL) {
   $cache_key = $type[0] . $name;
   if (isset($lookup_cache[$cache_key])) {
     if ($lookup_cache[$cache_key]) {
-      require_once DRUPAL_ROOT . '/' . $lookup_cache[$cache_key];
+      include_once DRUPAL_ROOT . '/' . $lookup_cache[$cache_key];
     }
     return (bool) $lookup_cache[$cache_key];
   }
@@ -3239,7 +3503,7 @@ function _registry_check_code($type, $name = NULL) {
   $lookup_cache[$cache_key] = $file;
 
   if ($file) {
-    require_once DRUPAL_ROOT . '/' . $file;
+    include_once DRUPAL_ROOT . '/' . $file;
     return TRUE;
   }
   else {
