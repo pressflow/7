@@ -521,6 +521,33 @@ class DBLogTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Verifies that exceptions are caught in dblog_watchdog().
+   */
+  protected function testDBLogException() {
+    $log = array(
+      'type'        => 'custom',
+      'message'     => 'Log entry added to test watchdog handling of Exceptions.',
+      'variables'   => array(),
+      'severity'    => WATCHDOG_NOTICE,
+      'link'        => NULL,
+      'user'        => $this->big_user,
+      'uid'         => isset($this->big_user->uid) ? $this->big_user->uid : 0,
+      'request_uri' => request_uri(),
+      'referer'     => $_SERVER['HTTP_REFERER'],
+      'ip'          => ip_address(),
+      'timestamp'   => REQUEST_TIME,
+    );
+
+    // Remove watchdog table temporarily to simulate it missing during
+    // installation.
+    db_query("DROP TABLE {watchdog}");
+
+    // Add a watchdog entry.
+    // This should not throw an Exception, but fail silently.
+    dblog_watchdog($log);
+  }
+
+  /**
    * Gets the database log event information from the browser page.
    *
    * @return array
@@ -637,5 +664,33 @@ class DBLogTestCase extends DrupalWebTestCase {
     // equivalents because assertLink() uses this string in xpath() to query the
     // Document Object Model (DOM).
     $this->assertLink(html_entity_decode($message_text), 0, $message);
+  }
+
+  /**
+   * Make sure HTML tags are filtered out in the log detail page.
+   */
+  public function testLogMessageSanitized() {
+    $this->drupalLogin($this->big_user);
+
+    // Make sure dangerous HTML tags are filtered out in log detail page.
+    $log = array(
+      'uid' => 0,
+      'type' => 'custom',
+      'message' => "<script>alert('foo');</script> <strong>Lorem ipsum</strong>",
+      'variables' => NULL,
+      'severity' => WATCHDOG_NOTICE,
+      'link' => 'foo/bar',
+      'request_uri' => 'http://example.com?dblog=1',
+      'referer' => 'http://example.org?dblog=2',
+      'ip' => '0.0.1.0',
+      'timestamp' => REQUEST_TIME,
+    );
+    dblog_watchdog($log);
+
+    $wid = db_query('SELECT MAX(wid) FROM {watchdog}')->fetchField();
+    $this->drupalGet('admin/reports/event/' . $wid);
+    $this->assertResponse(200);
+    $this->assertNoRaw("<script>alert('foo');</script>");
+    $this->assertRaw("alert('foo'); <strong>Lorem ipsum</strong>");
   }
 }

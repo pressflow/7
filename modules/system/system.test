@@ -726,7 +726,7 @@ class IPAddressBlockingTestCase extends DrupalWebTestCase {
 
     // Block a valid IP address.
     $edit = array();
-    $edit['ip'] = '192.168.1.1';
+    $edit['ip'] = '1.2.3.3';
     $this->drupalPost('admin/config/people/ip-blocking', $edit, t('Add'));
     $ip = db_query("SELECT iid from {blocked_ips} WHERE ip = :ip", array(':ip' => $edit['ip']))->fetchField();
     $this->assertTrue($ip, t('IP address found in database.'));
@@ -734,7 +734,7 @@ class IPAddressBlockingTestCase extends DrupalWebTestCase {
 
     // Try to block an IP address that's already blocked.
     $edit = array();
-    $edit['ip'] = '192.168.1.1';
+    $edit['ip'] = '1.2.3.3';
     $this->drupalPost('admin/config/people/ip-blocking', $edit, t('Add'));
     $this->assertText(t('This IP address is already blocked.'));
 
@@ -769,6 +769,25 @@ class IPAddressBlockingTestCase extends DrupalWebTestCase {
      // $edit['ip'] = ip_address();
      // $this->drupalPost('admin/config/people/ip-blocking', $edit, t('Save'));
      // $this->assertText(t('You may not block your own IP address.'));
+  }
+
+  /**
+   * Test duplicate IP addresses are not present in the 'blocked_ips' table.
+   */
+  function testDuplicateIpAddress() {
+    drupal_static_reset('ip_address');
+    $submit_ip = $_SERVER['REMOTE_ADDR'] = '192.168.1.1';
+    system_block_ip_action();
+    system_block_ip_action();
+    $ip_count = db_query("SELECT iid from {blocked_ips} WHERE ip = :ip", array(':ip' => $submit_ip))->rowCount();
+    $this->assertEqual('1', $ip_count);
+    drupal_static_reset('ip_address');
+    $submit_ip = $_SERVER['REMOTE_ADDR'] = ' ';
+    system_block_ip_action();
+    system_block_ip_action();
+    system_block_ip_action();
+    $ip_count = db_query("SELECT iid from {blocked_ips} WHERE ip = :ip", array(':ip' => $submit_ip))->rowCount();
+    $this->assertEqual('1', $ip_count);
   }
 }
 
@@ -2449,6 +2468,12 @@ class UpdateScriptFunctionalTest extends DrupalWebTestCase {
     $this->assertText('This is a requirements error provided by the update_script_test module.');
     $this->clickLink('try again');
     $this->assertText('This is a requirements error provided by the update_script_test module.');
+
+    // Check if the optional 'value' key displays without a notice.
+    variable_set('update_script_test_requirement_type', REQUIREMENT_INFO);
+    $this->drupalGet($this->update_url, array('external' => TRUE));
+    $this->assertText('This is a requirements info provided by the update_script_test module.');
+    $this->assertNoText('Notice: Undefined index: value in theme_status_report()');
   }
 
   /**
