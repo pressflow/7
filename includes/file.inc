@@ -535,7 +535,18 @@ SetHandler Drupal_Security_Do_Not_Remove_See_SA_2006_006
 EOF;
 
   if ($private) {
-    $lines = "Deny from all\n\n" . $lines;
+    $lines = <<<EOF
+# Deny all requests from Apache 2.4+.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+# Deny all requests from Apache 2.0-2.2.
+<IfModule !mod_authz_core.c>
+  Deny from all
+</IfModule>
+EOF
+    . "\n\n" . $lines;
   }
 
   return $lines;
@@ -889,7 +900,6 @@ function file_valid_uri($uri) {
  */
 function file_unmanaged_copy($source, $destination = NULL, $replace = FILE_EXISTS_RENAME) {
   $original_source = $source;
-  $original_destination = $destination;
 
   // Assert that the source file actually exists.
   if (!file_exists($source)) {
@@ -2553,7 +2563,6 @@ function file_directory_temp() {
  *   An associative array of headers, as expected by file_transfer().
  */
 function file_get_content_headers($file) {
-  $name = mime_header_encode($file->filename);
   $type = mime_header_encode($file->filemime);
 
   return array(
