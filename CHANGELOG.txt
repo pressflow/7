@@ -1,4 +1,8 @@
 
+Drupal 7.56, 2017-06-21
+-----------------------
+- Fixed security issues (access bypass). See SA-CORE-2017-003.
+
 Drupal 7.55, 2017-06-07
 -----------------------
 - Fixed incompatibility with PHP versions 7.0.19 and 7.1.5 due to duplicate
