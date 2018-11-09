@@ -15,6 +15,7 @@ The branch maintainers for Drupal 7 are:
 - Fabian Franz 'Fabianx' https://www.drupal.org/u/fabianx
 - David Rothstein 'David_Rothstein' https://www.drupal.org/u/david_rothstein
 - Stefan Ruijsenaars 'stefan.r' https://www.drupal.org/u/stefanr-0
+- (provisional) Pol Dellaiera 'Pol' https://www.drupal.org/u/pol
 
 
 Component maintainers
@@ -44,10 +45,9 @@ Cron system
 - Derek Wright 'dww' https://www.drupal.org/u/dww
 
 Database system
-- Larry Garfield 'Crell' https://www.drupal.org/u/crell
+- ?
 
   - MySQL driver
-    - Larry Garfield 'Crell' https://www.drupal.org/u/crell
     - David Strauss 'David Strauss' https://www.drupal.org/u/david-strauss
 
   - PostgreSQL driver
