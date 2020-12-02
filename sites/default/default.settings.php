@@ -247,6 +247,24 @@
 $databases = array();
 
 /**
+ * Quoting of identifiers in MySQL.
+ *
+ * To allow compatibility with newer versions of MySQL, Drupal will quote table
+ * names and some other identifiers. The ANSI standard character for identifier
+ * quoting is the double quote (") and that can be used by MySQL along with the
+ * sql_mode setting of ANSI_QUOTES. However, MySQL's own default is to use
+ * backticks (`). Drupal 7 uses backticks for compatibility. If you need to
+ * change this, you can do so with this variable. It's possible to switch off
+ * identifier quoting altogether by setting this variable to an empty string.
+ *
+ * @see https://www.drupal.org/project/drupal/issues/2978575
+ * @see https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
+ * @see \DatabaseConnection_mysql::setPrefix
+ * @see \DatabaseConnection_mysql::quoteIdentifier
+ */
+# $conf['mysql_identifier_quote_character'] = '"';
+
+/**
  * Access control for update.php script.
  *
  * If you are updating your Drupal installation using the update.php script but
@@ -668,3 +686,42 @@ $conf['file_scan_ignore_directories'] = array(
   'node_modules',
   'bower_components',
 );
+
+/**
+ * Logging of user flood control events.
+ *
+ * Drupal's user module will place a temporary block on a given IP address or
+ * user account if there are excessive failed login attempts. By default these
+ * flood control events will be logged. This can be useful for identifying
+ * brute force login attacks. Set this variable to FALSE to disable logging, for
+ * example if you are using the dblog module and want to avoid database writes.
+ *
+ * @see user_login_final_validate()
+ * @see user_user_flood_control()
+ */
+# $conf['log_user_flood_control'] = FALSE;
+
+/**
+ * Opt out of variable_initialize() locking optimization.
+ *
+ * After lengthy discussion in https://www.drupal.org/node/973436 a change was
+ * made in variable_initialize() in order to avoid excessive waiting under
+ * certain conditions. Set this variable to TRUE in order to opt out of this
+ * optimization and revert to the original behaviour.
+ */
+# $conf['variable_initialize_wait_for_lock'] = FALSE;
+
+/**
+ * Use site name as display-name in outgoing mail.
+ *
+ * Drupal can use the site name (i.e. the value of the site_name variable) as
+ * the display-name when sending e-mail. For example this would mean the sender
+ * might be "Acme Website" <acme@example.com> as opposed to just the e-mail
+ * address alone. In order to avoid disruption this is not enabled by default
+ * for existing sites. The feature can be enabled by setting this variable to
+ * TRUE.
+ *
+ * @see https://tools.ietf.org/html/rfc2822
+ * @see drupal_mail()
+ */
+$conf['mail_display_name_site_name'] = TRUE;
