@@ -1,3 +1,7 @@
+Drupal 7.77, 2020-12-03
+-----------------------
+- Hotfix for schema.prefixed tables
+
 Drupal 7.76, 2020-12-02
 -----------------------
 - Support for MySQL 8
