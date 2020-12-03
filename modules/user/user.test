@@ -322,7 +322,7 @@ class UserLoginTestCase extends DrupalWebTestCase {
   }
 
   function setUp() {
-    parent::setUp('user_session_test');
+    parent::setUp('user_session_test', 'user_flood_test');
   }
 
   /**
@@ -453,12 +453,19 @@ class UserLoginTestCase extends DrupalWebTestCase {
     $this->drupalPost('user', $edit, t('Log in'));
     $this->assertNoFieldByXPath("//input[@name='pass' and @value!='']", NULL, 'Password value attribute is blank.');
     if (isset($flood_trigger)) {
+      $this->assertResponse(403);
+      $user_log = db_query_range('SELECT message FROM {watchdog} WHERE type = :type ORDER BY wid DESC', 0, 1, array(':type' => 'user'))->fetchField();
+      $user_flood_test_log = db_query_range('SELECT message FROM {watchdog} WHERE type = :type ORDER BY wid DESC', 0, 1, array(':type' => 'user_flood_test'))->fetchField();
       if ($flood_trigger == 'user') {
-        $this->assertRaw(format_plural(variable_get('user_failed_login_user_limit', 5), 'Sorry, there has been more than one failed login attempt for this account. It is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', 'Sorry, there have been more than @count failed login attempts for this account. It is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', array('@url' => url('user/password'))));
+        $this->assertRaw(t('Sorry, there have been more than @count failed login attempts for this account. It is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', array('@url' => url('user/password'), '@count' => variable_get('user_failed_login_user_limit', 5))));
+        $this->assertEqual('Flood control blocked login attempt for %user from %ip.', $user_log, 'A watchdog message was logged for the login attempt blocked by flood control per user');
+        $this->assertEqual('hook_user_flood_control was passed username %username and IP %ip.', $user_flood_test_log, 'hook_user_flood_control was invoked by flood control per user');
       }
       else {
         // No uid, so the limit is IP-based.
         $this->assertRaw(t('Sorry, too many failed login attempts from your IP address. This IP address is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', array('@url' => url('user/password'))));
+        $this->assertEqual('Flood control blocked login attempt from %ip.', $user_log, 'A watchdog message was logged for the login attempt blocked by flood control per IP');
+        $this->assertEqual('hook_user_flood_control was passed IP %ip.', $user_flood_test_log, 'hook_user_flood_control was invoked by flood control per IP');
       }
     }
     else {
@@ -507,6 +514,8 @@ class UserPasswordResetTestCase extends DrupalWebTestCase {
     $this->drupalPost('user/password', $edit, t('E-mail new password'));
     // Confirm the password reset.
     $this->assertText(t('Further instructions have been sent to your e-mail address.'), 'Password reset instructions mailed message displayed.');
+    // Ensure that flood control was not triggered.
+    $this->assertNoText(t('is temporarily blocked. Try again later'), 'Flood control was not triggered by single password reset.');
 
     // Create an image field to enable an Ajax request on the user profile page.
     $field = array(
@@ -550,6 +559,84 @@ class UserPasswordResetTestCase extends DrupalWebTestCase {
     $edit = array('pass[pass1]' => $password, 'pass[pass2]' => $password);
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The changes have been saved.'), 'Forgotten password changed.');
+  }
+
+  /**
+   * Test user-based flood control on password reset.
+   */
+  function testPasswordResetFloodControlPerUser() {
+    // Set a very low limit for testing.
+    variable_set('user_pass_reset_user_limit', 2);
+
+    // Create a user.
+    $account = $this->drupalCreateUser();
+    $this->drupalLogin($account);
+    $this->drupalLogout();
+
+    $edit = array('name' => $account->name);
+
+    // Try 2 requests that should not trigger flood control.
+    for ($i = 0; $i < 2; $i++) {
+      $this->drupalPost('user/password', $edit, t('E-mail new password'));
+      // Confirm the password reset.
+      $this->assertText(t('Further instructions have been sent to your e-mail address.'), 'Password reset instructions mailed message displayed.');
+      // Ensure that flood control was not triggered.
+      $this->assertNoText(t('is temporarily blocked. Try again later'), 'Flood control was not triggered by password reset.');
+    }
+
+    // A successful password reset should clear flood events.
+    $resetURL = $this->getResetURL();
+    $this->drupalGet($resetURL);
+
+    // Check successful login.
+    $this->drupalPost(NULL, NULL, t('Log in'));
+    $this->drupalLogout();
+
+    // Try 2 requests that should not trigger flood control.
+    for ($i = 0; $i < 2; $i++) {
+      $this->drupalPost('user/password', $edit, t('E-mail new password'));
+      // Confirm the password reset.
+      $this->assertText(t('Further instructions have been sent to your e-mail address.'), 'Password reset instructions mailed message displayed.');
+      // Ensure that flood control was not triggered.
+      $this->assertNoText(t('is temporarily blocked. Try again later'), 'Flood control was not triggered by password reset.');
+    }
+
+    // The next request should trigger flood control
+    $this->drupalPost('user/password', $edit, t('E-mail new password'));
+    // Confirm the password reset was blocked.
+    $this->assertNoText(t('Further instructions have been sent to your e-mail address.'), 'Password reset instructions mailed message not displayed for excessive password resets.');
+    // Ensure that flood control was triggered.
+    $this->assertText(t('Sorry, there have been more than 2 password reset attempts for this account. It is temporarily blocked.'), 'Flood control was triggered by excessive password resets for one user.');
+  }
+
+  /**
+   * Test IP-based flood control on password reset.
+   */
+  function testPasswordResetFloodControlPerIp() {
+    // Set a very low limit for testing.
+    variable_set('user_pass_reset_ip_limit', 2);
+
+    // Try 2 requests that should not trigger flood control.
+    for ($i = 0; $i < 2; $i++) {
+      $name = $this->randomName();
+      $edit = array('name' => $name);
+      $this->drupalPost('user/password', $edit, t('E-mail new password'));
+      // Confirm the password reset was not blocked. Note that @name is used
+      // instead of %name as assertText() works with plain text not HTML.
+      $this->assertText(t('Sorry, @name is not recognized as a user name or an e-mail address.', array('@name' => $name)), 'User name not recognized message displayed.');
+      // Ensure that flood control was not triggered.
+      $this->assertNoText(t('is temporarily blocked. Try again later'), 'Flood control was not triggered by password reset.');
+    }
+
+    // The next request should trigger flood control
+    $name = $this->randomName();
+    $edit = array('name' => $name);
+    $this->drupalPost('user/password', $edit, t('E-mail new password'));
+    // Confirm the password reset was blocked early. Note that @name is used
+    // instead of %name as assertText() works with plain text not HTML.
+    $this->assertNoText(t('Sorry, @name is not recognized as a user name or an e-mail address.', array('@name' => $name)), 'User name not recognized message not displayed.');
+    // Ensure that flood control was triggered.
+    $this->assertText(t('Sorry, too many password reset attempts from your IP address. This IP address is temporarily blocked.'), 'Flood control was triggered by excessive password resets from one IP.');
   }
 
   /**
