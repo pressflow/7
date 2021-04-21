@@ -712,6 +712,15 @@ $conf['file_scan_ignore_directories'] = array(
 # $conf['variable_initialize_wait_for_lock'] = FALSE;
 
 /**
+ * Opt in to field_sql_storage_field_storage_write() optimization.
+ *
+ * To reduce unnecessary writes field_sql_storage_field_storage_write() can skip
+ * fields where values have apparently not changed. To opt in to this
+ * optimization, set this variable to TRUE.
+ */
+$conf['field_sql_storage_skip_writing_unchanged_fields'] = TRUE;
+
+/**
  * Use site name as display-name in outgoing mail.
  *
  * Drupal can use the site name (i.e. the value of the site_name variable) as
@@ -725,3 +734,23 @@ $conf['file_scan_ignore_directories'] = array(
  * @see drupal_mail()
  */
 $conf['mail_display_name_site_name'] = TRUE;
+
+/**
+ * SameSite cookie attribute.
+ *
+ * This variable can be used to set a value for the SameSite cookie attribute.
+ *
+ * Versions of PHP before 7.3 have no native support for the SameSite attribute
+ * so it is emulated.
+ *
+ * The session.cookie-samesite setting in PHP 7.3 and later will be overridden
+ * by this variable for Drupal session cookies, and any other cookies managed
+ * with drupal_setcookie().
+ *
+ * Setting this variable to FALSE disables the SameSite attribute on cookies.
+ *
+ * @see drupal_setcookie()
+ * @see drupal_session_start()
+ * @see https://www.php.net/manual/en/session.configuration.php#ini.session.cookie-samesite
+ */
+#$conf['samesite_cookie_value'] = 'None';
