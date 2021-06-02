@@ -156,6 +156,23 @@ All arguments are long options.
 
   --verbose   Output detailed assertion messages in addition to summary.
 
+  --fail-only When paired with --verbose, do not print the detailed messages
+              for passing tests.
+
+  --cache     (Experimental) Cache result of setUp per installation profile.
+              This will create one cache entry per profile and is generally safe
+              to use.
+              To clear all cache entries use --clean.
+
+  --cache-modules
+
+              (Experimental) Cache result of setUp per installation profile and
+              installed modules. This will create one copy of the database
+              tables per module-combination and therefore this option should not
+              be used when running all tests. This is most useful for local
+              development of individual test cases. This option implies --cache.
+              To clear all cache entries use --clean.
+
   <test1>[,<test2>[,<test3> ...]]
 
               One or more tests to be run. By default, these are interpreted
@@ -199,7 +216,10 @@ function simpletest_script_parse_args() {
     'directory' => '',
     'color' => FALSE,
     'verbose' => FALSE,
+    'cache' => FALSE,
+    'cache-modules' => FALSE,
     'test_names' => array(),
+    'fail-only' => FALSE,
     // Used internally.
     'test-id' => 0,
     'execute-test' => '',
@@ -380,6 +400,8 @@ function simpletest_script_execute_batch($test_id, $test_classes) {
  * Bootstrap Drupal and run a single test.
  */
 function simpletest_script_run_one_test($test_id, $test_class) {
+  global $args;
+
   try {
     // Bootstrap Drupal.
     drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
@@ -387,6 +409,8 @@ function simpletest_script_run_one_test($test_id, $test_class) {
     simpletest_classloader_register();
 
     $test = new $test_class($test_id);
+    $test->useSetupInstallationCache = !empty($args['cache']);
+    $test->useSetupModulesCache = !empty($args['cache-modules']);
     $test->run();
     $info = $test->getInfo();
 
@@ -422,6 +446,13 @@ function simpletest_script_command($test_id, $test_class) {
   if ($args['color']) {
     $command .= ' --color';
   }
+  if ($args['cache-modules']) {
+    $command .= ' --cache --cache-modules';
+  }
+  elseif ($args['cache']) {
+    $command .= ' --cache';
+  }
+
   $command .= " --php " . escapeshellarg($php) . " --test-id $test_id --execute-test " . escapeshellarg($test_class);
   return $command;
 }
@@ -677,7 +708,7 @@ function simpletest_script_reporter_display_results() {
     $results = db_query("SELECT * FROM {simpletest} WHERE test_id = :test_id ORDER BY test_class, message_id", array(':test_id' => $test_id));
     $test_class = '';
     foreach ($results as $result) {
-      if (isset($results_map[$result->status])) {
+      if (isset($results_map[$result->status]) && (!$args['fail-only'] || $result->status !== 'pass')) {
         if ($result->test_class != $test_class) {
           // Display test class every time results are for new test class.
           echo "\n\n---- $result->test_class ----\n\n\n";

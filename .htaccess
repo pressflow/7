@@ -134,9 +134,9 @@ DirectoryIndex index.php index.html index.htm
     RewriteCond %{REQUEST_FILENAME}\.gz -s
     RewriteRule ^(.*)\.js $1\.js\.gz [QSA]
 
-    # Serve correct content types, and prevent mod_deflate double gzip.
-    RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1]
-    RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1]
+    # Serve correct content types, and prevent double compression.
+    RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1,E=no-brotli:1]
+    RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1,E=no-brotli:1]
 
     <FilesMatch "(\.js\.gz|\.css\.gz)$">
       # Serve correct encoding type.
@@ -147,8 +147,10 @@ DirectoryIndex index.php index.html index.htm
   </IfModule>
 </IfModule>
 
-# Add headers to all responses.
+# Various header fixes.
 <IfModule mod_headers.c>
   # Disable content sniffing, since it's an attack vector.
   Header always set X-Content-Type-Options nosniff
+  # Disable Proxy header, since it's an attack vector.
+  RequestHeader unset Proxy
 </IfModule>

@@ -2696,6 +2696,19 @@ function drupal_deliver_html_page($page_callback_result) {
     drupal_add_http_header('X-Frame-Options', $frame_options);
   }
 
+  if (variable_get('block_interest_cohort', TRUE)) {
+    $permissions_policy = drupal_get_http_header('Permissions-Policy');
+    if (is_null($permissions_policy)) {
+      drupal_add_http_header('Permissions-Policy', 'interest-cohort=()');
+    }
+    else {
+      // Only add interest-cohort if the header does not contain it already.
+      if (strpos($permissions_policy, 'interest-cohort') === FALSE) {
+        drupal_add_http_header('Permissions-Policy', 'interest-cohort=()', TRUE);
+      }
+    }
+  }
+
   // Menu status constants are integers; page content is a string or array.
   if (is_int($page_callback_result)) {
     // @todo: Break these up into separate functions?
@@ -3392,7 +3405,7 @@ function drupal_group_css($css) {
  * @see system_element_info()
  */
 function drupal_aggregate_css(&$css_groups) {
-  $preprocess_css = (variable_get('preprocess_css', FALSE) && (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update'));
+  $preprocess_css = (variable_get('preprocess_css', FALSE) && !defined('MAINTENANCE_MODE'));
 
   // For each group that needs aggregation, aggregate its items.
   foreach ($css_groups as $key => $group) {
@@ -3851,8 +3864,10 @@ function drupal_load_stylesheet_content($contents, $optimize = FALSE) {
     // whitespace.
     // @see http://php.net/manual/regexp.reference.subpatterns.php
     $contents = preg_replace('<
+      # Do not strip any space from within single or double quotes
+        (' . $double_quot . '|' . $single_quot . ')
       # Strip leading and trailing whitespace.
-        \s*([@{};,])\s*
+      | \s*([@{};,])\s*
       # Strip only leading whitespace from:
       # - Closing parenthesis: Retain "@media (bar) and foo".
       | \s+([\)])
@@ -3860,11 +3875,11 @@ function drupal_load_stylesheet_content($contents, $optimize = FALSE) {
       # - Opening parenthesis: Retain "@media (bar) and foo".
       # - Colon: Retain :pseudo-selectors.
       | ([\(:])\s+
-    >xS',
-      // Only one of the three capturing groups will match, so its reference
+    >xSs',
+      // Only one of the four capturing groups will match, so its reference
       // will contain the wanted value and the references for the
       // two non-matching groups will be replaced with empty strings.
-      '$1$2$3',
+      '$1$2$3$4',
       $contents
     );
     // End the file with a new line.
@@ -4505,7 +4520,7 @@ function drupal_get_js($scope = 'header', $javascript = NULL, $skip_alter = FALS
  * @see drupal_add_js()
  */
 function drupal_pre_render_scripts(array $elements) {
-  $preprocess_js = (variable_get('preprocess_js', FALSE) && (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update'));
+  $preprocess_js = (variable_get('preprocess_js', FALSE) && !defined('MAINTENANCE_MODE'));
 
   // A dummy query-string is added to filenames, to gain control over
   // browser-caching. The string changes on every update or full cache
@@ -6942,7 +6957,7 @@ function drupal_array_set_nested_value(array &$array, array $parents, $value, $f
 function &drupal_array_get_nested_value(array &$array, array $parents, &$key_exists = NULL) {
   $ref = &$array;
   foreach ($parents as $parent) {
-    if (is_array($ref) && array_key_exists($parent, $ref)) {
+    if (is_array($ref) && (isset($ref[$parent]) || array_key_exists($parent, $ref))) {
       $ref = &$ref[$parent];
     }
     else {
