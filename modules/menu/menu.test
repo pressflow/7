@@ -222,6 +222,14 @@ class MenuTestCase extends DrupalWebTestCase {
     $this->assertMenuLink($item2['mlid'], array('depth' => 2, 'has_children' => 1, 'p1' => $item1['mlid'], 'p2' => $item2['mlid'], 'p3' => 0));
     $this->assertMenuLink($item3['mlid'], array('depth' => 3, 'has_children' => 0, 'p1' => $item1['mlid'], 'p2' => $item2['mlid'], 'p3' => $item3['mlid'], 'p4' => 0));
 
+    // Add 102 menu links with increasing weights, then make sure the last-added
+    // item's weight doesn't get changed because of the old hardcoded delta = 50
+    $items = array();
+    for ($i = -50; $i <= 51; $i++) {
+      $items[$i] = $this->addMenuLink(0, 'node/' . $node1->nid, $menu_name, TRUE, strval($i));
+    }
+    $this->assertMenuLink($items[51]['mlid'], array('weight' => '51'));
+
     // Verify menu links.
     $this->verifyMenuLink($item1, $node1);
     $this->verifyMenuLink($item2, $node2, $item1, $node1);
@@ -287,14 +295,36 @@ class MenuTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Tries to use the navigation menu as the source for secondary links.
+   */
+  function testNavigationAsSecondaryMenu() {
+    $this->drupalLogin($this->big_user);
+
+    // Go to the menu settings page and make the navigation the source for the
+    // secondary menu.
+    $edit = array(
+      'menu_main_links_source' => 'main-menu',
+      'menu_secondary_links_source' => 'navigation',
+    );
+    $this->drupalGet('admin/structure/menu/settings');
+    $this->drupalPost(NULL, $edit, t('Save configuration'));
+
+    // Now visit the user page. There should be an 'Add content' link in the
+    // navigation block and one in the secondary menu.
+    $this->drupalGet('user');
+    $this->assertNoUniqueText(t('Add content'));
+  }
+
+  /**
    * Add a menu link using the menu module UI.
    *
    * @param integer $plid Parent menu link id.
    * @param string $link Link path.
    * @param string $menu_name Menu name.
+   * @param string $weight Menu link weight
    * @return array Menu link created.
    */
-  function addMenuLink($plid = 0, $link = '<front>', $menu_name = 'navigation', $expanded = TRUE) {
+  function addMenuLink($plid = 0, $link = '<front>', $menu_name = 'navigation', $expanded = TRUE, $weight = '0') {
     // View add menu link page.
     $this->drupalGet("admin/structure/menu/manage/$menu_name/add");
     $this->assertResponse(200);
@@ -307,7 +337,7 @@ class MenuTestCase extends DrupalWebTestCase {
       'enabled' => TRUE, // Use this to disable the menu and test.
       'expanded' => $expanded, // Setting this to true should test whether it works when we do the std_user tests.
       'parent' =>  $menu_name . ':' . $plid,
-      'weight' => '0',
+      'weight' => $weight,
     );
 
     // Add menu link.
@@ -604,6 +634,50 @@ class MenuTestCase extends DrupalWebTestCase {
       $this->assertText(t('Menus'), 'Add menu node was displayed');
     }
   }
+
+  /**
+   * Tests that menu admin lists can include menu items for unpublished nodes.
+   */
+  function testUnpublishedNodeMenuItem() {
+    // Log in as an administrator who can view unpublished nodes.
+    $menu_and_node_admin_user = $this->drupalCreateUser(array(
+      'bypass node access',
+      'administer menu',
+    ));
+    $this->drupalLogin($menu_and_node_admin_user);
+
+    // Create an unpublished node with a menu link.
+    $title = $this->randomName();
+    $node = $this->drupalCreateNode(array(
+      'type' => 'article',
+      'title' => $title,
+      'status' => NODE_NOT_PUBLISHED,
+    ));
+    $edit = array(
+      'link_path' => 'node/' . $node->nid,
+      'link_title' => $title,
+      'description' => '',
+      'enabled' => TRUE,
+      'expanded' => TRUE,
+      'parent' => 'navigation:0',
+      'weight' => '0',
+    );
+    $this->drupalPost('admin/structure/menu/manage/navigation/add', $edit, t('Save'));
+
+    // Verify that the administrator can see the menu link (with a label
+    // indicating that it is unpublished) on the menu management page.
+    $this->drupalGet('admin/structure/menu/manage/navigation');
+    $this->assertText($title . ' (unpublished)', 'Menu link to unpublished node is visible to users with "bypass node access" permission.');
+
+    // Verify that a user who cannot view unpublished nodes does not see the
+    // menu link on the menu management page.
+    $menu_admin_user = $this->drupalCreateUser(array('administer menu'));
+    $this->drupalLogin($menu_admin_user);
+    $this->drupalGet('admin/structure/menu/manage/navigation');
+    $this->assertResponse(200);
+    $this->assertNoText($title, 'Menu link to unpublished node is not visible to users without the "bypass node access" permission.');
+  }
+
 }
 
 /**
@@ -758,4 +832,5 @@ class MenuNodeTestCase extends DrupalWebTestCase {
     $options = $this->xpath('//select[@id=:id]//option[@value=:option]', array(':id' => $id, ':option' => $option));
     return $this->assertTrue(isset($selects[0]) && !isset($options[0]), $message ? $message : t('Option @option for field @id does not exist.', array('@option' => $option, '@id' => $id)), t('Browser'));
   }
+
 }
