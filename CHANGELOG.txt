@@ -1,3 +1,13 @@
+Drupal 7.83, 2021-12-01
+-----------------------
+- Initial support for PHP 8.1
+- The has_js cookie has been removed (but can be re-enabled)
+- The leading www. is no longer stripped from cookie domain by default
+- The user entity now has a "changed" property
+- Introduced a skip_permissions_hardening setting
+- Changes to the password reset process to avoid email and username enumeration
+- Various bug fixes, optimizations and improvements
+
 Drupal 7.82, 2021-07-21
 -----------------------
 - Fixed security issues:

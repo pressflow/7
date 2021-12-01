@@ -1484,8 +1484,8 @@ class JavaScriptTestCase extends DrupalWebTestCase {
    */
   function testAddSetting() {
     $javascript = drupal_add_js(array('drupal' => 'rocks', 'dries' => 280342800), 'setting');
-    $this->assertEqual(280342800, $javascript['settings']['data'][2]['dries'], 'JavaScript setting is set correctly.');
-    $this->assertEqual('rocks', $javascript['settings']['data'][2]['drupal'], 'The other JavaScript setting is set correctly.');
+    $this->assertEqual(280342800, $javascript['settings']['data'][3]['dries'], 'JavaScript setting is set correctly.');
+    $this->assertEqual('rocks', $javascript['settings']['data'][3]['drupal'], 'The other JavaScript setting is set correctly.');
   }
 
   /**
@@ -1921,6 +1921,18 @@ class JavaScriptTestCase extends DrupalWebTestCase {
     $this->drupalGet('common-test/query-string');
     $query_string = variable_get('css_js_query_string', '0');
     $this->assertRaw(drupal_get_path('module', 'node') . '/node.js?' . $query_string, 'Query string was appended correctly to js.');
+  }
+
+  /**
+   * Tests that the set_has_js_cookie variable is reflected in Drupal.settings.
+   */
+  function testSetHasJsCookie() {
+    $this->drupalGet('');
+    $this->assertRaw('"setHasJsCookie":0', 'setHasJsCookie set to 0 by default.');
+
+    variable_set('set_has_js_cookie', TRUE);
+    $this->drupalGet('');
+    $this->assertRaw('"setHasJsCookie":1', 'setHasJsCookie set to 1 when set_has_js_cookie is set to TRUE.');
   }
 
   /**
@@ -3294,6 +3306,51 @@ class BlockInterestCohortTest extends DrupalWebTestCase {
     variable_set('block_interest_cohort', FALSE);
     $this->drupalGet('node');
     $this->assertFalse($this->drupalGetHeader('Permissions-Policy'), 'FLoC blocking can be disabled.');
+  }
+
+}
+
+/**
+ * Test for drupal_add_html_head_link().
+ */
+class DrupalAddHtmlHeadLinkTest extends DrupalWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Add HTML head link',
+      'description' => 'Test for drupal_add_html_head_link().',
+      'group' => 'System',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  function setUp() {
+    parent::setUp('common_test');
+  }
+
+  /**
+   * Tests drupal_add_html_head_link().
+   */
+  function testDrupalAddHtmlHeadLink() {
+    $this->drupalGet('common-test/html_head_link');
+    $expected_link_header = implode(',', array(
+      '</foo?bar=baz>; rel="alternate"',
+      '</foo/bar>; hreflang="nl"; rel="alternate"',
+      '</foo/bar>; hreflang="de"; rel="alternate"',
+      '</foo?bar=baz&baz=false>; hreflang="en"; rel="alternate"',
+    ));
+    $this->assertEqual($this->drupalGetHeader('Link'), $expected_link_header);
+
+    // Check that duplicate alternate URLs with different hreflangs are allowed.
+    $test_link = $this->xpath('//head/link[@rel="alternate"][@href="/foo/bar"]');
+    $this->assertEqual(count($test_link), 2, 'Duplicate alternate URLs are allowed.');
+    // Check that link element attributes are HTML-encoded.
+    $this->assertRaw('<link href="/foo?bar=baz&amp;baz=false" hreflang="en" rel="alternate" />');
   }
 
 }
