@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.83');
+define('VERSION', '7.84');
 
 /**
  * Core API compatibility.
@@ -824,6 +824,16 @@ function drupal_settings_initialize() {
     // in drupal_settings_initialize().
     if (!empty($_SERVER['HTTP_HOST'])) {
       $cookie_domain = _drupal_get_cookie_domain($_SERVER['HTTP_HOST']);
+    }
+
+    // Drupal 7.83 included a security improvement whereby www. is no longer
+    // stripped from the cookie domain. However, this can cause problems with
+    // existing session cookies whereby some users are left unable to login. In
+    // order to avoid that, use the cookie domain (including leading dot) as the
+    // session name when a www. subdomain is in use.
+    // @see https://www.drupal.org/project/drupal/issues/2522002
+    if (strpos($session_name, 'www.') === 0) {
+      $session_name = $cookie_domain;
     }
   }
   // Per RFC 2109, cookie domains must contain at least one dot other than the
