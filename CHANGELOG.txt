@@ -1,3 +1,7 @@
+Drupal 7.84, 2021-12-13
+-----------------------
+- Hotfix for session cookie domain on www subdomains
+
 Drupal 7.83, 2021-12-01
 -----------------------
 - Initial support for PHP 8.1
