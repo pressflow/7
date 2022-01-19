@@ -1,3 +1,7 @@
+Drupal 7.85, 2022-01-12
+-----------------------
+- Fix session cookies for sites with different base_urls but a shared domain
+
 Drupal 7.84, 2021-12-13
 -----------------------
 - Hotfix for session cookie domain on www subdomains
