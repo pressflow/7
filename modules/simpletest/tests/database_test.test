@@ -868,14 +868,30 @@ class DatabaseUpdateTestCase extends DatabaseTestCase {
       ->fields(array('age' => 1))
       ->execute();
 
-    // Ensure that expressions are handled properly.  This should set every
-    // record's age to a square of itself, which will change only three of the
-    // four records in the table since 1*1 = 1. That means only three records
-    // are modified, so we should get back 3, not 4, from execute().
+    // Ensure that expressions are handled properly. This should set every
+    // record's age to a square of itself. The number of affected rows returned
+    // by db_update() will vary across different database engines and versions:
+    // - MySQL / InnoDB: changed rows only
+    // - MySQL / MyISAM: changed rows only
+    // - PostgreSQL: all rows matched by the query
+    // - SQLite: changed rows only (see workaround in UpdateQuery_sqlite)
+    // All database engines will change only three of the four records in the
+    // table since 1*1 = 1. However, the pgsql driver will return the number of
+    // rows matched rather than the number changed.
+    // @see https://www.drupal.org/project/drupal/issues/805858
+    // @see https://www.drupal.org/project/drupal/issues/3264471
+    $connection = Database::getConnection()->getConnectionOptions();
+    $expected_rows = 3;
+    if ($connection['driver'] === 'pgsql') {
+      $expected_rows ++;
+    }
     $num_rows = db_update('test')
       ->expression('age', 'age * age')
       ->execute();
-    $this->assertIdentical($num_rows, 3, 'Number of affected rows are returned.');
+    $this->assertIdentical($num_rows, $expected_rows, 'Number of affected rows are returned.');
+
+    $saved_name = db_query('SELECT name FROM {test} WHERE age = :age', array(':age' => pow(26, 2)))->fetchField();
+    $this->assertIdentical('Paul', $saved_name, 'Successfully updated values using an algebraic expression.');
   }
 }
 
@@ -1592,7 +1608,7 @@ class DatabaseSelectTestCase extends DatabaseTestCase {
 
   /**
    * Test that we can UNION multiple Select queries together. This is
-   * semantically equal to UNION DISTINCT, so we don't explicity test that.
+   * semantically equal to UNION DISTINCT, so we don't explicitly test that.
    */
   function testUnion() {
     $query_1 = db_select('test', 't')
@@ -1601,7 +1617,8 @@ class DatabaseSelectTestCase extends DatabaseTestCase {
 
     $query_2 = db_select('test', 't')
       ->fields('t', array('name'))
-      ->condition('age', 28);
+      ->condition('age', 28)
+      ->orderBy('name');
 
     $query_1->union($query_2);
 
@@ -4341,6 +4358,13 @@ class DatabaseReservedKeywordTestCase extends DatabaseTestCase {
     }
     else {
       $database = $connection['database'];
+
+      if ($connection['driver'] === 'pgsql') {
+        // database.scheme.table for PostgreSQL
+        // @see https://www.postgresql.org/docs/14/ddl-schemas.html
+        $database .= '.public';
+      }
+
       // Test db_query with schema.{table} pattern
       db_query('SELECT * FROM ' . $database . '.{system} LIMIT 1')->fetchObject();
       $this->assertTrue(isset($record->filename), 'Successfully queried the schema.{system} table.');
@@ -4464,6 +4488,13 @@ class DatabaseTablePrefixTestCase extends DatabaseTestCase {
     }
 
     $db_name = $connection_options['database'];
+
+    if ($connection_options['driver'] === 'pgsql') {
+      // database.scheme.table for PostgreSQL
+      // @see https://www.postgresql.org/docs/14/ddl-schemas.html
+      $db_name .= '.public';
+    }
+
     // This prefix is usually something like simpletest12345
     $test_prefix = $connection_options['prefix']['default'];
 
