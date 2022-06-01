@@ -886,7 +886,13 @@ function system_modules($form, $form_state = array()) {
     // one.
     if ($module->status && isset($module->info['configure'])) {
       $configure_link = menu_get_item($module->info['configure']);
-      if ($configure_link['access']) {
+      if ($configure_link === FALSE) {
+        watchdog('system', 'Module %module specifies an invalid path for configuration: %configure', array(
+          '%module' => $module->info['name'],
+          '%configure' => $module->info['configure'],
+        ));
+      }
+      else if ($configure_link['access']) {
         $extra['links']['configure'] = array(
           '#type' => 'link',
           '#title' => t('Configure'),
@@ -929,6 +935,8 @@ function system_modules($form, $form_state = array()) {
       ),
       // Ensure that the "Core" package fieldset comes first.
       '#weight' => $package == 'Core' ? -10 : NULL,
+      // Hide this package unless we're running a test.
+      '#access' => !($package == 'Only For Testing' && !drupal_valid_test_ua()),
     );
   }
 
@@ -2358,6 +2366,10 @@ function system_status($check = FALSE) {
  * Menu callback: run cron manually.
  */
 function system_run_cron() {
+  if (!isset($_GET['token']) || !drupal_valid_token($_GET['token'], 'run-cron')) {
+    return MENU_ACCESS_DENIED;
+  }
+
   // Run cron manually
   if (drupal_cron_run()) {
     drupal_set_message(t('Cron ran successfully.'));
