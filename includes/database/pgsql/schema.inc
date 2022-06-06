@@ -13,6 +13,13 @@
 class DatabaseSchema_pgsql extends DatabaseSchema {
 
   /**
+   * PostgreSQL's temporary namespace name.
+   *
+   * @var string
+   */
+  protected $tempNamespaceName;
+
+  /**
    * A cache of information about blob columns and sequences of tables.
    *
    * This is collected by DatabaseConnection_pgsql->queryTableInformation(),
@@ -97,23 +104,47 @@ class DatabaseSchema_pgsql extends DatabaseSchema {
   public function queryTableInformation($table) {
     // Generate a key to reference this table's information on.
     $key = $this->connection->prefixTables('{' . $table . '}');
-    if (!strpos($key, '.')) {
+
+    // Take into account that temporary tables are stored in a different schema.
+    // \DatabaseConnection::generateTemporaryTableName() sets 'db_temporary_'
+    // prefix to all temporary tables.
+    if (strpos($key, '.') === FALSE && strpos($table, 'db_temporary_') === FALSE) {
       $key = 'public.' . $key;
+    }
+    else {
+      $key = $this->getTempNamespaceName() . '.' . $key;
     }
 
     if (!isset($this->tableInformation[$key])) {
-      // Split the key into schema and table for querying.
-      list($schema, $table_name) = explode('.', $key);
       $table_information = (object) array(
         'blob_fields' => array(),
         'sequences' => array(),
       );
-      // Don't use {} around information_schema.columns table.
-      $result = $this->connection->query("SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_schema = :schema AND table_name = :table AND (data_type = 'bytea' OR (numeric_precision IS NOT NULL AND column_default LIKE :default))", array(
-        ':schema' => $schema,
-        ':table' => $table_name,
-        ':default' => '%nextval%',
+
+      // The bytea columns and sequences for a table can be found in
+      // pg_attribute, which is significantly faster than querying the
+      // information_schema. The data type of a field can be found by lookup
+      // of the attribute ID, and the default value must be extracted from the
+      // node tree for the attribute definition instead of the historical
+      // human-readable column, adsrc.
+      $sql = <<<'EOD'
+SELECT pg_attribute.attname AS column_name, format_type(pg_attribute.atttypid, pg_attribute.atttypmod) AS data_type, pg_get_expr(pg_attrdef.adbin, pg_attribute.attrelid) AS column_default
+FROM pg_attribute
+LEFT JOIN pg_attrdef ON pg_attrdef.adrelid = pg_attribute.attrelid AND pg_attrdef.adnum = pg_attribute.attnum
+WHERE pg_attribute.attnum > 0
+AND NOT pg_attribute.attisdropped
+AND pg_attribute.attrelid = :key::regclass
+AND (format_type(pg_attribute.atttypid, pg_attribute.atttypmod) = 'bytea'
+OR pg_get_expr(pg_attrdef.adbin, pg_attribute.attrelid) LIKE 'nextval%')
+EOD;
+      $result = $this->connection->query($sql, array(
+        ':key' => $key,
       ));
+
+      if (empty($result)) {
+        return $table_information;
+      }
+
       foreach ($result as $column) {
         if ($column->data_type == 'bytea') {
           $table_information->blob_fields[$column->column_name] = TRUE;
@@ -129,6 +160,19 @@ class DatabaseSchema_pgsql extends DatabaseSchema {
       $this->tableInformation[$key] = $table_information;
     }
     return $this->tableInformation[$key];
+  }
+
+  /**
+   * Gets PostgreSQL's temporary namespace name.
+   *
+   * @return string
+   *   PostgreSQL's temporary namespace anme.
+   */
+  protected function getTempNamespaceName() {
+    if (!isset($this->tempNamespaceName)) {
+      $this->tempNamespaceName = $this->connection->query('SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema()')->fetchField();
+    }
+    return $this->tempNamespaceName;
   }
 
   /**
@@ -370,6 +414,68 @@ class DatabaseSchema_pgsql extends DatabaseSchema {
     return implode(', ', $return);
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function tableExists($table) {
+    // In PostgreSQL "unquoted names are always folded to lower case."
+    // @see DatabaseSchema_pgsql::buildTableNameCondition().
+    $prefixInfo = $this->getPrefixInfo(strtolower($table), TRUE);
+
+    return (bool) $this->connection->query("SELECT 1 FROM pg_tables WHERE schemaname = :schema AND tablename = :table", array(':schema' => $prefixInfo['schema'], ':table' => $prefixInfo['table']))->fetchField();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function findTables($table_expression) {
+    $individually_prefixed_tables = $this->connection->getUnprefixedTablesMap();
+    $default_prefix = $this->connection->tablePrefix();
+    $default_prefix_length = strlen($default_prefix);
+    $tables = array();
+
+    // Load all the tables up front in order to take into account per-table
+    // prefixes. The actual matching is done at the bottom of the method.
+    $results = $this->connection->query("SELECT tablename FROM pg_tables WHERE schemaname = :schema", array(':schema' => $this->defaultSchema));
+    foreach ($results as $table) {
+      // Take into account tables that have an individual prefix.
+      if (isset($individually_prefixed_tables[$table->tablename])) {
+        $prefix_length = strlen($this->connection->tablePrefix($individually_prefixed_tables[$table->tablename]));
+      }
+      elseif ($default_prefix && substr($table->tablename, 0, $default_prefix_length) !== $default_prefix) {
+        // This table name does not start the default prefix, which means that
+        // it is not managed by Drupal so it should be excluded from the result.
+        continue;
+      }
+      else {
+        $prefix_length = $default_prefix_length;
+      }
+
+      // Remove the prefix from the returned tables.
+      $unprefixed_table_name = substr($table->tablename, $prefix_length);
+
+      // The pattern can match a table which is the same as the prefix. That
+      // will become an empty string when we remove the prefix, which will
+      // probably surprise the caller, besides not being a prefixed table. So
+      // remove it.
+      if (!empty($unprefixed_table_name)) {
+        $tables[$unprefixed_table_name] = $unprefixed_table_name;
+      }
+    }
+
+    // Need to use strtolower on the table name as it was used previously by
+    // DatabaseSchema_pgsql::buildTableNameCondition().
+    // @see https://www.drupal.org/project/drupal/issues/3262341
+    $table_expression = strtolower($table_expression);
+
+    // Convert the table expression from its SQL LIKE syntax to a regular
+    // expression and escape the delimiter that will be used for matching.
+    $table_expression = str_replace(array('%', '_'), array('.*?', '.'), preg_quote($table_expression, '/'));
+    $tables = preg_grep('/^' . $table_expression . '$/i', $tables);
+
+    return $tables;
+  }
+
   function renameTable($table, $new_name) {
     if (!$this->tableExists($table)) {
       throw new DatabaseSchemaObjectDoesNotExistException(t("Cannot rename @table to @table_new: table @table doesn't exist.", array('@table' => $table, '@table_new' => $new_name)));
@@ -491,6 +597,17 @@ class DatabaseSchema_pgsql extends DatabaseSchema {
     }
 
     $this->connection->query('ALTER TABLE {' . $table . '} ALTER COLUMN "' . $field . '" DROP DEFAULT');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function fieldExists($table, $column) {
+    // In PostgreSQL "unquoted names are always folded to lower case."
+    // @see DatabaseSchema_pgsql::buildTableNameCondition().
+    $prefixInfo = $this->getPrefixInfo(strtolower($table));
+
+    return (bool) $this->connection->query("SELECT 1 FROM pg_attribute WHERE attrelid = :key::regclass AND attname = :column AND NOT attisdropped AND attnum > 0", array(':key' => $prefixInfo['schema'] . '.' . $prefixInfo['table'], ':column' => $column))->fetchField();
   }
 
   public function indexExists($table, $name) {

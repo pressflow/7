@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.89');
+define('VERSION', '7.90');
 
 /**
  * Core API compatibility.
@@ -1618,7 +1618,7 @@ function drupal_page_header() {
  */
 function drupal_serve_page_from_cache(stdClass $cache) {
   // Negotiate whether to use compression.
-  $page_compression = !empty($cache->data['page_compressed']);
+  $page_compression = !empty($cache->data['page_compressed']) && !empty($cache->data['body']);
   $return_compressed = $page_compression && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
 
   // Get headers set in hook_boot(). Keys are lower-case.
@@ -1949,7 +1949,7 @@ function check_plain($text) {
  *   TRUE if the text is valid UTF-8, FALSE if not.
  */
 function drupal_validate_utf8($text) {
-  if (strlen($text) == 0) {
+  if (strlen((string) $text) == 0) {
     return TRUE;
   }
   // With the PCRE_UTF8 modifier 'u', preg_match() fails silently on strings
