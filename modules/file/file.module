@@ -246,7 +246,15 @@ function file_ajax_upload() {
     // Invalid request.
     drupal_set_message(t('An unrecoverable error occurred. The uploaded file likely exceeded the maximum file size (@size) that this server supports.', array('@size' => format_size(file_upload_max_size()))), 'error');
     $commands = array();
-    $commands[] = ajax_command_replace(NULL, theme('status_messages'));
+    $commands[] = ajax_command_prepend(NULL, theme('status_messages'));
+
+    // Unset the problematic file from the input so that user can submit the
+    // form without reloading the page.
+    // @see https://www.drupal.org/project/drupal/issues/2749245
+    $field_name = (string) reset($form_parents);
+    $wrapper_id = drupal_html_id('edit-' . $field_name);
+    $commands[] = ajax_command_invoke('#' . $wrapper_id . ' .form-type-managed-file input[type="file"]', 'val', array(''));
+
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
@@ -256,7 +264,7 @@ function file_ajax_upload() {
     // Invalid form_build_id.
     drupal_set_message(t('An unrecoverable error occurred. Use of this form has expired. Try reloading the page and submitting again.'), 'error');
     $commands = array();
-    $commands[] = ajax_command_replace(NULL, theme('status_messages'));
+    $commands[] = ajax_command_prepend(NULL, theme('status_messages'));
     return array('#type' => 'ajax', '#commands' => $commands);
   }
 
@@ -363,10 +371,6 @@ function file_file_delete($file) {
  * support for a default value.
  */
 function file_managed_file_process($element, &$form_state, $form) {
-  // Append the '-upload' to the #id so the field label's 'for' attribute
-  // corresponds with the file element.
-  $original_id = $element['#id'];
-  $element['#id'] .= '-upload';
   $fid = isset($element['#value']['fid']) ? $element['#value']['fid'] : 0;
 
   // Set some default element properties.
@@ -376,7 +380,7 @@ function file_managed_file_process($element, &$form_state, $form) {
 
   $ajax_settings = array(
     'path' => 'file/ajax/' . implode('/', $element['#array_parents']) . '/' . $form['form_build_id']['#value'],
-    'wrapper' => $original_id . '-ajax-wrapper',
+    'wrapper' => $element['#id'] . '-ajax-wrapper',
     'effect' => 'fade',
     'progress' => array(
       'type' => $element['#progress_indicator'],
@@ -450,12 +454,25 @@ function file_managed_file_process($element, &$form_state, $form) {
   $element['upload'] = array(
     '#name' => 'files[' . implode('_', $element['#parents']) . ']',
     '#type' => 'file',
+    // This #title will not actually be used as the upload field's HTML label,
+    // since the theme function for upload fields never passes the element
+    // through theme('form_element'). Instead the parent element's #title is
+    // used as the label (see below). That is usually a more meaningful label
+    // anyway.
     '#title' => t('Choose a file'),
     '#title_display' => 'invisible',
+    // Set the ID manually so the desired field label can be associated with it
+    // below. Use the same method for setting the ID that the form API
+    // autogenerator does.
+    '#id' => drupal_html_id('edit-' . implode('-', array_merge($element['#parents'], array('upload')))),
     '#size' => $element['#size'],
     '#theme_wrappers' => array(),
     '#weight' => -10,
   );
+
+  // Indicate that $element['#title'] should be used as the HTML label for the
+  // file upload field.
+  $element['#label_for'] = $element['upload']['#id'];
 
   if ($fid && $element['#file']) {
     $element['filename'] = array(
@@ -482,13 +499,13 @@ function file_managed_file_process($element, &$form_state, $form) {
     $element['upload']['#attached']['js'] = array(
       array(
         'type' => 'setting',
-        'data' => array('file' => array('elements' => array('#' . $element['#id'] => $extension_list)))
+        'data' => array('file' => array('elements' => array('#' . $element['upload']['#id'] => $extension_list)))
       )
     );
   }
 
   // Prefix and suffix used for Ajax replacement.
-  $element['#prefix'] = '<div id="' . $original_id . '-ajax-wrapper">';
+  $element['#prefix'] = '<div id="' . $element['#id'] . '-ajax-wrapper">';
   $element['#suffix'] = '</div>';
 
   return $element;
