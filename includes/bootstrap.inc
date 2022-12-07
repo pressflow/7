@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.92');
+define('VERSION', '7.93');
 
 /**
  * Core API compatibility.
@@ -18,7 +18,7 @@ define('DRUPAL_CORE_COMPATIBILITY', '7.x');
 /**
  * Minimum supported version of PHP.
  */
-define('DRUPAL_MINIMUM_PHP', '5.2.4');
+define('DRUPAL_MINIMUM_PHP', '5.3.3');
 
 /**
  * Minimum recommended value of PHP memory_limit.
@@ -3976,6 +3976,14 @@ function drupal_setcookie($name, $value, $options) {
     setcookie($name, $value, $options);
   }
   else {
+    $defaults = array(
+      'expires' => 0,
+      'path' => '',
+      'domain' => '',
+      'secure' => FALSE,
+      'httponly' => FALSE,
+    );
+    $options += $defaults;
     setcookie($name, $value, $options['expires'], $options['path'], $options['domain'], $options['secure'], $options['httponly']);
   }
 }

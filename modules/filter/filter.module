@@ -773,6 +773,8 @@ function check_markup($text, $format_id = NULL, $langcode = '', $cache = FALSE) 
     return '';
   }
 
+  $text = (string) $text;
+
   // Check for a cached version of this piece of text.
   $cache = $cache && !empty($format->cache);
   $cache_id = '';
@@ -785,7 +787,7 @@ function check_markup($text, $format_id = NULL, $langcode = '', $cache = FALSE) 
 
   // Convert all Windows and Mac newlines to a single newline, so filters only
   // need to deal with one possibility.
-  $text = str_replace(array("\r\n", "\r"), "\n", (string) $text);
+  $text = str_replace(array("\r\n", "\r"), "\n", $text);
 
   // Get a complete list of filters, ordered properly.
   $filters = filter_list_format($format->format);
@@ -1704,7 +1706,7 @@ function _filter_autop($text) {
   // to avoid messing up code. We look for matched pairs and allow basic
   // nesting. For example:
   // "processed <pre> ignored <script> ignored </script> ignored </pre> processed"
-  $chunks = preg_split('@(<!--.*?-->|</?(?:pre|script|style|object|iframe|!--)[^>]*>)@i', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+  $chunks = preg_split('@(<!--.*?-->|</?(?:pre|script|style|object|iframe|svg|!--)[^>]*>)@i', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
   // Note: PHP ensures the array consists of alternating delimiters and literals
   // and begins and ends with a literal (inserting NULL as required).
   $ignore = FALSE;
