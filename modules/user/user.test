@@ -308,6 +308,17 @@ class UserValidationTestCase extends DrupalWebTestCase {
       $this->$test($result, $description . ' (' . $name . ')');
     }
   }
+
+  // Test altered e-mail validation.
+  function testAlteredMailValidation() {
+    // This e-mail is considered as valid.
+    $mail = 'foo@example.local';
+    $this->assertNull(user_validate_mail($mail), 'E-mail address is valid.');
+
+    // Invalidate all emails ending with .local in alter hook.
+    module_enable(array('user_email_validation_test'));
+    $this->assertNotNull(user_validate_mail($mail), 'E-mail address is invalid.');
+  }
 }
 
 /**
@@ -775,7 +786,7 @@ class UserPasswordResetTestCase extends DrupalWebTestCase {
     // To attempt an expired password reset, create a password reset link as if
     // its request time was 60 seconds older than the allowed limit of timeout.
     $bogus_timestamp = REQUEST_TIME - variable_get('user_password_reset_timeout', 86400) - 60;
-    $this->drupalGet("user/reset/$account->uid/$bogus_timestamp/" . user_pass_rehash($account->pass, $bogus_timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/reset/$account->uid/$bogus_timestamp/" . user_pass_rehash($account->pass, $bogus_timestamp, $account->login, $account->uid, $account->mail));
     $this->assertText(t('You have tried to use a one-time login link that has expired. Please request a new one using the form below.'), 'Expired password reset request rejected.');
   }
 
@@ -864,12 +875,26 @@ class UserPasswordResetTestCase extends DrupalWebTestCase {
     $this->assertNoText('You have tried to use a one-time login link that has either been used or is no longer valid. Please request a new one using the form below.');
   }
 
+  /**
+   * Make sure that password reset URLs are invalidated when the user's email
+   * address changes.
+   */
+  function testResetInvalidation() {
+    $account = $this->drupalCreateUser();
+    $original_reset_url = user_pass_reset_url($account);
+    user_save($account, array('mail' => '1' . $account->mail));
+    $this->drupalGet($original_reset_url);
+    $this->assertText('You have tried to use a one-time login link that has either been used or is no longer valid. Please request a new one using the form below.');
+  }
+
 }
 
 /**
  * Test cancelling a user.
  */
 class UserCancelTestCase extends DrupalWebTestCase {
+  protected $admin_user;
+
   public static function getInfo() {
     return array(
       'name' => 'Cancel account',
@@ -903,7 +928,7 @@ class UserCancelTestCase extends DrupalWebTestCase {
 
     // Attempt bogus account cancellation request confirmation.
     $timestamp = $account->login;
-    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid, $account->mail));
     $this->assertResponse(403, 'Bogus cancelling request rejected.');
     $account = user_load($account->uid);
     $this->assertTrue($account->status == 1, 'User account was not canceled.');
@@ -976,14 +1001,14 @@ class UserCancelTestCase extends DrupalWebTestCase {
 
     // Attempt bogus account cancellation request confirmation.
     $bogus_timestamp = $timestamp + 60;
-    $this->drupalGet("user/$account->uid/cancel/confirm/$bogus_timestamp/" . user_pass_rehash($account->pass, $bogus_timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/$account->uid/cancel/confirm/$bogus_timestamp/" . user_pass_rehash($account->pass, $bogus_timestamp, $account->login, $account->uid, $account->mail));
     $this->assertText(t('You have tried to use an account cancellation link that has expired. Please request a new one using the form below.'), 'Bogus cancelling request rejected.');
     $account = user_load($account->uid);
     $this->assertTrue($account->status == 1, 'User account was not canceled.');
 
     // Attempt expired account cancellation request confirmation.
     $bogus_timestamp = $timestamp - 86400 - 60;
-    $this->drupalGet("user/$account->uid/cancel/confirm/$bogus_timestamp/" . user_pass_rehash($account->pass, $bogus_timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/$account->uid/cancel/confirm/$bogus_timestamp/" . user_pass_rehash($account->pass, $bogus_timestamp, $account->login, $account->uid, $account->mail));
     $this->assertText(t('You have tried to use an account cancellation link that has expired. Please request a new one using the form below.'), 'Expired cancel account request rejected.');
     $accounts = user_load_multiple(array($account->uid), array('status' => 1));
     $this->assertTrue(reset($accounts), 'User account was not canceled.');
@@ -1020,7 +1045,7 @@ class UserCancelTestCase extends DrupalWebTestCase {
     $this->assertText(t('A confirmation request to cancel your account has been sent to your e-mail address.'), 'Account cancellation request mailed message displayed.');
 
     // Confirm account cancellation request.
-    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid, $account->mail));
     $account = user_load($account->uid, TRUE);
     $this->assertTrue($account->status == 0, 'User has been blocked.');
 
@@ -1058,7 +1083,7 @@ class UserCancelTestCase extends DrupalWebTestCase {
     $this->assertText(t('A confirmation request to cancel your account has been sent to your e-mail address.'), 'Account cancellation request mailed message displayed.');
 
     // Confirm account cancellation request.
-    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid, $account->mail));
     $account = user_load($account->uid, TRUE);
     $this->assertTrue($account->status == 0, 'User has been blocked.');
 
@@ -1108,7 +1133,7 @@ class UserCancelTestCase extends DrupalWebTestCase {
     $this->assertText(t('A confirmation request to cancel your account has been sent to your e-mail address.'), 'Account cancellation request mailed message displayed.');
 
     // Confirm account cancellation request.
-    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid, $account->mail));
     $this->assertFalse(user_load($account->uid, TRUE), 'User is not found in the database.');
 
     // Confirm that user's content has been attributed to anonymous user.
@@ -1172,7 +1197,7 @@ class UserCancelTestCase extends DrupalWebTestCase {
     $this->assertText(t('A confirmation request to cancel your account has been sent to your e-mail address.'), 'Account cancellation request mailed message displayed.');
 
     // Confirm account cancellation request.
-    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid));
+    $this->drupalGet("user/$account->uid/cancel/confirm/$timestamp/" . user_pass_rehash($account->pass, $timestamp, $account->login, $account->uid, $account->mail));
     $this->assertFalse(user_load($account->uid, TRUE), 'User is not found in the database.');
 
     // Confirm that user's content has been deleted.
@@ -1300,9 +1325,10 @@ class UserPictureTestCase extends DrupalWebTestCase {
     $this->drupalLogin($this->user);
 
     // Try to upload a file that is not an image for the user picture.
-    $not_an_image = current($this->drupalGetTestFiles('html'));
-    $this->saveUserPicture($not_an_image);
+    $not_an_image = $this->drupalGetTestFiles('html');
+    $this->saveUserPicture($not_an_image[1]);
     $this->assertRaw(t('Only JPEG, PNG and GIF images are allowed.'), 'Non-image files are not accepted.');
+    $this->assertNoRaw(t('Only files with the following extensions are allowed:'), 'Additional error message not displayed.');
   }
 
   /**
@@ -1829,6 +1855,9 @@ class UserTimeZoneFunctionalTest extends DrupalWebTestCase {
  * Test user autocompletion.
  */
 class UserAutocompleteTestCase extends DrupalWebTestCase {
+  protected $unprivileged_user;
+  protected $privileged_user;
+
   public static function getInfo() {
     return array(
       'name' => 'User autocompletion',
@@ -2296,6 +2325,11 @@ class UserEditRebuildTestCase extends DrupalWebTestCase {
  * Test case for user signatures.
  */
 class UserSignatureTestCase extends DrupalWebTestCase {
+  protected $admin_user;
+  protected $web_user;
+  protected $full_html_format;
+  protected $plain_text_format;
+
   public static function getInfo() {
     return array(
       'name' => 'User signatures',
@@ -2416,6 +2450,7 @@ class UserEditedOwnAccountTestCase extends DrupalWebTestCase {
  * Test case to test adding, editing and deleting roles.
  */
 class UserRoleAdminTestCase extends DrupalWebTestCase {
+  protected $admin_user;
 
   public static function getInfo() {
     return array(
@@ -2856,5 +2891,69 @@ class UserValidateCurrentPassCustomForm extends DrupalWebTestCase {
     $edit['current_pass'] = $this->accessUser->pass_raw;
     $this->drupalPost('user_form_test_current_password/' . $this->accessUser->uid, $edit, t('Test'));
     $this->assertText(t('The password has been validated and the form submitted successfully.'));
+  }
+}
+
+/**
+ * Tests actions provided by the User module.
+ */
+class UserActionsTest extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'User actions',
+      'description' => 'Test actions provided by the user module.',
+      'group' => 'User',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('dblog', 'anonymous_user_unblock_test');
+  }
+
+  /**
+   * Tests user block and unblock actions.
+   */
+  function testUserBlockUnBlockActions() {
+    $unblocked_user = $this->drupalCreateUser();
+
+    db_truncate('watchdog')->execute();
+
+    // Block a user.
+    user_block_user_action($unblocked_user);
+
+    $blocked_user = user_load($unblocked_user->uid, TRUE);
+    $this->assertEqual($blocked_user->status, 0, 'User is blocked');
+
+    // Assert that a watchdog message was logged.
+    $status = (bool) db_query_range('SELECT 1 FROM {watchdog} WHERE message = :message AND variables = :variables', 0, 1, array(':message' => 'Blocked user %name.', ':variables' => serialize(array('%name' => $blocked_user->name))))->fetchField();
+    $this->assert($status, 'A watchdog message was logged by user block action.');
+
+    // Unblock a user.
+    user_unblock_user_action($blocked_user);
+
+    $unblocked_user = user_load($unblocked_user->uid, TRUE);
+    $this->assertEqual($unblocked_user->status, 1, 'User is unblocked');
+
+    // Assert that a watchdog message was logged.
+    $status = (bool) db_query_range('SELECT 1 FROM {watchdog} WHERE message = :message AND variables = :variables', 0, 1, array(':message' => 'Unblocked user %name.', ':variables' => serialize(array('%name' => $unblocked_user->name))))->fetchField();
+    $this->assert($status, 'A watchdog message was logged by user unblock action.');
+
+    // Try to unblock the anonymous user.
+    db_truncate('watchdog')->execute();
+    $anonymous_user = user_load(0);
+
+    // Assert anonymous user is blocked.
+    $this->assertEqual($anonymous_user->status, 0, 'Anonymous user is blocked');
+
+    user_unblock_user_action($anonymous_user);
+
+    // Assert anonymous user remains blocked.
+    $anonymous_user = user_load(0, TRUE);
+    $this->assertEqual($anonymous_user->status, 0, 'Anonymous user remains blocked');
+
+    // Assert that a watchdog message was logged.
+    $status = (bool) db_query_range('SELECT 1 FROM {watchdog} WHERE message = :message', 0, 1, array(':message' => 'Anonymous user should not be unblocked.'))->fetchField();
+    $this->assert($status, 'A watchdog message was logged by user unblock action.');
   }
 }

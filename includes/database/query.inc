@@ -1288,6 +1288,15 @@ class MergeQuery extends Query implements QueryConditionInterface {
   protected $conditionTable;
 
   /**
+   * The condition object for this query.
+   *
+   * Condition handling is handled via composition.
+   *
+   * @var DatabaseCondition
+   */
+  protected $condition;
+
+  /**
    * An array of fields on which to insert.
    *
    * @var array
@@ -1692,6 +1701,13 @@ class DatabaseCondition implements QueryConditionInterface, Countable {
    * The identifier of the query placeholder this condition has been compiled against.
    */
   protected $queryPlaceholderIdentifier;
+
+  /**
+   * Contains the string version of the Condition.
+   *
+   * @var string
+   */
+  protected $stringVersion;
 
   /**
    * Constructs a DataBaseCondition object.
