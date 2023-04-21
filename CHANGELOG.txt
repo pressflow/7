@@ -1,3 +1,7 @@
+Drupal 7.97, 2023-04-21
+-----------------------
+- Fix PHP 5.x regression caused by SA-CORE-2023-005
+
 Drupal 7.96, 2023-04-19
 -----------------------
 - Fixed security issues:
