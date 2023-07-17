@@ -1,3 +1,8 @@
+Drupal 7.98, 2023-06-07
+-----------------------
+- Various security improvements
+- Various bug fixes, optimizations and improvements
+
 Drupal 7.97, 2023-04-21
 -----------------------
 - Fix PHP 5.x regression caused by SA-CORE-2023-005
