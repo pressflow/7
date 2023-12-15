@@ -1,3 +1,8 @@
+Drupal 7.99, 2023-12-06
+-----------------------
+- Various security improvements
+- Various bug fixes, optimizations and improvements
+
 Drupal 7.98, 2023-06-07
 -----------------------
 - Various security improvements

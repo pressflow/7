@@ -1862,7 +1862,7 @@ function file_validate_is_image(stdClass $file) {
 
   $info = image_get_info($file->uri);
   if (!$info || empty($info['extension'])) {
-    $errors[] = t('Only JPEG, PNG and GIF images are allowed.');
+    $errors[] = t('The image file is invalid or the image type is not allowed. Allowed types: %allowed_types', array('%allowed_types' => t('Only JPEG, PNG and GIF images are allowed.')));
   }
 
   return $errors;
@@ -1905,6 +1905,8 @@ function file_validate_image_resolution(stdClass $file, $maximum_dimensions = 0,
         if ($image = image_load($file->uri)) {
           image_scale($image, $width, $height);
           image_save($image);
+          // Update the image info since we have resized it.
+          $info = $image->info;
           $file->filesize = $image->info['file_size'];
           drupal_set_message(t('The image was resized to fit within the maximum allowed dimensions of %dimensions pixels.', array('%dimensions' => $maximum_dimensions)));
         }

@@ -178,7 +178,16 @@ function user_pass_reset($form, &$form_state, $uid, $timestamp, $hashed_pass, $a
     // A different user is already logged in on the computer.
     else {
       $reset_link_account = user_load($uid);
-      if (!empty($reset_link_account)) {
+      $is_valid = FALSE;
+      if (!empty($reset_link_account) && $timestamp >= $reset_link_account->login && $timestamp <= REQUEST_TIME) {
+        if ($hashed_pass == user_pass_rehash($reset_link_account->pass, $timestamp, $reset_link_account->login, $reset_link_account->uid, $reset_link_account->mail)) {
+          $is_valid = TRUE;
+        }
+        elseif ($session_reset_hash && $session_reset_hash == user_pass_rehash($reset_link_account->pass, $timestamp, $reset_link_account->login, $reset_link_account->uid, $reset_link_account->mail)) {
+          $is_valid = TRUE;
+        }
+      }
+      if ($is_valid) {
         drupal_set_message(t('Another user (%other_user) is already logged into the site on this computer, but you tried to use a one-time link for user %resetting_user. Please <a href="!logout">logout</a> and try using the link again.',
           array('%other_user' => $user->name, '%resetting_user' => $reset_link_account->name, '!logout' => url('user/logout'))), 'warning');
       } else {
@@ -233,6 +242,20 @@ function user_pass_reset($form, &$form_state, $uid, $timestamp, $hashed_pass, $a
       if ($is_valid) {
         // First stage is a confirmation form, then login
         if ($action == 'login') {
+          if (variable_get('user_failed_login_identifier_uid_only', FALSE)) {
+            // Clear flood events based on the uid only if configured.
+            $identifier = $account->uid;
+          }
+          else {
+            // The default identifier is a combination of uid and IP address.
+            $identifier = $account->uid . '-' . ip_address();
+          }
+          // Only clear the user specific flood events. We cannot clear the more
+          // broad IP address flood events because that would open a
+          // vulnerability where an attacker with a valid account could use that
+          // to brute force other accounts.
+          flood_clear_event('failed_login_attempt_user', $identifier);
+
           // Set the new user.
           $user = $account;
           // user_login_finalize() also updates the login timestamp of the
