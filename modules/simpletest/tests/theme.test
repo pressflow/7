@@ -25,6 +25,46 @@ class ThemeTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Test the file exists APC cache.
+   */
+  public function testFileExistsCache() {
+    // Allow asset aggregation.
+    variable_set('preprocess_css', 1);
+    variable_set('preprocess_js', 1);
+
+    if (!variable_get('preprocess_css', FALSE) || !variable_get('preprocess_js', FALSE)) {
+      watchdog('theme.test', 'The aggregation variables are being forced via settings.php. Unable to test.');
+      return;
+    }
+    // If there is no APC, there is nothing to test.
+    if (!function_exists('apc_fetch')) {
+      watchdog('APC', 'APC is not enabled, therefore the file existence will not be cached.');
+      return;
+    }
+
+    $account = $this->drupalCreateUser(array('access content'));
+    $this->drupalLogin($account);
+
+    // Visit the newly created node.
+    $this->drupalGet('theme-test/suggestion');
+
+    // At this point since aggregation is on we should have some file_exists
+    // URIs cached in APC.
+    $files = apc_fetch('drupal_aggregated_files');
+    $this->assertTrue(!empty($files), 'File exists calls were cached in APC.');
+
+    // Test cache clearing.
+    drupal_clear_js_cache();
+    $files = apc_fetch('drupal_aggregated_files');
+    $this->assertTrue(empty($files['js']), 'File exists calls were cleared for JS.');
+
+    $this->drupalGet('theme-test/suggestion');
+    drupal_flush_all_caches();
+    $files = apc_fetch('drupal_aggregated_files');
+    $this->assert(!$files, 'All cache cleared from APC.');
+  }
+
+  /**
    * Test function theme_get_suggestions() for SA-CORE-2009-003.
    */
   function testThemeSuggestions() {

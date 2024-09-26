@@ -3736,7 +3736,7 @@ function drupal_build_css_cache($css) {
     $uri = $map[$key];
   }
 
-  if (empty($uri) || !drupal_aggregated_file_exists($uri)) {
+  if (empty($uri) || !drupal_aggregated_file_exists($uri, 'css')) {
     // Build aggregate CSS file.
     foreach ($css as $stylesheet) {
       // Only 'file' stylesheets can be aggregated.
@@ -3963,6 +3963,7 @@ function _drupal_load_stylesheet($matches) {
 function drupal_clear_css_cache() {
   variable_del('drupal_css_cache_files');
   file_scan_directory('public://css', '/.*/', array('callback' => 'drupal_delete_file_if_stale'));
+  drupal_aggregated_file_flush('css');
 }
 
 /**
@@ -5183,18 +5184,70 @@ function drupal_add_tabledrag($table_id, $action, $relationship, $group, $subgro
   drupal_add_js($settings, 'setting');
 }
 
-function drupal_aggregated_file_exists($uri) {
-  if (function_exists('apc_fetch')) {
-    $exists = apc_fetch('file_exists_' . $uri);
-    if (!$exists && file_exists($uri)) {
-      $exists = TRUE;
-      apc_store('file_exists_' . $uri, TRUE, 86400);
-    }
+/**
+ * Checks if an aggregated file exists and caches the results in a APC variable.
+ *
+ * @param string $uri
+ *   The file URI to check.
+ * @param string $type
+ *   The type of aggregated file. Either 'css' or 'js'.
+ *
+ * @return bool
+ *   TRUE if the file exists. FALSE otherwise.
+ */
+function drupal_aggregated_file_exists($uri, $type = 'css') {
+  if (!function_exists('apc_fetch')) {
+    return file_exists($uri);
   }
-  else {
-    $exists = file_exists($uri);
+  $cache_key = 'drupal_aggregated_files';
+
+  // Try the static cache first.
+  $files = &drupal_static($cache_key);
+  if (!empty($files[$type][$uri])) {
+    return $files[$type][$uri];
   }
+
+  // Try the APC cache.
+  $files = apc_fetch($cache_key);
+  if (isset($files[$type][$uri])) {
+    return $files[$type][$uri];
+  }
+  $files = $files ? $files : array();
+  $files[$type] = isset($files[$type]) ? $files[$type] : array();
+  $exists = file_exists($uri);
+  $files[$type][$uri] = $exists;
+  apc_store($cache_key, $files, 86400);
   return $exists;
+}
+
+/**
+ * Clears the cached information about file existence.
+ *
+ * @param string $type
+ *   The type of aggregated file. Either 'css' or 'js'.
+ */
+function drupal_aggregated_file_flush($type = 'css') {
+  if (!function_exists('apc_fetch')) {
+    return;
+  }
+  $cache_key = 'drupal_aggregated_files';
+  $files = &drupal_static($cache_key);
+  if (empty($files)) {
+    $files = apc_fetch($cache_key);
+  }
+  $save = FALSE;
+  if (!empty($files[$type])) {
+    unset($files[$type]);
+    $save = TRUE;
+  }
+  if (empty($files)) {
+    apc_delete($cache_key);
+    drupal_static_reset($cache_key);
+    return;
+  }
+  if ($save) {
+    apc_store('drupal_aggregated_files', $files);
+  }
 }
 
 /**
@@ -5236,7 +5289,7 @@ function drupal_build_js_cache($files) {
     $uri = $map[$key];
   }
 
-  if (empty($uri) || !drupal_aggregated_file_exists($uri)) {
+  if (empty($uri) || !drupal_aggregated_file_exists($uri, 'js')) {
     // Build aggregate JS file.
     foreach ($files as $path => $info) {
       if ($info['preprocess']) {
@@ -5283,6 +5336,7 @@ function drupal_clear_js_cache() {
   variable_del('javascript_parsed');
   variable_del('drupal_js_cache_files');
   file_scan_directory('public://js', '/.*/', array('callback' => 'drupal_delete_file_if_stale'));
+  drupal_aggregated_file_flush('js');
 }
 
 /**
