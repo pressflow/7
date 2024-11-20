@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.101');
+define('VERSION', '7.102');
 
 /**
  * Core API compatibility.
@@ -456,6 +456,9 @@ abstract class DrupalCacheArray implements ArrayAccess {
   public function __destruct() {
     if ($this->bin == 'cache_form' && !variable_get('drupal_cache_array_persist_cache_form', FALSE)) {
       return;
+    }
+    if (!is_array($this->keysToPersist)) {
+      throw new UnexpectedValueException();
     }
     $data = array();
     foreach ($this->keysToPersist as $offset => $persist) {
